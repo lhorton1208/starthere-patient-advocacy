@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}In-Hospital Patient Visits | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>In-Hospital Patient Visits</h1>
+    <p>Consistent bedside advocacy throughout your hospital stay.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    <p>
+      Hospital stays often involve multiple providers, shifting care plans, and
+      important decisions. Our advocates visit you in the hospital to ensure continuity,
+      clarity, and confidence in your care.
+    </p>
+
+    <h2>What We Do</h2>
+    <ul>
+      <li>Regular in-person visits at your bedside</li>
+      <li>Attend rounds and key conversations with your care team when appropriate</li>
+      <li>Help you understand diagnoses, treatments, and options</li>
+      <li>Track medications, procedures, and scheduled tests</li>
+      <li>Identify and address gaps in communication or care coordination</li>
+    </ul>
+
+    <h2>Benefits for Patients &amp; Families</h2>
+    <p>
+      Having a dedicated advocate reduces confusion, improves communication with providers,
+      and gives families peace of mind knowing someone experienced is monitoring the
+      details of your hospital stay.
+    </p>
+
+    <a href="{{ url_for('patient_info') }}" class="btn btn-primary">Submit Patient Information</a>
+  </div>
+</section>
+{% endblock %}

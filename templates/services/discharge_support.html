@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Discharge Support – Patient Advocacy | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Discharge Support – Patient Advocacy</h1>
+    <p>Clear guidance for a safe transition home.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    <p>
+      Leaving the hospital is a critical transition. Discharge instructions can be
+      complex and easy to miss. Our advocates help you understand your plan, organize
+      follow-up care, and leave with confidence.
+    </p>
+
+    <h2>What We Do</h2>
+    <ul>
+      <li>Review discharge instructions with you and your family</li>
+      <li>Clarify medication changes, dosages, and schedules</li>
+      <li>Confirm follow-up appointments and specialist referrals</li>
+      <li>Identify equipment, home care, or therapy needs</li>
+      <li>Provide a written summary of key action items</li>
+    </ul>
+
+    <h2>Why Discharge Support Matters</h2>
+    <p>
+      Many readmissions and complications happen because discharge plans are unclear or
+      incomplete. StartHere advocates bridge that gap so you know exactly what to do
+      after you leave the hospital.
+    </p>
+
+    <a href="{{ url_for('patient_info') }}" class="btn btn-primary">Submit Patient Information</a>
+  </div>
+</section>
+{% endblock %}

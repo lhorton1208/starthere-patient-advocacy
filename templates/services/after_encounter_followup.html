@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}After Encounter 10/20/30 Days Followup | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>After Encounter 10/20/30 Days Followup</h1>
+    <p>Structured check-ins to support your recovery after care.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    <p>
+      Recovery does not end at discharge. StartHere provides scheduled follow-up
+      advocacy at 10, 20, and 30 days after your encounter to monitor progress,
+      address concerns, and keep your care on track.
+    </p>
+
+    <h2>Followup Schedule</h2>
+    <ul>
+      <li><strong>10-Day Check-In</strong> – Review how you are feeling, confirm medications are working, and address early recovery questions.</li>
+      <li><strong>20-Day Check-In</strong> – Assess progress on follow-up appointments, therapy, and any lingering symptoms.</li>
+      <li><strong>30-Day Check-In</strong> – Evaluate overall recovery, identify ongoing needs, and plan next steps if additional support is required.</li>
+    </ul>
+
+    <h2>What We Monitor</h2>
+    <ul>
+      <li>Symptom changes and medication adherence</li>
+      <li>Completion of follow-up appointments</li>
+      <li>Barriers to care (transportation, insurance, home support)</li>
+      <li>Questions or concerns that arise during recovery</li>
+    </ul>
+
+    <a href="{{ url_for('patient_info') }}" class="btn btn-primary">Submit Patient Information</a>
+  </div>
+</section>
+{% endblock %}

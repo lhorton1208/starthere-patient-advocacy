@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}ER Admittance – Patient Advocate | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>ER Admittance – Patient Advocate</h1>
+    <p>Immediate advocacy when every minute matters.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    <p>
+      Emergency room visits are stressful and fast-paced. A StartHere patient advocate
+      can meet you at the ER to help communicate with staff, track test results, and
+      ensure your concerns are heard from the moment you arrive.
+    </p>
+
+    <h2>What We Do</h2>
+    <ul>
+      <li>Meet you or your family member at the emergency department</li>
+      <li>Help communicate symptoms, history, and questions to the care team</li>
+      <li>Track orders, test results, and wait times</li>
+      <li>Explain procedures and next steps in plain language</li>
+      <li>Coordinate with family members and keep everyone informed</li>
+    </ul>
+
+    <h2>When to Request an Advocate</h2>
+    <p>
+      Consider requesting ER admittance advocacy if you are managing a complex condition,
+      feel overwhelmed, need help communicating with providers, or want a trusted
+      professional by your side during a critical moment.
+    </p>
+
+    <a href="{{ url_for('patient_info') }}" class="btn btn-primary">Submit Patient Information</a>
+  </div>
+</section>
+{% endblock %}

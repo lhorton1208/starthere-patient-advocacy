@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}StartHere Patient Advocacy{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="{{ url_for('index') }}" class="logo">
+        <div class="logo-icon">SH</div>
+        <div class="logo-text">
+          <span class="logo-name">StartHere</span>
+          <span class="logo-tagline">Patient Advocacy</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <div class="nav-item">
+          <a href="#" class="nav-link {% if request.path.startswith('/services') %}active{% endif %}">
+            Services <span class="chevron">&#9660;</span>
+          </a>
+          <div class="dropdown">
+            <a href="{{ url_for('er_admittance') }}">ER Admittance – Patient Advocate</a>
+            <a href="{{ url_for('in_hospital_visits') }}">In-Hospital Patient Visits</a>
+            <a href="{{ url_for('discharge_support') }}">Discharge Support – Patient Advocacy</a>
+            <a href="{{ url_for('after_encounter_followup') }}">After Encounter 10/20/30 Days Followup</a>
+          </div>
+        </div>
+
+        <div class="nav-item">
+          <a href="#" class="nav-link {% if request.path.startswith('/client') %}active{% endif %}">
+            Client Information <span class="chevron">&#9660;</span>
+          </a>
+          <div class="dropdown">
+            <a href="{{ url_for('patient_info') }}">Patient Info</a>
+            <a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a>
+          </div>
+        </div>
+
+        <a href="{{ url_for('contacts') }}" class="nav-link {% if request.path == '/contacts' %}active{% endif %}">
+          Contacts
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <h4>StartHere Patient Advocacy</h4>
+          <p style="margin:0;font-size:0.9rem;">Compassionate support when you need it most.</p>
+        </div>
+        <div>
+          <h4>Services</h4>
+          <ul>
+            <li><a href="{{ url_for('er_admittance') }}">ER Admittance</a></li>
+            <li><a href="{{ url_for('in_hospital_visits') }}">In-Hospital Visits</a></li>
+            <li><a href="{{ url_for('discharge_support') }}">Discharge Support</a></li>
+            <li><a href="{{ url_for('after_encounter_followup') }}">After Encounter Followup</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Client Information</h4>
+          <ul>
+            <li><a href="{{ url_for('patient_info') }}">Patient Info</a></li>
+            <li><a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a></li>
+            <li><a href="{{ url_for('contacts') }}">Contacts</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; {{ current_year }} StartHere Patient Advocacy. All rights reserved.
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

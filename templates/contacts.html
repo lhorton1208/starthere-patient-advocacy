@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Contacts | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Our Team</h1>
+    <p>Reach out to a StartHere patient advocate directly.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    <p>
+      Our advocates are ready to help you navigate emergency care, hospital stays,
+      discharge planning, and follow-up support. Contact a team member below or
+      <a href="{{ url_for('patient_info') }}">submit a patient information request</a>.
+    </p>
+
+    <div class="contact-grid">
+      {% for contact in contacts %}
+      <div class="contact-card">
+        <div class="contact-avatar" aria-hidden="true">
+          {{ contact.name.split()[0][0] }}{{ contact.name.split()[-1][0] }}
+        </div>
+        <h2>{{ contact.name }}</h2>
+        <p class="contact-title">{{ contact.title }}</p>
+        <ul class="contact-details">
+          {% if contact.email %}
+          <li>
+            <span class="contact-label">Email</span>
+            <a href="mailto:{{ contact.email }}">{{ contact.email }}</a>
+          </li>
+          {% endif %}
+          {% if contact.phone %}
+          <li>
+            <span class="contact-label">Phone</span>
+            <a href="tel:{{ contact.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ contact.phone }}</a>
+          </li>
+          {% endif %}
+          {% if not contact.email and not contact.phone %}
+          <li>
+            <span class="contact-label">Contact</span>
+            <a href="{{ url_for('patient_info') }}">Submit a patient request</a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Info | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Patient Info</h1>
+    <p>Share your information so we can begin advocating for you.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <p>
+      Complete the form below to request advocacy services. A member of our team will
+      review your submission and contact you to discuss next steps.
+    </p>
+
+    <div class="form-card">
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          {{ form.patient_name.label }}
+          {{ form.patient_name(id="patient_name") }}
+          {% for error in form.patient_name.errors %}
+          <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.contact_name.label }}
+          {{ form.contact_name(id="contact_name") }}
+          {% for error in form.contact_name.errors %}
+          <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.phone.label }}
+          {{ form.phone(id="phone") }}
+          {% for error in form.phone.errors %}
+          <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.email.label }}
+          {{ form.email(id="email") }}
+          {% for error in form.email.errors %}
+          <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.service.label }}
+          {{ form.service(id="service") }}
+          {% for error in form.service.errors %}
+          <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.hospital.label }}
+          {{ form.hospital(id="hospital") }}
+          {% for error in form.hospital.errors %}
+          <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.notes.label }}
+          {{ form.notes(id="notes", placeholder="Describe your situation, timeline, and any immediate concerns.") }}
+          {% for error in form.notes.errors %}
+          <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Request</button>
+
+        <p class="form-note">
+          Your information is handled in accordance with our
+          <a href="{{ url_for('hipaa_forms') }}">HIPAA privacy practices</a>.
+          This form is for intake purposes; complete HIPAA authorization forms separately.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

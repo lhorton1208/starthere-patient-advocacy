@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}StartHere Patient Advocacy – Compassionate Care Navigation{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <h1>Your Advocate Through Every Step of Care</h1>
+    <p>
+      StartHere Patient Advocacy provides experienced, compassionate support for patients
+      and families navigating emergency rooms, hospital stays, discharge planning, and
+      follow-up care.
+    </p>
+    <a href="{{ url_for('patient_info') }}" class="btn btn-primary">Get Started</a>
+    <a href="{{ url_for('er_admittance') }}" class="btn btn-outline">Our Services</a>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    <h2>How We Help</h2>
+    <p>
+      A hospital visit can be overwhelming. Our patient advocates are by your side to
+      ask the right questions, coordinate with care teams, and ensure you understand
+      every decision along the way.
+    </p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>ER Admittance – Patient Advocate</h3>
+        <p>Immediate support when you or a loved one arrives at the emergency room.</p>
+        <a href="{{ url_for('er_admittance') }}" class="card-link">Learn more &rarr;</a>
+      </div>
+      <div class="card">
+        <h3>In-Hospital Patient Visits</h3>
+        <p>Regular bedside advocacy throughout your hospital stay.</p>
+        <a href="{{ url_for('in_hospital_visits') }}" class="card-link">Learn more &rarr;</a>
+      </div>
+      <div class="card">
+        <h3>Discharge Support</h3>
+        <p>Clear guidance on medications, follow-up appointments, and home care.</p>
+        <a href="{{ url_for('discharge_support') }}" class="card-link">Learn more &rarr;</a>
+      </div>
+      <div class="card">
+        <h3>After Encounter Followup</h3>
+        <p>Structured check-ins at 10, 20, and 30 days after your encounter.</p>
+        <a href="{{ url_for('after_encounter_followup') }}" class="card-link">Learn more &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
