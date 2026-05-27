@@ -5,7 +5,11 @@ from flask import Flask, flash, redirect, render_template, url_for
 
 from config import CONTACTS, Config, INSTANCE_DIR
 from forms import PatientInfoForm
-from models import PatientSubmission, db
+from intake import create_intake_request
+from models import db
+from routes.billing import billing_bp
+from routes.encounters import encounters_bp
+from seed import seed_database
 
 
 def create_app(config_class=Config):
@@ -16,8 +20,12 @@ def create_app(config_class=Config):
 
     db.init_app(app)
 
+    app.register_blueprint(encounters_bp)
+    app.register_blueprint(billing_bp)
+
     with app.app_context():
         db.create_all()
+        seed_database()
 
     @app.context_processor
     def inject_globals():
@@ -47,17 +55,15 @@ def create_app(config_class=Config):
     def patient_info():
         form = PatientInfoForm()
         if form.validate_on_submit():
-            submission = PatientSubmission(
+            create_intake_request(
                 patient_name=form.patient_name.data.strip(),
                 contact_name=form.contact_name.data.strip(),
                 phone=form.phone.data.strip(),
                 email=form.email.data.strip().lower(),
                 service=form.service.data,
-                hospital=(form.hospital.data or "").strip() or None,
+                hospital_name=(form.hospital.data or "").strip() or None,
                 notes=(form.notes.data or "").strip() or None,
             )
-            db.session.add(submission)
-            db.session.commit()
             flash(
                 "Thank you! Your request has been submitted. A member of our team will contact you soon.",
                 "success",

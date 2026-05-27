@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}New Invoice | {{ account.name }}{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>New Invoice</h1>
+    <p>Account: {{ account.name }}</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+
+    <div class="form-card form-card-wide">
+      <form method="post">
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.invoice_number) }}
+        {{ render_form_field(form.issue_date) }}
+        {{ render_form_field(form.due_date) }}
+        {{ render_form_field(form.status) }}
+        <h2 class="section-label">Line Item</h2>
+        {{ render_form_field(form.description) }}
+        {{ render_form_field(form.quantity) }}
+        {{ render_form_field(form.unit_price) }}
+        <button type="submit" class="btn btn-solid">Create Invoice</button>
+        <a href="{{ url_for('billing.view_account', account_id=account.id) }}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

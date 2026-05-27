@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Accounts | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>Accounts &amp; Billing</h1>
+      <p>Look up accounts, billing records, and invoices.</p>
+    </div>
+    <a href="{{ url_for('billing.new_account') }}" class="btn btn-solid">New Account</a>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+
+    <form method="get" class="search-bar">
+      <div class="search-grid search-grid-2">
+        <div class="form-group">
+          {{ search_form.q.label }}
+          {{ search_form.q(id="q", placeholder="Account name, number, or client...") }}
+        </div>
+        <div class="form-group">
+          {{ search_form.status.label }}
+          {{ search_form.status(id="status") }}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-solid">Search</button>
+      <a href="{{ url_for('billing.list_accounts') }}" class="btn btn-secondary">Clear</a>
+    </form>
+
+    {% if accounts %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Client</th>
+            <th>Patient</th>
+            <th>Type</th>
+            <th>Balance</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for account in accounts %}
+          <tr>
+            <td>
+              {{ account.name }}
+              {% if account.account_number %}<br><small>{{ account.account_number }}</small>{% endif %}
+            </td>
+            <td>{{ account.client.name }}</td>
+            <td>{{ account.patient.full_name if account.patient else '—' }}</td>
+            <td>{{ account.lookup_list.name }}</td>
+            <td>${{ '%.2f'|format(account.balance|float) }}</td>
+            <td><span class="badge badge-{{ account.status }}">{{ account.status }}</span></td>
+            <td><a href="{{ url_for('billing.view_account', account_id=account.id) }}">View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">No accounts found. <a href="{{ url_for('billing.new_account') }}">Create one</a>.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

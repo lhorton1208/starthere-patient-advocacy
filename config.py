@@ -45,3 +45,27 @@ SERVICE_CHOICES = [
     ("discharge", "Discharge Support – Patient Advocacy"),
     ("followup", "After Encounter 10/20/30 Days Followup"),
 ]
+
+SERVICE_LABELS = dict(SERVICE_CHOICES)
+
+ENCOUNTER_STATUS_CHOICES = [
+    ("requested", "Requested"),
+    ("scheduled", "Scheduled"),
+    ("active", "Active"),
+    ("completed", "Completed"),
+    ("cancelled", "Cancelled"),
+]
+
+ACCOUNT_STATUS_CHOICES = [
+    ("active", "Active"),
+    ("inactive", "Inactive"),
+    ("closed", "Closed"),
+]
+
+INVOICE_STATUS_CHOICES = [
+    ("draft", "Draft"),
+    ("sent", "Sent"),
+    ("paid", "Paid"),
+    ("overdue", "Overdue"),
+    ("cancelled", "Cancelled"),
+]

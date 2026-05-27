@@ -43,6 +43,26 @@
         <a href="{{ url_for('contacts') }}" class="nav-link {% if request.path == '/contacts' %}active{% endif %}">
           Contacts
         </a>
+
+        <div class="nav-item">
+          <a href="#" class="nav-link {% if request.path.startswith('/encounters') %}active{% endif %}">
+            Encounters <span class="chevron">&#9660;</span>
+          </a>
+          <div class="dropdown">
+            <a href="{{ url_for('encounters.list_encounters') }}">View Encounters</a>
+            <a href="{{ url_for('encounters.new_encounter') }}">New Encounter</a>
+          </div>
+        </div>
+
+        <div class="nav-item">
+          <a href="#" class="nav-link {% if request.path.startswith('/accounts') %}active{% endif %}">
+            Accounts &amp; Billing <span class="chevron">&#9660;</span>
+          </a>
+          <div class="dropdown">
+            <a href="{{ url_for('billing.list_accounts') }}">View Accounts</a>
+            <a href="{{ url_for('billing.new_account') }}">New Account</a>
+          </div>
+        </div>
       </nav>
     </div>
   </header>
@@ -73,6 +93,13 @@
             <li><a href="{{ url_for('patient_info') }}">Patient Info</a></li>
             <li><a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a></li>
             <li><a href="{{ url_for('contacts') }}">Contacts</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Employee Tools</h4>
+          <ul>
+            <li><a href="{{ url_for('encounters.list_encounters') }}">Encounters</a></li>
+            <li><a href="{{ url_for('billing.list_accounts') }}">Accounts &amp; Billing</a></li>
           </ul>
         </div>
       </div>

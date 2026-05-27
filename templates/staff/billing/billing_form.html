@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}Add Billing | {{ account.name }}{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Add Billing Record</h1>
+    <p>Account: {{ account.name }}</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+
+    <div class="form-card">
+      <form method="post">
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.note_id) }}
+        {{ render_form_field(form.description) }}
+        {{ render_form_field(form.amount) }}
+        <button type="submit" class="btn btn-solid">Save Billing</button>
+        <a href="{{ url_for('billing.view_account', account_id=account.id) }}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

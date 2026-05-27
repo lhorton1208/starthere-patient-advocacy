@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}Add Note | Encounter #{{ encounter.id }}{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Add Note</h1>
+    <p>Encounter #{{ encounter.id }} — {{ encounter.patient.full_name }}</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+
+    <div class="form-card">
+      <form method="post">
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.content) }}
+        {{ render_form_field(form.author) }}
+        <button type="submit" class="btn btn-solid">Save Note</button>
+        <a href="{{ url_for('encounters.view_encounter', encounter_id=encounter.id) }}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

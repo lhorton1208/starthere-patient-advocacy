@@ -19,7 +19,33 @@ python app.py
 
 Open [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
-Patient form submissions are saved to `instance/starthere.db` (SQLite) by default.
+Patient form submissions are saved to the relational database in `instance/starthere.db` (SQLite) by default.
+
+## Data model
+
+The database follows the StartHere ER diagram with these tables:
+
+| Table | Purpose |
+|-------|---------|
+| `companies` | Top-level organization (StartHere Patient Advocacy) |
+| `clients` | Primary contacts who request advocacy services |
+| `patients` | Patients receiving advocacy |
+| `patient_relationships` | Related contacts for a patient (family, caregivers) |
+| `advocates` | StartHere patient advocates |
+| `providers` | External medical providers involved in care |
+| `hospitals` | Hospital facilities |
+| `home_health_facilities` | Home health agencies |
+| `encounters` | Service events (ER admittance, visits, discharge, follow-up) |
+| `notes` | Documentation attached to encounters |
+| `lookup_lists` | Reference lists (e.g. account types) |
+| `accounts` | Client/patient financial accounts |
+| `billings` | Billing records linked to notes and accounts |
+| `invoices` | Invoices for an account |
+| `invoice_items` | Line items on an invoice |
+
+On startup, the app seeds **StartHere Patient Advocacy**, the three advocates, and default account-type lookup values.
+
+The Patient Info form creates a **Client**, **Patient**, **Encounter**, optional **Hospital**, and optional **Note**.
 
 ## Site structure
 
@@ -28,12 +54,17 @@ Patient form submissions are saved to `instance/starthere.db` (SQLite) by defaul
 - **Client Information** – Patient Info form (saved to database), HIPAA Forms
 - **Contacts** – Georgette Johnson, Dawn Criswell, Larry Horton
 
-## Viewing submissions
-
-Submissions are stored in the `patient_submissions` table. To inspect locally:
+## Viewing data locally
 
 ```bash
-sqlite3 instance/starthere.db "SELECT id, patient_name, email, service, created_at FROM patient_submissions;"
+sqlite3 instance/starthere.db "SELECT p.first_name, p.last_name, e.encounter_type, e.status, e.created_at FROM encounters e JOIN patients p ON p.id = e.patient_id ORDER BY e.created_at DESC;"
+```
+
+Other useful queries:
+
+```bash
+sqlite3 instance/starthere.db "SELECT name, title, email FROM advocates;"
+sqlite3 instance/starthere.db "SELECT name FROM hospitals;"
 ```
 
 ## Environment variables

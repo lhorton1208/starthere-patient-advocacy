@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Encounters | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>Encounters</h1>
+      <p>Search, view, and manage patient encounters and notes.</p>
+    </div>
+    <a href="{{ url_for('encounters.new_encounter') }}" class="btn btn-solid">New Encounter</a>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+
+    <form method="get" class="search-bar">
+      <div class="search-grid">
+        <div class="form-group">
+          {{ search_form.q.label }}
+          {{ search_form.q(id="q", placeholder="Patient name...") }}
+        </div>
+        <div class="form-group">
+          {{ search_form.status.label }}
+          {{ search_form.status(id="status") }}
+        </div>
+        <div class="form-group">
+          {{ search_form.encounter_type.label }}
+          {{ search_form.encounter_type(id="encounter_type") }}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-solid">Search</button>
+      <a href="{{ url_for('encounters.list_encounters') }}" class="btn btn-secondary">Clear</a>
+    </form>
+
+    {% if encounters %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Patient</th>
+            <th>Service</th>
+            <th>Status</th>
+            <th>Advocate</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for encounter in encounters %}
+          <tr>
+            <td>#{{ encounter.id }}</td>
+            <td>{{ encounter.patient.full_name }}</td>
+            <td>{{ service_labels.get(encounter.encounter_type, encounter.encounter_type) }}</td>
+            <td><span class="badge badge-{{ encounter.status }}">{{ encounter.status }}</span></td>
+            <td>{{ encounter.advocate.name if encounter.advocate else '—' }}</td>
+            <td>{{ encounter.created_at.strftime('%Y-%m-%d') }}</td>
+            <td><a href="{{ url_for('encounters.view_encounter', encounter_id=encounter.id) }}">View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">No encounters found. <a href="{{ url_for('encounters.new_encounter') }}">Create one</a>.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

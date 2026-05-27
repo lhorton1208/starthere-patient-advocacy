@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}{{ account.name }} | Accounts{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>{{ account.name }}</h1>
+      <p>
+        Client: {{ account.client.name }}
+        {% if account.patient %} · Patient: {{ account.patient.full_name }}{% endif %}
+      </p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('billing.new_billing', account_id=account.id) }}" class="btn btn-solid">Add Billing</a>
+      <a href="{{ url_for('billing.new_invoice', account_id=account.id) }}" class="btn btn-secondary">New Invoice</a>
+    </div>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h2>Account Summary</h2>
+        <dl>
+          <dt>Account Number</dt><dd>{{ account.account_number or '—' }}</dd>
+          <dt>Account Type</dt><dd>{{ account.lookup_list.name }}</dd>
+          <dt>Balance</dt><dd>${{ '%.2f'|format(account.balance|float) }}</dd>
+          <dt>Status</dt><dd><span class="badge badge-{{ account.status }}">{{ account.status }}</span></dd>
+          <dt>Client</dt><dd>{{ account.client.name }}</dd>
+          <dt>Patient</dt><dd>{{ account.patient.full_name if account.patient else '—' }}</dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h2>Billing Records ({{ billings|length }})</h2>
+        {% if billings %}
+        <div class="table-wrap">
+          <table class="data-table data-table-compact">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for billing in billings %}
+              <tr>
+                <td>{{ billing.billed_at.strftime('%Y-%m-%d') }}</td>
+                <td>{{ billing.description or '—' }}</td>
+                <td>${{ '%.2f'|format(billing.amount|float) }}</td>
+                <td>#{{ billing.note_id }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="empty-state">No billing records yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="detail-card" style="margin-top: 1.5rem;">
+      <h2>Invoices ({{ invoices|length }})</h2>
+      {% if invoices %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in invoices %}
+            <tr>
+              <td>{{ invoice.invoice_number }}</td>
+              <td>{{ invoice.issue_date.strftime('%Y-%m-%d') }}</td>
+              <td>{{ invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else '—' }}</td>
+              <td>${{ '%.2f'|format(invoice.total|float) }}</td>
+              <td><span class="badge badge-{{ invoice.status }}">{{ invoice.status }}</span></td>
+              <td><a href="{{ url_for('billing.view_invoice', invoice_id=invoice.id) }}">View</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="empty-state">No invoices yet. <a href="{{ url_for('billing.new_invoice', account_id=account.id) }}">Create one</a>.</p>
+      {% endif %}
+    </div>
+
+    <a href="{{ url_for('billing.list_accounts') }}" class="back-link">&larr; Back to accounts</a>
+  </div>
+</section>
+{% endblock %}
