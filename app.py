@@ -1,9 +1,10 @@
 import os
 from datetime import datetime
 
-from flask import Flask, flash, redirect, render_template, url_for
+from flask import Flask, flash, redirect, render_template, send_from_directory, url_for
+from whitenoise import WhiteNoise
 
-from config import CONTACTS, Config, INSTANCE_DIR
+from config import BASE_DIR, CONTACTS, Config, INSTANCE_DIR
 from forms import PatientInfoForm
 from intake import create_intake_request
 from models import db
@@ -13,7 +14,8 @@ from seed import seed_database
 
 
 def create_app(config_class=Config):
-    app = Flask(__name__)
+    static_dir = os.path.join(BASE_DIR, "static")
+    app = Flask(__name__, static_folder=static_dir, static_url_path="/static")
     app.config.from_object(config_class)
 
     os.makedirs(INSTANCE_DIR, exist_ok=True)
@@ -80,6 +82,15 @@ def create_app(config_class=Config):
     def contacts():
         return render_template("contacts.html", contacts=CONTACTS)
 
+    @app.route("/static/images/starthere-logo.png")
+    def logo_asset():
+        return send_from_directory(
+            os.path.join(static_dir, "images"),
+            "starthere-logo.png",
+            mimetype="image/png",
+        )
+
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root=static_dir, prefix="static/")
     return app
 
 
