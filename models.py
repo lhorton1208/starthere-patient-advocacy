@@ -99,6 +99,7 @@ class Advocate(db.Model):
 
     company = db.relationship("Company", back_populates="advocates")
     encounters = db.relationship("Encounter", back_populates="advocate", lazy="dynamic")
+    time_cards = db.relationship("TimeCard", back_populates="advocate", lazy="dynamic")
 
 
 class Provider(db.Model):
@@ -259,3 +260,18 @@ class InvoiceItem(db.Model):
     amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
 
     invoice = db.relationship("Invoice", back_populates="items")
+
+
+class TimeCard(db.Model):
+    __tablename__ = "time_cards"
+
+    id = db.Column(db.Integer, primary_key=True)
+    advocate_id = db.Column(db.Integer, db.ForeignKey("advocates.id"), nullable=False)
+    encounter_id = db.Column(db.Integer, db.ForeignKey("encounters.id"))
+    work_date = db.Column(db.Date, nullable=False)
+    hours = db.Column(db.Numeric(6, 2), nullable=False, default=0)
+    description = db.Column(db.String(300))
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+
+    advocate = db.relationship("Advocate", back_populates="time_cards")
+    encounter = db.relationship("Encounter", backref=db.backref("time_cards", lazy="dynamic"))

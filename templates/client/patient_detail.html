@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}{{ patient.full_name }} | Patient Info{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>{{ patient.full_name }}</h1>
+      <p>Patient record and linked client.</p>
+    </div>
+    <a href="{{ url_for('client_patient.edit_patient', patient_id=patient.id) }}" class="btn btn-solid">Edit Patient</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="detail-card">
+      <h2>Patient Details</h2>
+      <dl>
+        <dt>Linked Client</dt>
+        <dd><a href="{{ url_for('client_patient.view_client', client_id=patient.client_id) }}">{{ patient.client.name }}</a></dd>
+        <dt>Date of Birth</dt><dd>{{ patient.date_of_birth.strftime('%Y-%m-%d') if patient.date_of_birth else '—' }}</dd>
+        <dt>Phone</dt><dd>{{ patient.phone or '—' }}</dd>
+        <dt>Email</dt><dd>{{ patient.email or '—' }}</dd>
+        <dt>Encounters</dt><dd>{{ patient.encounters.count() }}</dd>
+      </dl>
+    </div>
+    <a href="{{ url_for('client_patient.list_patients') }}" class="back-link">&larr; Back to Patient Info</a>
+  </div>
+</section>
+{% endblock %}

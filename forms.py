@@ -20,6 +20,7 @@ from config import (
 
 
 class PatientInfoForm(FlaskForm):
+    """Public service request form (creates client, patient, and encounter)."""
     patient_name = StringField(
         "Patient Full Name",
         validators=[DataRequired(), Length(max=200)],
@@ -179,3 +180,68 @@ class InvoiceForm(FlaskForm):
 
 def empty_select(label):
     return [(0, f"Select {label}...")]
+
+
+class ClientInfoForm(FlaskForm):
+    name = StringField("Client Name", validators=[DataRequired(), Length(max=200)])
+    phone = StringField("Phone", validators=[Optional(), Length(max=50)])
+    email = EmailField("Email", validators=[Optional(), Email(), Length(max=200)])
+    address = StringField("Address", validators=[Optional(), Length(max=300)])
+    patient_id = SelectField(
+        "Linked Patient",
+        coerce=nullable_int,
+        validators=[Optional()],
+    )
+
+
+class PatientRecordForm(FlaskForm):
+    client_id = SelectField("Linked Client", coerce=int, validators=[DataRequired()])
+    first_name = StringField("First Name", validators=[DataRequired(), Length(max=100)])
+    last_name = StringField("Last Name", validators=[DataRequired(), Length(max=100)])
+    date_of_birth = DateField("Date of Birth", validators=[Optional()])
+    phone = StringField("Phone", validators=[Optional(), Length(max=50)])
+    email = EmailField("Email", validators=[Optional(), Email(), Length(max=200)])
+
+
+class HospitalForm(FlaskForm):
+    name = StringField("Hospital Name", validators=[DataRequired(), Length(max=200)])
+    address = StringField("Address", validators=[Optional(), Length(max=300)])
+    phone = StringField("Phone", validators=[Optional(), Length(max=50)])
+
+
+class AdvocateEntityForm(FlaskForm):
+    name = StringField("Name", validators=[DataRequired(), Length(max=200)])
+    title = StringField("Title", validators=[Optional(), Length(max=100)])
+    phone = StringField("Phone", validators=[Optional(), Length(max=50)])
+    email = EmailField("Email", validators=[Optional(), Email(), Length(max=200)])
+    active = SelectField(
+        "Status",
+        choices=[("1", "Active"), ("0", "Inactive")],
+        validators=[DataRequired()],
+    )
+
+
+class HomeHealthFacilityForm(FlaskForm):
+    name = StringField("Facility Name", validators=[DataRequired(), Length(max=200)])
+    address = StringField("Address", validators=[Optional(), Length(max=300)])
+    phone = StringField("Phone", validators=[Optional(), Length(max=50)])
+
+
+class TimeCardForm(FlaskForm):
+    advocate_id = SelectField("Advocate", coerce=int, validators=[DataRequired()])
+    encounter_id = SelectField("Encounter", coerce=nullable_int, validators=[Optional()])
+    work_date = DateField("Work Date", validators=[DataRequired()], default=date.today)
+    hours = DecimalField(
+        "Hours",
+        places=2,
+        validators=[DataRequired(), NumberRange(min=0.01, max=24)],
+    )
+    description = StringField("Description", validators=[Optional(), Length(max=300)])
+
+
+class AdHocQueryForm(FlaskForm):
+    sql = TextAreaField(
+        "SQL Query (SELECT only)",
+        validators=[DataRequired(), Length(max=5000)],
+        render_kw={"rows": 8, "placeholder": "SELECT id, name FROM clients LIMIT 25;"},
+    )

@@ -5,11 +5,12 @@ from flask import Flask, flash, redirect, render_template, send_from_directory, 
 from whitenoise import WhiteNoise
 
 from config import BASE_DIR, CONTACTS, Config, INSTANCE_DIR
-from forms import PatientInfoForm
-from intake import create_intake_request
 from models import db
 from routes.billing import billing_bp
+from routes.client_patient import client_patient_bp
 from routes.encounters import encounters_bp
+from routes.entities import entities_bp
+from routes.reports import reports_bp
 from seed import seed_database
 
 
@@ -24,6 +25,9 @@ def create_app(config_class=Config):
 
     app.register_blueprint(encounters_bp)
     app.register_blueprint(billing_bp)
+    app.register_blueprint(reports_bp)
+    app.register_blueprint(entities_bp)
+    app.register_blueprint(client_patient_bp)
 
     with app.app_context():
         db.create_all()
@@ -53,26 +57,9 @@ def create_app(config_class=Config):
     def after_encounter_followup():
         return render_template("services/after_encounter_followup.html")
 
-    @app.route("/client/patient-info", methods=["GET", "POST"])
-    def patient_info():
-        form = PatientInfoForm()
-        if form.validate_on_submit():
-            create_intake_request(
-                patient_name=form.patient_name.data.strip(),
-                contact_name=form.contact_name.data.strip(),
-                phone=form.phone.data.strip(),
-                email=form.email.data.strip().lower(),
-                service=form.service.data,
-                hospital_name=(form.hospital.data or "").strip() or None,
-                notes=(form.notes.data or "").strip() or None,
-            )
-            flash(
-                "Thank you! Your request has been submitted. A member of our team will contact you soon.",
-                "success",
-            )
-            return redirect(url_for("patient_info"))
-
-        return render_template("client/patient_info.html", form=form)
+    @app.route("/client/patient-info")
+    def patient_info_redirect():
+        return redirect(url_for("client_patient.list_patients"))
 
     @app.route("/client/hipaa-forms")
     def hipaa_forms():

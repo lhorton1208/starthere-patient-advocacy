@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}{{ title }} | StartHere{% endblock %}
+
+{% block content %}
+<section class="page-header"><div class="container"><h1>{{ title }}</h1></div></section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <p class="form-note">Select the client this patient is linked to. View clients in <a href="{{ url_for('client_patient.list_clients') }}">Client Info</a>.</p>
+    <div class="form-card">
+      <form method="post">
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.client_id) }}
+        {{ render_form_field(form.first_name) }}
+        {{ render_form_field(form.last_name) }}
+        {{ render_form_field(form.date_of_birth) }}
+        {{ render_form_field(form.phone) }}
+        {{ render_form_field(form.email) }}
+        <button type="submit" class="btn btn-solid">Save Patient</button>
+        {% if patient %}
+        <a href="{{ url_for('client_patient.view_patient', patient_id=patient.id) }}" class="btn btn-secondary">Cancel</a>
+        {% else %}
+        <a href="{{ url_for('client_patient.list_patients') }}" class="btn btn-secondary">Cancel</a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

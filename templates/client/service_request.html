@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}Service Request | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Request Advocacy Services</h1>
+    <p>Submit a new service request for yourself or a loved one.</p>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {{ flash_messages() }}
+    <div class="form-card">
+      <form method="post">
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.patient_name) }}
+        {{ render_form_field(form.contact_name) }}
+        {{ render_form_field(form.phone) }}
+        {{ render_form_field(form.email) }}
+        {{ render_form_field(form.service) }}
+        {{ render_form_field(form.hospital) }}
+        {{ render_form_field(form.notes) }}
+        <button type="submit" class="btn btn-solid">Submit Request</button>
+        <p class="form-note">
+          Your information is handled in accordance with our
+          <a href="{{ url_for('hipaa_forms') }}">HIPAA privacy practices</a>.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

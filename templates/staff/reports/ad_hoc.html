@@ -1,0 +1,38 @@
+{% extends "staff/reports/base_report.html" %}
+{% from "staff/_macros.html" import render_form_field %}
+
+{% block report_content %}
+<div class="form-card form-card-wide">
+  <form method="post">
+    {{ form.hidden_tag() }}
+    {{ render_form_field(form.sql) }}
+    <button type="submit" class="btn btn-solid">Run Query</button>
+  </form>
+  <p class="form-note">Only read-only SELECT queries are allowed. Results are limited to 200 rows.</p>
+</div>
+
+{% if columns %}
+<div class="table-wrap" style="margin-top: 1.5rem;">
+  <table class="data-table">
+    <thead>
+      <tr>
+        {% for col in columns %}
+        <th>{{ col }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in results %}
+      <tr>
+        {% for col in columns %}
+        <td>{{ row[col] }}</td>
+        {% endfor %}
+      </tr>
+      {% else %}
+      <tr><td colspan="{{ columns|length }}" class="empty-state">No rows returned.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

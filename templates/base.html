@@ -42,8 +42,34 @@
             Client Information <span class="chevron">&#9660;</span>
           </a>
           <div class="dropdown">
-            <a href="{{ url_for('patient_info') }}">Patient Info</a>
+            <a href="{{ url_for('client_patient.list_clients') }}">Client Info</a>
+            <a href="{{ url_for('client_patient.list_patients') }}">Patient Info</a>
+            <a href="{{ url_for('client_patient.service_request') }}">Service Request</a>
             <a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a>
+          </div>
+        </div>
+
+        <div class="nav-item">
+          <a href="#" class="nav-link {% if request.path.startswith('/reports') %}active{% endif %}">
+            Reports <span class="chevron">&#9660;</span>
+          </a>
+          <div class="dropdown">
+            <a href="{{ url_for('reports.report_encounters') }}">Encounters</a>
+            <a href="{{ url_for('reports.report_patients') }}">Patients</a>
+            <a href="{{ url_for('reports.report_advocates') }}">Advocates</a>
+            <a href="{{ url_for('reports.report_time_cards') }}">Time Cards</a>
+            <a href="{{ url_for('reports.report_ad_hoc') }}">Ad-Hoc Queries</a>
+          </div>
+        </div>
+
+        <div class="nav-item">
+          <a href="#" class="nav-link {% if request.path.startswith('/entities') %}active{% endif %}">
+            Add/Edit Entities <span class="chevron">&#9660;</span>
+          </a>
+          <div class="dropdown">
+            <a href="{{ url_for('entities.list_hospitals') }}">Hospitals</a>
+            <a href="{{ url_for('entities.list_advocates') }}">Advocates</a>
+            <a href="{{ url_for('entities.list_home_care') }}">Home Care Facilities</a>
           </div>
         </div>
 
@@ -97,7 +123,8 @@
         <div>
           <h4>Client Information</h4>
           <ul>
-            <li><a href="{{ url_for('patient_info') }}">Patient Info</a></li>
+            <li><a href="{{ url_for('client_patient.list_clients') }}">Client Info</a></li>
+            <li><a href="{{ url_for('client_patient.list_patients') }}">Patient Info</a></li>
             <li><a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a></li>
             <li><a href="{{ url_for('contacts') }}">Contacts</a></li>
           </ul>
@@ -107,6 +134,8 @@
           <ul>
             <li><a href="{{ url_for('encounters.list_encounters') }}">Encounters</a></li>
             <li><a href="{{ url_for('billing.list_accounts') }}">Accounts &amp; Billing</a></li>
+            <li><a href="{{ url_for('reports.report_encounters') }}">Reports</a></li>
+            <li><a href="{{ url_for('entities.list_hospitals') }}">Add/Edit Entities</a></li>
           </ul>
         </div>
       </div>

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}{{ client.name }} | Client Info{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>{{ client.name }}</h1>
+      <p>Client record and linked patients.</p>
+    </div>
+    <a href="{{ url_for('client_patient.edit_client', client_id=client.id) }}" class="btn btn-solid">Edit Client</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h2>Client Details</h2>
+        <dl>
+          <dt>Phone</dt><dd>{{ client.phone or '—' }}</dd>
+          <dt>Email</dt><dd>{{ client.email or '—' }}</dd>
+          <dt>Address</dt><dd>{{ client.address or '—' }}</dd>
+        </dl>
+      </div>
+      <div class="detail-card">
+        <h2>Linked Patients</h2>
+        {% if patients %}
+        <ul>
+          {% for patient in patients %}
+          <li><a href="{{ url_for('client_patient.view_patient', patient_id=patient.id) }}">{{ patient.full_name }}</a></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No patients linked. <a href="{{ url_for('client_patient.edit_patient') }}?client_id={{ client.id }}">Add a patient</a>.</p>
+        {% endif %}
+      </div>
+    </div>
+    <a href="{{ url_for('client_patient.list_clients') }}" class="back-link">&larr; Back to Client Info</a>
+  </div>
+</section>
+{% endblock %}

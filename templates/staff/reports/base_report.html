@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}{{ title }} | StartHere{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>{{ title }}</h1>
+    <p>Read-only report view for StartHere staff.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    {% block report_content %}{% endblock %}
+  </div>
+</section>
+{% endblock %}

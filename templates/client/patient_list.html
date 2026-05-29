@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Patient Info | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>Patient Info</h1>
+      <p>Manage patients and their linked clients.</p>
+    </div>
+    <a href="{{ url_for('client_patient.edit_patient') }}" class="btn btn-solid">New Patient</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <p>Each patient must be linked to a client. Manage clients in <a href="{{ url_for('client_patient.list_clients') }}">Client Info</a>.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Patient</th><th>Client</th><th>Phone</th><th>Email</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td><a href="{{ url_for('client_patient.view_patient', patient_id=row.id) }}">{{ row.full_name }}</a></td>
+            <td><a href="{{ url_for('client_patient.view_client', client_id=row.client_id) }}">{{ row.client.name }}</a></td>
+            <td>{{ row.phone or '—' }}</td>
+            <td>{{ row.email or '—' }}</td>
+            <td><a href="{{ url_for('client_patient.edit_patient', patient_id=row.id) }}">Edit</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="empty-state">No patients yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

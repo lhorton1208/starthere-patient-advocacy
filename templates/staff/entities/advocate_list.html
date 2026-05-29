@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Advocates | StartHere{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div><h1>Advocates</h1><p>Add and edit StartHere advocates.</p></div>
+    <a href="{{ url_for('entities.edit_advocate') }}" class="btn btn-solid">Add Advocate</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Title</th><th>Phone</th><th>Email</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ row.name }}</td>
+            <td>{{ row.title or '—' }}</td>
+            <td>{{ row.phone or '—' }}</td>
+            <td>{{ row.email or '—' }}</td>
+            <td>{{ 'Active' if row.active else 'Inactive' }}</td>
+            <td><a href="{{ url_for('entities.edit_advocate', item_id=row.id) }}">Edit</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="empty-state">No advocates yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Hospitals | StartHere{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div><h1>Hospitals</h1><p>Add and edit hospital facilities.</p></div>
+    <a href="{{ url_for('entities.edit_hospital') }}" class="btn btn-solid">Add Hospital</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th></th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ row.name }}</td>
+            <td>{{ row.phone or '—' }}</td>
+            <td>{{ row.address or '—' }}</td>
+            <td><a href="{{ url_for('entities.edit_hospital', item_id=row.id) }}">Edit</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty-state">No hospitals yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

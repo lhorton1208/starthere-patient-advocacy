@@ -15,7 +15,7 @@
     <p>
       Our advocates are ready to help you navigate emergency care, hospital stays,
       discharge planning, and follow-up support. Contact a team member below or
-      <a href="{{ url_for('patient_info') }}">submit a patient information request</a>.
+      <a href="{{ url_for('client_patient.service_request') }}">submit a patient information request</a>.
     </p>
 
     <div class="contact-grid">
@@ -42,7 +42,7 @@
           {% if not contact.email and not contact.phone %}
           <li>
             <span class="contact-label">Contact</span>
-            <a href="{{ url_for('patient_info') }}">Submit a patient request</a>
+            <a href="{{ url_for('client_patient.service_request') }}">Submit a patient request</a>
           </li>
           {% endif %}
         </ul>
