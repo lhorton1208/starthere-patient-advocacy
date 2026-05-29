@@ -63,17 +63,45 @@ a:hover {
 .logo {
   display: flex;
   align-items: center;
+  gap: 0.65rem;
   text-decoration: none;
+  flex-shrink: 0;
+  color: var(--color-text);
+}
+
+.logo-icon-img {
+  height: 48px;
+  width: auto;
+  display: block;
   flex-shrink: 0;
 }
 
-.logo-img {
-  height: auto;
-  max-height: 88px;
-  width: auto;
-  max-width: min(220px, 42vw);
-  display: block;
-  object-fit: contain;
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.logo-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.logo-start {
+  color: #1e3a5f;
+}
+
+.logo-here {
+  color: #6f8f72;
+}
+
+.logo-tagline {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8b7a9e;
+  font-weight: 600;
 }
 
 .main-nav {
@@ -710,9 +738,12 @@ a:hover {
 }
 
 @media (max-width: 768px) {
-  .logo-img {
-    max-height: 72px;
-    max-width: 180px;
+  .logo-icon-img {
+    height: 40px;
+  }
+
+  .logo-name {
+    font-size: 1.05rem;
   }
 
   .header-inner {

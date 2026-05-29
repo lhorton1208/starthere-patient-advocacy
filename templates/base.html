@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}StartHere Patient Advocacy{% endblock %}</title>
-  <link rel="icon" href="{{ url_for('static', filename='images/starthere-logo.png') }}" type="image/png">
+  <link rel="icon" href="{{ url_for('static', filename='images/starthere-logo-favicon.png') }}" type="image/png">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -12,12 +12,16 @@
     <div class="container header-inner">
       <a href="{{ url_for('index') }}" class="logo">
         <img
-          src="{{ url_for('static', filename='images/starhere-logo.png') }}"
-          alt="StartHere Patient Advocacy"
-          class="logo-img"
-          width="220"
-          height="165"
+          src="{{ url_for('static', filename='images/starthere-logo-icon.png') }}"
+          alt=""
+          class="logo-icon-img"
+          width="48"
+          height="38"
         >
+        <div class="logo-text">
+          <span class="logo-name"><span class="logo-start">Start</span><span class="logo-here">Here</span></span>
+          <span class="logo-tagline">Patient Advocacy</span>
+        </div>
       </a>
 
       <nav class="main-nav" aria-label="Main navigation">

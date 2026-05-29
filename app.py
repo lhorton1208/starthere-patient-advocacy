@@ -82,11 +82,11 @@ def create_app(config_class=Config):
     def contacts():
         return render_template("contacts.html", contacts=CONTACTS)
 
-    @app.route("/static/images/starthere-logo.png")
+    @app.route("/static/images/starthere-logo-icon.png")
     def logo_asset():
         return send_from_directory(
             os.path.join(static_dir, "images"),
-            "starthere-logo.png",
+            "starthere-logo-icon.png",
             mimetype="image/png",
         )
 
