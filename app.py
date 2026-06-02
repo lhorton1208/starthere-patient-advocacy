@@ -65,6 +65,14 @@ def create_app(config_class=Config):
     def hipaa_forms():
         return render_template("client/hipaa_forms.html")
 
+    @app.route("/about")
+    def about():
+        featured = next(
+            (c for c in CONTACTS if c.get("bio")),
+            CONTACTS[0] if CONTACTS else None,
+        )
+        return render_template("about.html", advocate=featured)
+
     @app.route("/contacts")
     def contacts():
         return render_template("contacts.html", contacts=CONTACTS)
@@ -85,4 +93,6 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=int(os.environ.get("PORT", 5000)))
+    # macOS often binds AirPlay to localhost:5000; use 5001 locally.
+    port = int(os.environ.get("PORT", 5001))
+    app.run(debug=True, host="127.0.0.1", port=port)

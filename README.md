@@ -17,7 +17,9 @@ cp .env.example .env       # optional: set SECRET_KEY and contact info
 python app.py
 ```
 
-Open [http://127.0.0.1:5000](http://127.0.0.1:5000).
+Open [http://127.0.0.1:5001](http://127.0.0.1:5001) (About page: `/about`).
+
+On macOS, `http://localhost:5000` is often **not** this app — AirPlay Receiver uses that port and returns a blank or 403 response. Use `127.0.0.1` and port **5001** (the local default), or set `PORT` in `.env` if you need another port.
 
 Patient form submissions are saved to the relational database in `instance/starthere.db` (SQLite) by default.
 
@@ -52,7 +54,7 @@ The Patient Info form creates a **Client**, **Patient**, **Encounter**, optional
 - **Home** – Overview and service cards
 - **Services** – ER Admittance, In-Hospital Visits, Discharge Support, After Encounter Followup
 - **Client Information** – Patient Info form (saved to database), HIPAA Forms
-- **Contacts** – Georgette Johnson, Dawn Criswell, Larry Horton
+- **About StartHere** – Advocate bio (Georgette Darnell) and team contacts
 
 ## Viewing data locally
 
@@ -94,7 +96,7 @@ See `.env.example` for all contact variable names.
 1. Create a **PostgreSQL** database on Render and copy its **Internal Database URL**.
 2. Create a **Web Service**:
    - **Build command:** `pip install -r requirements.txt`
-   - **Start command:** `gunicorn app:app`
+   - **Start command:** `gunicorn app:app --bind 0.0.0.0:$PORT`
 3. Add environment variables:
    - `SECRET_KEY` — generate a random string
    - `DATABASE_URL` — paste the PostgreSQL URL from step 1
@@ -106,7 +108,7 @@ Tables are created automatically on first startup.
 
 The app works on any platform that runs Python and supports environment variables:
 
-- **Railway** — connect repo, set `DATABASE_URL` and `SECRET_KEY`, use start command `gunicorn app:app`
+- **Railway** — connect repo, set `DATABASE_URL` and `SECRET_KEY`, use start command `gunicorn app:app --bind 0.0.0.0:$PORT`
 - **Fly.io** — add a `Dockerfile` or use their Python buildpack with gunicorn
 - **Heroku** — the included `Procfile` works with `heroku create` and a Postgres add-on
 

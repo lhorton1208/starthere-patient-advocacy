@@ -21,10 +21,23 @@
     <div class="contact-grid">
       {% for contact in contacts %}
       <div class="contact-card">
+        {% if contact.image %}
+        <img
+          src="{{ url_for('static', filename='images/' ~ contact.image) }}"
+          alt=""
+          class="contact-photo"
+          width="96"
+          height="96"
+        >
+        {% else %}
         <div class="contact-avatar" aria-hidden="true">
           {{ contact.name.split()[0][0] }}{{ contact.name.split()[-1][0] }}
         </div>
+        {% endif %}
         <h2>{{ contact.name }}</h2>
+        {% if contact.bio %}
+        <p class="contact-bio-link"><a href="{{ url_for('about') }}">Read full bio</a></p>
+        {% endif %}
         <p class="contact-title">{{ contact.title }}</p>
         <ul class="contact-details">
           {% if contact.email %}

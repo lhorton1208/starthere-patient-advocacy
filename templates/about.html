@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}About | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>About StartHere</h1>
+    <p>Experienced nursing advocacy for patients and families navigating modern healthcare.</p>
+  </div>
+</section>
+
+{% if advocate %}
+<section class="content-section">
+  <div class="container">
+    <article class="advocate-profile">
+      <div class="advocate-profile-media">
+        {% if advocate.image %}
+        <img
+          src="{{ url_for('static', filename='images/' ~ advocate.image) }}"
+          alt="Portrait of {{ advocate.name }}"
+          class="advocate-photo"
+          width="280"
+          height="280"
+        >
+        {% else %}
+        <div class="contact-avatar advocate-photo-placeholder" aria-hidden="true">
+          {{ advocate.name.split()[0][0] }}{{ advocate.name.split()[-1][0] }}
+        </div>
+        {% endif %}
+        <h2 class="advocate-name">{{ advocate.name }}</h2>
+        <p class="advocate-title">{{ advocate.title }}</p>
+        {% if advocate.email or advocate.phone %}
+        <ul class="advocate-contact-links">
+          {% if advocate.email %}
+          <li><a href="mailto:{{ advocate.email }}">{{ advocate.email }}</a></li>
+          {% endif %}
+          {% if advocate.phone %}
+          <li>
+            <a href="tel:{{ advocate.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ advocate.phone }}</a>
+          </li>
+          {% endif %}
+        </ul>
+        {% endif %}
+      </div>
+      <div class="advocate-profile-bio">
+        {% for paragraph in advocate.bio %}
+        <p>{{ paragraph }}</p>
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+</section>
+{% endif %}
+
+<section class="content-section content-section-alt">
+  <div class="container">
+    <p>
+      Ready to get support?
+      <a href="{{ url_for('client_patient.service_request') }}">Submit a patient information request</a>
+      or <a href="{{ url_for('contacts') }}">contact our team</a>.
+    </p>
+  </div>
+</section>
+{% endblock %}

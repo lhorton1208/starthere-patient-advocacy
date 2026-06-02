@@ -415,6 +415,91 @@ a:hover {
   font-size: 1.25rem;
 }
 
+.contact-photo {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 2px solid var(--color-border);
+}
+
+.contact-bio-link {
+  margin: -0.75rem 0 1rem;
+  font-size: 0.9rem;
+}
+
+/* About */
+.advocate-profile {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.advocate-profile-media {
+  text-align: center;
+}
+
+.advocate-photo {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  display: block;
+  margin: 0 auto 1.25rem;
+}
+
+.advocate-photo-placeholder {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 1.25rem;
+  font-size: 2rem;
+}
+
+.advocate-name {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  color: var(--color-primary-dark);
+}
+
+.advocate-title {
+  margin: 0 0 1rem;
+  color: var(--color-text-muted);
+}
+
+.advocate-contact-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.advocate-contact-links li + li {
+  margin-top: 0.35rem;
+}
+
+.advocate-profile-bio p {
+  margin: 0 0 1.25rem;
+}
+
+.advocate-profile-bio p:last-child {
+  margin-bottom: 0;
+}
+
+.content-section-alt {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 720px) {
+  .advocate-profile {
+    grid-template-columns: 1fr;
+  }
+}
+
 .contact-card h2 {
   margin: 0 0 0.25rem;
   font-size: 1.2rem;

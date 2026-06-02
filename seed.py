@@ -26,9 +26,14 @@ def seed_database():
             )
 
     for contact in CONTACTS:
+        lookup_name = contact.get("legacy_name") or contact["name"]
         advocate = Advocate.query.filter_by(
-            company_id=company.id, name=contact["name"]
+            company_id=company.id, name=lookup_name
         ).first()
+        if not advocate and lookup_name != contact["name"]:
+            advocate = Advocate.query.filter_by(
+                company_id=company.id, name=contact["name"]
+            ).first()
         if not advocate:
             db.session.add(
                 Advocate(
@@ -40,6 +45,7 @@ def seed_database():
                 )
             )
         else:
+            advocate.name = contact["name"]
             advocate.title = contact.get("title")
             if contact.get("email"):
                 advocate.email = contact["email"]
