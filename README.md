@@ -54,7 +54,7 @@ The Patient Info form creates a **Client**, **Patient**, **Encounter**, optional
 - **Home** – Overview and service cards
 - **Services** – ER Admittance, In-Hospital Visits, Discharge Support, After Encounter Followup
 - **Client Information** – Patient Info form (saved to database), HIPAA Forms
-- **About StartHere** – Advocate bios (Dawn Criswell, Georgette Darnell) and team contacts
+- **About StartHere** – Advocate bios (Dawn Criswell, Georgette Darnell, Larry Horton) and team contacts
 
 ## Viewing data locally
 

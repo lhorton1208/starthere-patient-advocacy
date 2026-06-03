@@ -68,6 +68,23 @@ DAWN_BIO = [
     ),
 ]
 
+LARRY_BIO = [
+    (
+        "Larry Horton is a Founder and Principal of StartHere Patient Advocacy, "
+        "where he helps individuals and families navigate the healthcare system with "
+        "clarity, confidence, and compassionate support. A Marine Corps veteran with a "
+        "background in Healthcare IT and Clinical Trials IT, Larry brings both "
+        "professional expertise and personal commitment to patient advocacy. Inspired "
+        "by his own family's experience with gaps in care coordination, he is dedicated "
+        "to helping others make informed decisions and avoid preventable setbacks."
+    ),
+    (
+        "Larry holds a Bachelor and Master degree in Computer Science from NC Central "
+        "University and NC State University and an MBA from Kenan-Flagler Business "
+        "School UNC Chapel Hill."
+    ),
+]
+
 CONTACTS = [
     {
         "name": "Dawn Criswell",
@@ -91,9 +108,12 @@ CONTACTS = [
     },
     {
         "name": "Larry Horton",
+        "slug": "larry-horton",
         "title": "Founder & Principal, StartHere Patient Advocacy LLC",
         "email": os.environ.get("CONTACT_LARRY_EMAIL", ""),
         "phone": os.environ.get("CONTACT_LARRY_PHONE", ""),
+        "image": "larry-horton.png",
+        "bio": LARRY_BIO,
     },
 ]
 
