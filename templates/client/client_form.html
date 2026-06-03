@@ -13,10 +13,27 @@
     <div class="form-card">
       <form method="post">
         {{ form.hidden_tag() }}
-        {{ render_form_field(form.name) }}
-        {{ render_form_field(form.phone) }}
+        <h3 class="form-section-title">Name</h3>
+        {{ render_form_field(form.prefix) }}
+        {{ render_form_field(form.first_name) }}
+        {{ render_form_field(form.middle_name) }}
+        {{ render_form_field(form.last_name) }}
+        {{ render_form_field(form.suffix) }}
+        {{ render_form_field(form.account_number) }}
+
+        <h3 class="form-section-title">Contact</h3>
         {{ render_form_field(form.email) }}
+        {{ render_form_field(form.phone) }}
+        {{ render_form_field(form.phone_number2) }}
+        {{ render_form_field(form.relationship_to_patient_id) }}
+
+        <h3 class="form-section-title">Address</h3>
         {{ render_form_field(form.address) }}
+        {{ render_form_field(form.city) }}
+        {{ render_form_field(form.state) }}
+        {{ render_form_field(form.zip_code) }}
+
+        <h3 class="form-section-title">Patient Link</h3>
         {{ render_form_field(form.patient_id) }}
         <button type="submit" class="btn btn-solid">Save Client</button>
         {% if client %}

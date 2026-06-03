@@ -17,16 +17,34 @@
   <div class="container">
     {% include "staff/_banner.html" %}
     {{ flash_messages() }}
-    <div class="detail-card">
-      <h2>Patient Details</h2>
-      <dl>
-        <dt>Linked Client</dt>
-        <dd><a href="{{ url_for('client_patient.view_client', client_id=patient.client_id) }}">{{ patient.client.name }}</a></dd>
-        <dt>Date of Birth</dt><dd>{{ patient.date_of_birth.strftime('%Y-%m-%d') if patient.date_of_birth else '—' }}</dd>
-        <dt>Phone</dt><dd>{{ patient.phone or '—' }}</dd>
-        <dt>Email</dt><dd>{{ patient.email or '—' }}</dd>
-        <dt>Encounters</dt><dd>{{ patient.encounters.count() }}</dd>
-      </dl>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h2>Patient Details</h2>
+        <dl>
+          <dt>Linked Client</dt>
+          <dd><a href="{{ url_for('client_patient.view_client', client_id=patient.client_id) }}">{{ patient.client.display_name }}</a></dd>
+          <dt>Date of Birth</dt><dd>{{ patient.date_of_birth.strftime('%Y-%m-%d') if patient.date_of_birth else '—' }}</dd>
+          {% if patient.last4_ssn %}<dt>Last 4 SSN</dt><dd>{{ patient.last4_ssn }}</dd>{% endif %}
+          <dt>Mobile</dt><dd>{{ patient.phone_mobile or '—' }}</dd>
+          <dt>Landline</dt><dd>{{ patient.phone_landline or '—' }}</dd>
+          <dt>Email</dt><dd>{{ patient.email or '—' }}</dd>
+          <dt>Address</dt>
+          <dd>
+            {% if patient.address or patient.city or patient.state or patient.zip_code %}
+              {{ patient.address or '' }}{% if patient.city %}, {{ patient.city }}{% endif %}{% if patient.state %} {{ patient.state }}{% endif %}{% if patient.zip_code %} {{ patient.zip_code }}{% endif %}
+            {% else %}—{% endif %}
+          </dd>
+          {% if patient.mood %}<dt>Mood</dt><dd>{{ patient.mood }}</dd>{% endif %}
+          {% if patient.mental_state %}<dt>Mental State</dt><dd>{{ patient.mental_state }}</dd>{% endif %}
+          <dt>Encounters</dt><dd>{{ patient.encounters.count() }}</dd>
+        </dl>
+      </div>
+      {% if patient.intake_notes %}
+      <div class="detail-card">
+        <h2>Interview Notes</h2>
+        <p class="intake-notes">{{ patient.intake_notes }}</p>
+      </div>
+      {% endif %}
     </div>
     <a href="{{ url_for('client_patient.list_patients') }}" class="back-link">&larr; Back to Patient Info</a>
   </div>

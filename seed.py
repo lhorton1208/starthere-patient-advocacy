@@ -1,5 +1,5 @@
 from config import CONTACTS
-from models import Advocate, Company, LookupList, db
+from models import Advocate, Company, LookupList, RelationshipToPatient, db
 
 
 COMPANY_NAME = "StartHere Patient Advocacy"
@@ -10,6 +10,18 @@ ACCOUNT_TYPES = [
     ("Operating Expense", "account_type", "General operating expenses"),
 ]
 
+RELATIONSHIP_TYPES = [
+    ("Self", "Patient is the client", False, False),
+    ("Spouse", "Spouse or partner", False, False),
+    ("Parent", "Parent of patient", False, True),
+    ("Child", "Child of patient", True, False),
+    ("Sibling", "Sibling of patient", False, False),
+    ("Other Family", "Other family member", False, False),
+    ("Friend", "Friend of patient", False, False),
+    ("Legal Guardian", "Legal guardian", True, False),
+    ("Power of Attorney", "Power of attorney", False, True),
+]
+
 
 def seed_database():
     company = Company.query.filter_by(name=COMPANY_NAME).first()
@@ -17,6 +29,18 @@ def seed_database():
         company = Company(name=COMPANY_NAME)
         db.session.add(company)
         db.session.flush()
+
+    for relationship, description, guardian, poa in RELATIONSHIP_TYPES:
+        exists = RelationshipToPatient.query.filter_by(relationship=relationship).first()
+        if not exists:
+            db.session.add(
+                RelationshipToPatient(
+                    relationship=relationship,
+                    description=description,
+                    is_legal_guardian=guardian,
+                    is_power_of_attorney=poa,
+                )
+            )
 
     for name, list_type, description in ACCOUNT_TYPES:
         exists = LookupList.query.filter_by(name=name, list_type=list_type).first()

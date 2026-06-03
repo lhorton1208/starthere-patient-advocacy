@@ -27,7 +27,7 @@
           {% for row in rows %}
           <tr>
             <td><a href="{{ url_for('client_patient.view_patient', patient_id=row.id) }}">{{ row.full_name }}</a></td>
-            <td><a href="{{ url_for('client_patient.view_client', client_id=row.client_id) }}">{{ row.client.name }}</a></td>
+            <td><a href="{{ url_for('client_patient.view_client', client_id=row.client_id) }}">{{ row.client.display_name }}</a></td>
             <td>{{ row.phone or '—' }}</td>
             <td>{{ row.email or '—' }}</td>
             <td><a href="{{ url_for('client_patient.edit_patient', patient_id=row.id) }}">Edit</a></td>

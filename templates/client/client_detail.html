@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% from "staff/_macros.html" import flash_messages %}
 
-{% block title %}{{ client.name }} | Client Info{% endblock %}
+{% block title %}{{ client.display_name }} | Client Info{% endblock %}
 
 {% block content %}
 <section class="page-header">
   <div class="container page-header-row">
     <div>
-      <h1>{{ client.name }}</h1>
+      <h1>{{ client.display_name }}</h1>
       <p>Client record and linked patients.</p>
     </div>
     <a href="{{ url_for('client_patient.edit_client', client_id=client.id) }}" class="btn btn-solid">Edit Client</a>
@@ -21,9 +21,17 @@
       <div class="detail-card">
         <h2>Client Details</h2>
         <dl>
-          <dt>Phone</dt><dd>{{ client.phone or '—' }}</dd>
+          {% if client.account_number %}<dt>Account Number</dt><dd>{{ client.account_number }}</dd>{% endif %}
           <dt>Email</dt><dd>{{ client.email or '—' }}</dd>
-          <dt>Address</dt><dd>{{ client.address or '—' }}</dd>
+          <dt>Primary Phone</dt><dd>{{ client.phone or '—' }}</dd>
+          {% if client.phone_number2 %}<dt>Secondary Phone</dt><dd>{{ client.phone_number2 }}</dd>{% endif %}
+          {% if client.relationship_type %}<dt>Relationship to Patient</dt><dd>{{ client.relationship_type.relationship }}</dd>{% endif %}
+          <dt>Address</dt>
+          <dd>
+            {% if client.address or client.city or client.state or client.zip_code %}
+              {{ client.address or '' }}{% if client.city %}, {{ client.city }}{% endif %}{% if client.state %} {{ client.state }}{% endif %}{% if client.zip_code %} {{ client.zip_code }}{% endif %}
+            {% else %}—{% endif %}
+          </dd>
         </dl>
       </div>
       <div class="detail-card">

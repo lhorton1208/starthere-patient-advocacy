@@ -22,8 +22,8 @@ from config import (
 class PatientInfoForm(FlaskForm):
     """Public service request form (creates client, patient, and encounter)."""
     patient_name = StringField(
-        "Patient Full Name",
-        validators=[DataRequired(), Length(max=200)],
+        "Patient Full Name (leave blank if same as contact or adding later)",
+        validators=[Optional(), Length(max=200)],
     )
     contact_name = StringField(
         "Primary Contact Name",
@@ -38,9 +38,9 @@ class PatientInfoForm(FlaskForm):
         validators=[DataRequired(), Email(), Length(max=200)],
     )
     service = SelectField(
-        "Service Requested",
+        "Service Requested (required when adding a patient)",
         choices=[("", "Select a service...")] + SERVICE_CHOICES,
-        validators=[DataRequired()],
+        validators=[Optional()],
     )
     hospital = StringField(
         "Hospital / Facility (if known)",
@@ -183,10 +183,27 @@ def empty_select(label):
 
 
 class ClientInfoForm(FlaskForm):
-    name = StringField("Client Name", validators=[DataRequired(), Length(max=200)])
-    phone = StringField("Phone", validators=[Optional(), Length(max=50)])
-    email = EmailField("Email", validators=[Optional(), Email(), Length(max=200)])
-    address = StringField("Address", validators=[Optional(), Length(max=300)])
+    prefix = StringField("Prefix", validators=[Optional(), Length(max=255)])
+    first_name = StringField("First Name", validators=[DataRequired(), Length(max=255)])
+    middle_name = StringField("Middle Name", validators=[Optional(), Length(max=255)])
+    last_name = StringField("Last Name", validators=[DataRequired(), Length(max=255)])
+    suffix = StringField("Suffix", validators=[Optional(), Length(max=10)])
+    account_number = StringField("Account Number", validators=[Optional(), Length(max=255)])
+    phone = StringField("Primary Phone", validators=[Optional(), Length(max=50)])
+    phone_number2 = StringField("Secondary Phone", validators=[Optional(), Length(max=32)])
+    email = EmailField(
+        "Email",
+        validators=[DataRequired(), Email(), Length(max=255)],
+    )
+    relationship_to_patient_id = SelectField(
+        "Relationship to Patient",
+        coerce=nullable_int,
+        validators=[Optional()],
+    )
+    address = StringField("Street Address", validators=[Optional(), Length(max=300)])
+    city = StringField("City", validators=[Optional(), Length(max=255)])
+    state = StringField("State", validators=[Optional(), Length(max=255)])
+    zip_code = StringField("ZIP Code", validators=[Optional(), Length(max=255)])
     patient_id = SelectField(
         "Linked Patient",
         coerce=nullable_int,
@@ -196,11 +213,35 @@ class ClientInfoForm(FlaskForm):
 
 class PatientRecordForm(FlaskForm):
     client_id = SelectField("Linked Client", coerce=int, validators=[DataRequired()])
+    prefix = StringField("Prefix", validators=[Optional(), Length(max=32)])
     first_name = StringField("First Name", validators=[DataRequired(), Length(max=100)])
+    middle_name = StringField("Middle Name", validators=[Optional(), Length(max=255)])
     last_name = StringField("Last Name", validators=[DataRequired(), Length(max=100)])
+    suffix = StringField("Suffix", validators=[Optional(), Length(max=32)])
     date_of_birth = DateField("Date of Birth", validators=[Optional()])
-    phone = StringField("Phone", validators=[Optional(), Length(max=50)])
-    email = EmailField("Email", validators=[Optional(), Email(), Length(max=200)])
+    last4_ssn = StringField(
+        "Last 4 of SSN",
+        validators=[Optional(), Length(max=4)],
+    )
+    phone_mobile = StringField("Mobile Phone", validators=[Optional(), Length(max=32)])
+    phone_landline = StringField(
+        "Landline Phone", validators=[Optional(), Length(max=32)]
+    )
+    email = EmailField("Email", validators=[Optional(), Email(), Length(max=255)])
+    address = StringField("Street Address", validators=[Optional(), Length(max=300)])
+    city = StringField("City", validators=[Optional(), Length(max=255)])
+    state = StringField("State", validators=[Optional(), Length(max=255)])
+    zip_code = StringField("ZIP Code", validators=[Optional(), Length(max=255)])
+    mood = StringField("Mood", validators=[Optional(), Length(max=255)])
+    mental_state = StringField("Mental State", validators=[Optional(), Length(max=255)])
+    intake_notes = TextAreaField(
+        "Interview Notes",
+        validators=[Optional(), Length(max=10000)],
+        render_kw={
+            "rows": 6,
+            "placeholder": "Notes from the patient interview (advocate use).",
+        },
+    )
 
 
 class HospitalForm(FlaskForm):

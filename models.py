@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
@@ -30,20 +30,77 @@ class Company(db.Model):
     advocates = db.relationship("Advocate", back_populates="company", lazy="dynamic")
 
 
+class RelationshipToPatient(db.Model):
+    __tablename__ = "relationship_to_patient"
+
+    id = db.Column(db.Integer, primary_key=True)
+    relationship = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    is_legal_guardian = db.Column(db.Boolean, nullable=False, default=False)
+    is_power_of_attorney = db.Column(db.Boolean, nullable=False, default=False)
+
+    clients = db.relationship("Client", back_populates="relationship_type", lazy="dynamic")
+
+
 class Client(db.Model):
     __tablename__ = "clients"
 
     id = db.Column(db.Integer, primary_key=True)
     company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False)
-    name = db.Column(db.String(200), nullable=False)
-    phone = db.Column(db.String(50))
-    email = db.Column(db.String(200))
+    # Legacy single-field name (kept for backward compatibility in lists/reports).
+    name = db.Column(db.String(200), nullable=False, default="")
+    first_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
+    middle_name = db.Column(db.String(255))
+    suffix = db.Column(db.String(10))
+    prefix = db.Column(db.String(255))
+    account_number = db.Column(db.String(255))
     address = db.Column(db.String(300))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    zip_code = db.Column(db.String(255))
+    phone = db.Column(db.String(50))
+    phone_number2 = db.Column(db.String(32))
+    email = db.Column(db.String(255), unique=True)
+    relationship_to_patient_id = db.Column(
+        db.Integer, db.ForeignKey("relationship_to_patient.id")
+    )
+    patient_id = db.Column(db.Integer, db.ForeignKey("patients.id"), unique=True)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     company = db.relationship("Company", back_populates="clients")
-    patients = db.relationship("Patient", back_populates="client", lazy="dynamic")
+    relationship_type = db.relationship(
+        "RelationshipToPatient", back_populates="clients"
+    )
+    linked_patient = db.relationship(
+        "Patient",
+        foreign_keys=[patient_id],
+        back_populates="linked_client",
+        uselist=False,
+    )
+    patients = db.relationship(
+        "Patient",
+        foreign_keys="Patient.client_id",
+        back_populates="client",
+        lazy="dynamic",
+    )
     accounts = db.relationship("Account", back_populates="client", lazy="dynamic")
+
+    @property
+    def display_name(self):
+        if self.first_name or self.last_name:
+            parts = [self.prefix, self.first_name, self.middle_name, self.last_name, self.suffix]
+            return " ".join(p for p in parts if p)
+        return self.name or ""
+
+    def sync_name_fields(self):
+        if self.first_name or self.last_name:
+            self.name = self.display_name
+        elif self.name and not self.first_name:
+            parts = self.name.strip().split()
+            if parts:
+                self.first_name = parts[0]
+                self.last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
 
 
 class Patient(db.Model):
@@ -51,24 +108,68 @@ class Patient(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False)
-    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False, unique=True)
     first_name = db.Column(db.String(100), nullable=False)
+    middle_name = db.Column(db.String(255))
     last_name = db.Column(db.String(100), nullable=False)
+    prefix = db.Column(db.String(32))
+    suffix = db.Column(db.String(32))
     date_of_birth = db.Column(db.Date)
+    last4_ssn = db.Column(db.String(4))
+    last_encounter_date = db.Column(db.Date)
+    created_by = db.Column(db.String(255))
+    address = db.Column(db.String(300))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    zip_code = db.Column(db.String(255))
     phone = db.Column(db.String(50))
-    email = db.Column(db.String(200))
+    phone_mobile = db.Column(db.String(32))
+    phone_landline = db.Column(db.String(32))
+    email = db.Column(db.String(255), unique=True)
+    mood = db.Column(db.String(255))
+    mental_state = db.Column(db.String(255))
+    patient_medications_id = db.Column(
+        db.Integer, db.ForeignKey("patient_medications.id")
+    )
+    intake_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     company = db.relationship("Company", back_populates="patients")
-    client = db.relationship("Client", back_populates="patients")
+    client = db.relationship(
+        "Client",
+        foreign_keys=[client_id],
+        back_populates="patients",
+    )
+    linked_client = db.relationship(
+        "Client",
+        foreign_keys="Client.patient_id",
+        back_populates="linked_patient",
+        uselist=False,
+    )
     relationships = db.relationship(
         "PatientRelationship", back_populates="patient", lazy="dynamic"
     )
     encounters = db.relationship("Encounter", back_populates="patient", lazy="dynamic")
+    medications = db.relationship(
+        "PatientMedication",
+        foreign_keys="PatientMedication.patient_id",
+        back_populates="patient",
+        lazy="dynamic",
+    )
+    medication_profile = db.relationship(
+        "PatientMedication",
+        foreign_keys=[patient_medications_id],
+        uselist=False,
+    )
 
     @property
     def full_name(self):
-        return f"{self.first_name} {self.last_name}".strip()
+        parts = [self.prefix, self.first_name, self.middle_name, self.last_name, self.suffix]
+        return " ".join(p for p in parts if p).strip()
+
+    @property
+    def dob(self):
+        return self.date_of_birth
 
 
 class PatientRelationship(db.Model):
@@ -85,28 +186,74 @@ class PatientRelationship(db.Model):
     patient = db.relationship("Patient", back_populates="relationships")
 
 
+class PatientMedication(db.Model):
+    __tablename__ = "patient_medications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey("patients.id"), nullable=False)
+    medication_name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    dosage = db.Column(db.String(255))
+    frequency = db.Column(db.String(255))
+    prescribed_by = db.Column(db.String(255))
+    is_compliant = db.Column(db.Boolean)
+    pharmacy = db.Column(db.String(255))
+    pharmacy_phone_number = db.Column(db.String(32))
+    address = db.Column(db.String(255))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    zip_code = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+
+    patient = db.relationship(
+        "Patient",
+        foreign_keys=[patient_id],
+        back_populates="medications",
+    )
+
+
 class Advocate(db.Model):
     __tablename__ = "advocates"
 
     id = db.Column(db.Integer, primary_key=True)
     company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
+    first_name = db.Column(db.String(255))
+    middle_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
     title = db.Column(db.String(100))
     phone = db.Column(db.String(50))
+    phone_mobile = db.Column(db.String(32))
+    phone_landline = db.Column(db.String(32))
     email = db.Column(db.String(200))
+    address = db.Column(db.String(300))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    zip_code = db.Column(db.String(255))
     active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     company = db.relationship("Company", back_populates="advocates")
     encounters = db.relationship("Encounter", back_populates="advocate", lazy="dynamic")
     time_cards = db.relationship("TimeCard", back_populates="advocate", lazy="dynamic")
+    notes = db.relationship("Note", back_populates="advocate", lazy="dynamic")
+
+    def sync_name_fields(self):
+        if self.first_name or self.last_name:
+            self.name = " ".join(
+                p for p in [self.first_name, self.last_name] if p
+            ).strip()
 
 
 class Provider(db.Model):
     __tablename__ = "providers"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
+    name = db.Column(db.String(200), nullable=False, default="")
+    first_name = db.Column(db.String(255))
+    middle_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
+    location_id = db.Column(db.Integer)
     specialty = db.Column(db.String(150))
     phone = db.Column(db.String(50))
     email = db.Column(db.String(200))
@@ -115,6 +262,12 @@ class Provider(db.Model):
 
     encounters = db.relationship("Encounter", back_populates="provider", lazy="dynamic")
 
+    @property
+    def display_name(self):
+        if self.first_name or self.last_name:
+            return " ".join(p for p in [self.first_name, self.last_name] if p).strip()
+        return self.name
+
 
 class Hospital(db.Model):
     __tablename__ = "hospitals"
@@ -122,7 +275,11 @@ class Hospital(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False, unique=True)
     address = db.Column(db.String(300))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    zip_code = db.Column(db.String(255))
     phone = db.Column(db.String(50))
+    main_phone_number = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     encounters = db.relationship("Encounter", back_populates="hospital", lazy="dynamic")
@@ -134,7 +291,13 @@ class HomeHealthFacility(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False, unique=True)
     address = db.Column(db.String(300))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    zip_code = db.Column(db.String(255))
     phone = db.Column(db.String(50))
+    facility_phone_number = db.Column(db.String(32))
+    point_of_contact_name = db.Column(db.String(255))
+    point_of_contact_phone_number = db.Column(db.String(32))
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     encounters = db.relationship(
@@ -174,13 +337,24 @@ class Note(db.Model):
     __tablename__ = "notes"
 
     id = db.Column(db.Integer, primary_key=True)
-    encounter_id = db.Column(db.Integer, db.ForeignKey("encounters.id"), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    encounter_id = db.Column(db.Integer, db.ForeignKey("encounters.id"))
+    patient_id = db.Column(db.Integer, db.ForeignKey("patients.id"))
+    advocate_id = db.Column(db.Integer, db.ForeignKey("advocates.id"))
+    content = db.Column(db.Text, nullable=False, default="")
+    description = db.Column(db.Text)
+    note_text = db.Column(db.Text)
     author = db.Column(db.String(200))
+    note_datetime = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     encounter = db.relationship("Encounter", back_populates="notes")
+    patient = db.relationship("Patient", backref=db.backref("notes", lazy="dynamic"))
+    advocate = db.relationship("Advocate", back_populates="notes")
     billings = db.relationship("Billing", back_populates="note", lazy="dynamic")
+
+    @property
+    def body(self):
+        return self.note_text or self.content
 
 
 class LookupList(db.Model):
@@ -204,12 +378,20 @@ class Account(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     list_id = db.Column(db.Integer, db.ForeignKey("lookup_lists.id"), nullable=False)
-    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"))
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey("patients.id"))
     name = db.Column(db.String(200), nullable=False)
     account_number = db.Column(db.String(50))
     balance = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     status = db.Column(db.String(50), nullable=False, default="active")
+    billing_address = db.Column(db.String(255))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    zip_code = db.Column(db.String(255))
+    payment_method = db.Column(db.String(255))
+    credit_card_last4 = db.Column(db.String(4))
+    exp_date = db.Column(db.String(16))
+    last_payment_date = db.Column(db.Date)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     lookup_list = db.relationship("LookupList", back_populates="accounts")
@@ -242,6 +424,10 @@ class Invoice(db.Model):
     issue_date = db.Column(db.Date, nullable=False)
     due_date = db.Column(db.Date)
     total = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    invoice_sub_total = db.Column(db.Numeric(10, 2))
+    tax = db.Column(db.Numeric(10, 2))
+    invoice_total = db.Column(db.Numeric(10, 2))
+    description = db.Column(db.String(255))
     status = db.Column(db.String(50), nullable=False, default="draft")
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
@@ -258,6 +444,7 @@ class InvoiceItem(db.Model):
     quantity = db.Column(db.Numeric(10, 2), nullable=False, default=1)
     unit_price = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    line_item_total = db.Column(db.Numeric(10, 2))
 
     invoice = db.relationship("Invoice", back_populates="items")
 
@@ -274,4 +461,12 @@ class TimeCard(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     advocate = db.relationship("Advocate", back_populates="time_cards")
-    encounter = db.relationship("Encounter", backref=db.backref("time_cards", lazy="dynamic"))
+    encounter = db.relationship(
+        "Encounter", backref=db.backref("time_cards", lazy="dynamic")
+    )
+
+
+def link_client_patient(client: Client, patient: Patient) -> None:
+    """Keep bidirectional 0..1 links in sync."""
+    patient.client_id = client.id
+    client.patient_id = patient.id

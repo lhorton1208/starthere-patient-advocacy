@@ -14,7 +14,7 @@ from routes.reports import reports_bp
 from seed import seed_database
 
 
-def create_app(config_class=Config):
+def create_app(config_class=Config, *, run_migrate=True):
     static_dir = os.path.join(BASE_DIR, "static")
     app = Flask(__name__, static_folder=static_dir, static_url_path="/static")
     app.config.from_object(config_class)
@@ -29,9 +29,11 @@ def create_app(config_class=Config):
     app.register_blueprint(entities_bp)
     app.register_blueprint(client_patient_bp)
 
-    with app.app_context():
-        db.create_all()
-        seed_database()
+    if run_migrate:
+        with app.app_context():
+            from scripts.migrate_schema import run_migrations
+
+            run_migrations(app)
 
     @app.template_filter("static_image_exists")
     def static_image_exists(filename):
@@ -92,10 +94,27 @@ def create_app(config_class=Config):
     return app
 
 
-app = create_app()
+class _LazyWSGIApp:
+    """Defer create_app() until first request (avoids migrate on import)."""
+
+    _flask_app = None
+
+    def _get(self):
+        if self._flask_app is None:
+            self._flask_app = create_app()
+        return self._flask_app
+
+    def __call__(self, environ, start_response):
+        return self._get()(environ, start_response)
+
+    def __getattr__(self, name):
+        return getattr(self._get(), name)
+
+
+app = _LazyWSGIApp()
 
 
 if __name__ == "__main__":
     # macOS often binds AirPlay to localhost:5000; use 5001 locally.
     port = int(os.environ.get("PORT", 5001))
-    app.run(debug=True, host="127.0.0.1", port=port)
+    create_app().run(debug=True, host="127.0.0.1", port=port)

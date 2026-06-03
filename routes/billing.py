@@ -31,7 +31,7 @@ def _populate_account_form(form, account=None):
         (item.id, item.name) for item in account_types
     ]
     form.client_id.choices = empty_select("client") + [
-        (c.id, c.name) for c in clients
+        (c.id, c.display_name) for c in clients
     ]
     form.patient_id.choices = [(0, "None")] + [
         (p.id, p.full_name) for p in patients

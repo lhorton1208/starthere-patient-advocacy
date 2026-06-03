@@ -1,9 +1,17 @@
 from auth import employee_required
 from forms import ClientInfoForm, PatientInfoForm, PatientRecordForm, empty_select
-from intake import create_intake_request
-from models import Client, Company, Patient, db
+from intake import create_intake_request, normalize_email
+from models import (
+    Client,
+    Company,
+    Patient,
+    RelationshipToPatient,
+    db,
+    link_client_patient,
+)
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from seed import COMPANY_NAME
+from sqlalchemy.exc import IntegrityError
 
 client_patient_bp = Blueprint("client_patient", __name__, url_prefix="/client")
 
@@ -15,28 +23,88 @@ def _company():
     return company
 
 
+def _strip(value):
+    return (value or "").strip() or None
+
+
 def _populate_client_form(form, client=None):
+    relationships = RelationshipToPatient.query.order_by(
+        RelationshipToPatient.relationship
+    ).all()
+    form.relationship_to_patient_id.choices = [(0, "Select relationship...")] + [
+        (r.id, r.relationship) for r in relationships
+    ]
     patients = Patient.query.order_by(Patient.last_name, Patient.first_name).all()
     form.patient_id.choices = [(0, "None")] + [
         (p.id, p.full_name) for p in patients
     ]
-    if client and client.patients.count():
-        form.patient_id.data = client.patients.first().id
+    if client:
+        if not client.first_name and client.name:
+            client.sync_name_fields()
+        if client.patients.count():
+            form.patient_id.data = client.patients.first().id
+        if client.relationship_to_patient_id:
+            form.relationship_to_patient_id.data = client.relationship_to_patient_id
 
 
 def _populate_patient_form(form, patient=None):
-    clients = Client.query.order_by(Client.name).all()
+    clients = Client.query.order_by(Client.last_name, Client.first_name, Client.name).all()
     form.client_id.choices = empty_select("client") + [
-        (c.id, c.name) for c in clients
+        (c.id, c.display_name) for c in clients
     ]
     if patient:
         form.client_id.data = patient.client_id
+        if not patient.phone_mobile and patient.phone:
+            form.phone_mobile.data = patient.phone
+
+
+def _apply_client_from_form(record, form):
+    record.prefix = _strip(form.prefix.data)
+    record.first_name = form.first_name.data.strip()
+    record.middle_name = _strip(form.middle_name.data)
+    record.last_name = form.last_name.data.strip()
+    record.suffix = _strip(form.suffix.data)
+    record.account_number = _strip(form.account_number.data)
+    record.phone = _strip(form.phone.data)
+    record.phone_number2 = _strip(form.phone_number2.data)
+    record.email = normalize_email(form.email.data)
+    rel_id = form.relationship_to_patient_id.data
+    record.relationship_to_patient_id = rel_id if rel_id else None
+    record.address = _strip(form.address.data)
+    record.city = _strip(form.city.data)
+    record.state = _strip(form.state.data)
+    record.zip_code = _strip(form.zip_code.data)
+    record.sync_name_fields()
+
+
+def _apply_patient_from_form(record, form):
+    record.prefix = _strip(form.prefix.data)
+    record.first_name = form.first_name.data.strip()
+    record.middle_name = _strip(form.middle_name.data)
+    record.last_name = form.last_name.data.strip()
+    record.suffix = _strip(form.suffix.data)
+    record.date_of_birth = form.date_of_birth.data
+    ssn = _strip(form.last4_ssn.data)
+    if ssn and len(ssn) != 4:
+        raise ValueError("Last 4 of SSN must be exactly 4 characters.")
+    record.last4_ssn = ssn if ssn else None
+    record.phone_mobile = _strip(form.phone_mobile.data)
+    record.phone_landline = _strip(form.phone_landline.data)
+    record.phone = record.phone_mobile or record.phone_landline
+    record.email = normalize_email(form.email.data)
+    record.address = _strip(form.address.data)
+    record.city = _strip(form.city.data)
+    record.state = _strip(form.state.data)
+    record.zip_code = _strip(form.zip_code.data)
+    record.mood = _strip(form.mood.data)
+    record.mental_state = _strip(form.mental_state.data)
+    record.intake_notes = _strip(form.intake_notes.data)
 
 
 @client_patient_bp.route("/client-info")
 @employee_required
 def list_clients():
-    rows = Client.query.order_by(Client.name).all()
+    rows = Client.query.order_by(Client.last_name, Client.first_name, Client.name).all()
     return render_template("client/client_list.html", rows=rows)
 
 
@@ -51,10 +119,7 @@ def edit_client(client_id=None):
 
     if form.validate_on_submit():
         record = client or Client(company_id=company.id)
-        record.name = form.name.data.strip()
-        record.phone = (form.phone.data or "").strip() or None
-        record.email = (form.email.data or "").strip().lower() or None
-        record.address = (form.address.data or "").strip() or None
+        _apply_client_from_form(record, form)
         if not client:
             db.session.add(record)
             db.session.flush()
@@ -62,9 +127,29 @@ def edit_client(client_id=None):
         if form.patient_id.data:
             patient = Patient.query.get(form.patient_id.data)
             if patient:
-                patient.client_id = record.id
+                if patient.client_id != record.id and Patient.query.filter_by(
+                    client_id=record.id
+                ).first():
+                    flash("This client is already linked to another patient.", "error")
+                    return render_template(
+                        "client/client_form.html",
+                        form=form,
+                        client=client,
+                        title="Edit Client" if client else "New Client",
+                    )
+                link_client_patient(record, patient)
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("A client with this email already exists.", "error")
+            return render_template(
+                "client/client_form.html",
+                form=form,
+                client=client,
+                title="Edit Client" if client else "New Client",
+            )
         flash("Client saved.", "success")
         return redirect(url_for("client_patient.view_client", client_id=record.id))
 
@@ -99,22 +184,62 @@ def edit_patient(patient_id=None):
     patient = Patient.query.get(patient_id) if patient_id else None
     form = PatientRecordForm(obj=patient)
     _populate_patient_form(form, patient)
-    from flask import request
     preselect_client = request.args.get("client_id", type=int)
     if preselect_client and not patient:
         form.client_id.data = preselect_client
 
     if form.validate_on_submit():
-        record = patient or Patient(company_id=company.id)
-        record.client_id = form.client_id.data
-        record.first_name = form.first_name.data.strip()
-        record.last_name = form.last_name.data.strip()
-        record.date_of_birth = form.date_of_birth.data
-        record.phone = (form.phone.data or "").strip() or None
-        record.email = (form.email.data or "").strip().lower() or None
+        client = Client.query.get(form.client_id.data)
+        if not client:
+            flash("Please select a valid client.", "error")
+            return render_template(
+                "client/patient_form.html",
+                form=form,
+                patient=patient,
+                title="Edit Patient" if patient else "New Patient",
+            )
+
+        other = Patient.query.filter(
+            Patient.client_id == client.id,
+            Patient.id != (patient.id if patient else -1),
+        ).first()
+        if other:
+            flash("This client is already linked to another patient.", "error")
+            return render_template(
+                "client/patient_form.html",
+                form=form,
+                patient=patient,
+                title="Edit Patient" if patient else "New Patient",
+            )
+
+        record = patient or Patient(company_id=company.id, client_id=client.id)
+        record.client_id = client.id
+        try:
+            _apply_patient_from_form(record, form)
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return render_template(
+                "client/patient_form.html",
+                form=form,
+                patient=patient,
+                title="Edit Patient" if patient else "New Patient",
+            )
         if not patient:
             db.session.add(record)
-        db.session.commit()
+            db.session.flush()
+        link_client_patient(client, record)
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("A patient with this email already exists.", "error")
+            return render_template(
+                "client/patient_form.html",
+                form=form,
+                patient=patient,
+                title="Edit Patient" if patient else "New Patient",
+            )
         flash("Patient saved.", "success")
         return redirect(url_for("client_patient.view_patient", patient_id=record.id))
 
@@ -137,18 +262,25 @@ def view_patient(patient_id):
 def service_request():
     form = PatientInfoForm()
     if form.validate_on_submit():
-        create_intake_request(
-            patient_name=form.patient_name.data.strip(),
-            contact_name=form.contact_name.data.strip(),
-            phone=form.phone.data.strip(),
-            email=form.email.data.strip().lower(),
-            service=form.service.data,
-            hospital_name=(form.hospital.data or "").strip() or None,
-            notes=(form.notes.data or "").strip() or None,
-        )
-        flash(
-            "Thank you! Your request has been submitted. A member of our team will contact you soon.",
-            "success",
-        )
+        try:
+            _client, patient, encounter = create_intake_request(
+                patient_name=(form.patient_name.data or "").strip() or None,
+                contact_name=form.contact_name.data.strip(),
+                phone=form.phone.data.strip(),
+                email=form.email.data.strip().lower(),
+                service=form.service.data,
+                hospital_name=(form.hospital.data or "").strip() or None,
+                notes=(form.notes.data or "").strip() or None,
+            )
+            if patient and encounter:
+                msg = "Thank you! Your patient request has been submitted. Our team will contact you soon."
+            elif patient:
+                msg = "Thank you! Patient information has been saved. Our team will follow up with you soon."
+            else:
+                msg = "Thank you! Your contact information has been saved. You can add patient details later."
+            flash(msg, "success")
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return render_template("client/service_request.html", form=form)
         return redirect(url_for("client_patient.service_request"))
     return render_template("client/service_request.html", form=form)
