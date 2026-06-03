@@ -7,6 +7,7 @@ from models import (
     Patient,
     RelationshipToPatient,
     db,
+    delete_patient_record,
     link_client_patient,
 )
 from flask import Blueprint, flash, redirect, render_template, request, url_for
@@ -253,6 +254,17 @@ def edit_patient(patient_id=None):
         patient=patient,
         title="Edit Patient" if patient else "New Patient",
     )
+
+
+@client_patient_bp.route("/patient-info/<int:patient_id>/delete", methods=["POST"])
+@employee_required
+def delete_patient(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    name = patient.full_name
+    delete_patient_record(patient)
+    db.session.commit()
+    flash(f"Patient {name} has been removed.", "success")
+    return redirect(url_for("client_patient.list_patients"))
 
 
 @client_patient_bp.route("/patient-info/<int:patient_id>")

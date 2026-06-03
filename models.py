@@ -470,3 +470,50 @@ def link_client_patient(client: Client, patient: Patient) -> None:
     """Keep bidirectional 0..1 links in sync."""
     patient.client_id = client.id
     client.patient_id = patient.id
+
+
+def delete_patient_record(patient: Patient) -> None:
+    """Remove a patient and dependent encounters, notes, and links."""
+    encounter_ids = [
+        row[0]
+        for row in db.session.query(Encounter.id)
+        .filter_by(patient_id=patient.id)
+        .all()
+    ]
+
+    note_filters = [Note.patient_id == patient.id]
+    if encounter_ids:
+        note_filters.append(Note.encounter_id.in_(encounter_ids))
+    note_ids = [
+        row[0]
+        for row in db.session.query(Note.id).filter(db.or_(*note_filters)).all()
+    ]
+
+    if note_ids:
+        Billing.query.filter(Billing.note_id.in_(note_ids)).delete(
+            synchronize_session=False
+        )
+        Note.query.filter(Note.id.in_(note_ids)).delete(synchronize_session=False)
+
+    if encounter_ids:
+        TimeCard.query.filter(TimeCard.encounter_id.in_(encounter_ids)).delete(
+            synchronize_session=False
+        )
+    Encounter.query.filter_by(patient_id=patient.id).delete(synchronize_session=False)
+    PatientRelationship.query.filter_by(patient_id=patient.id).delete(
+        synchronize_session=False
+    )
+
+    patient.patient_medications_id = None
+    db.session.flush()
+    PatientMedication.query.filter_by(patient_id=patient.id).delete(
+        synchronize_session=False
+    )
+
+    Account.query.filter_by(patient_id=patient.id).update(
+        {Account.patient_id: None}, synchronize_session=False
+    )
+    Client.query.filter_by(patient_id=patient.id).update(
+        {Client.patient_id: None}, synchronize_session=False
+    )
+    db.session.delete(patient)

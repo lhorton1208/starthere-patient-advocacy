@@ -48,6 +48,17 @@
         <a href="{{ url_for('client_patient.list_patients') }}" class="btn btn-secondary">Cancel</a>
         {% endif %}
       </form>
+      {% if patient %}
+      <form
+        method="post"
+        action="{{ url_for('client_patient.delete_patient', patient_id=patient.id) }}"
+        class="delete-form"
+        onsubmit="return confirm('Permanently delete {{ patient.full_name }} and related encounters? This cannot be undone.');"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Delete Patient</button>
+      </form>
+      {% endif %}
     </div>
   </div>
 </section>
