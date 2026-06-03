@@ -1,5 +1,11 @@
 from auth import employee_required
-from forms import ClientInfoForm, PatientInfoForm, PatientRecordForm, empty_select
+from forms import (
+    ClientInfoForm,
+    DeletePatientForm,
+    PatientInfoForm,
+    PatientRecordForm,
+    empty_select,
+)
 from intake import create_intake_request, normalize_email
 from models import (
     Client,
@@ -188,6 +194,7 @@ def edit_patient(patient_id=None):
     company = _company()
     patient = Patient.query.get(patient_id) if patient_id else None
     form = PatientRecordForm(obj=patient)
+    delete_form = DeletePatientForm()
     _populate_patient_form(form, patient)
     preselect_client = request.args.get("client_id", type=int)
     if preselect_client and not patient:
@@ -200,6 +207,7 @@ def edit_patient(patient_id=None):
             return render_template(
                 "client/patient_form.html",
                 form=form,
+                delete_form=delete_form,
                 patient=patient,
                 title="Edit Patient" if patient else "New Patient",
             )
@@ -213,6 +221,7 @@ def edit_patient(patient_id=None):
             return render_template(
                 "client/patient_form.html",
                 form=form,
+                delete_form=delete_form,
                 patient=patient,
                 title="Edit Patient" if patient else "New Patient",
             )
@@ -226,6 +235,7 @@ def edit_patient(patient_id=None):
             return render_template(
                 "client/patient_form.html",
                 form=form,
+                delete_form=delete_form,
                 patient=patient,
                 title="Edit Patient" if patient else "New Patient",
             )
@@ -242,6 +252,7 @@ def edit_patient(patient_id=None):
             return render_template(
                 "client/patient_form.html",
                 form=form,
+                delete_form=delete_form,
                 patient=patient,
                 title="Edit Patient" if patient else "New Patient",
             )
@@ -251,6 +262,7 @@ def edit_patient(patient_id=None):
     return render_template(
         "client/patient_form.html",
         form=form,
+        delete_form=delete_form,
         patient=patient,
         title="Edit Patient" if patient else "New Patient",
     )
@@ -259,6 +271,11 @@ def edit_patient(patient_id=None):
 @client_patient_bp.route("/patient-info/<int:patient_id>/delete", methods=["POST"])
 @employee_required
 def delete_patient(patient_id):
+    form = DeletePatientForm()
+    if not form.validate_on_submit():
+        flash("Invalid request. Please try again.", "error")
+        return redirect(url_for("client_patient.edit_patient", patient_id=patient_id))
+
     patient = Patient.query.get_or_404(patient_id)
     name = patient.full_name
     delete_patient_record(patient)

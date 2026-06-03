@@ -211,6 +211,10 @@ class ClientInfoForm(FlaskForm):
     )
 
 
+class DeletePatientForm(FlaskForm):
+    """CSRF-only form for patient delete POST."""
+
+
 class PatientRecordForm(FlaskForm):
     client_id = SelectField("Linked Client", coerce=int, validators=[DataRequired()])
     prefix = StringField("Prefix", validators=[Optional(), Length(max=32)])
