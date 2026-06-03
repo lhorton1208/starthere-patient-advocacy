@@ -46,7 +46,7 @@ def report_encounters():
 @employee_required
 def report_patients():
     rows = (
-        Patient.query.join(Client)
+        Patient.query.join(Client, Patient.client_id == Client.id)
         .order_by(Patient.last_name, Patient.first_name)
         .all()
     )

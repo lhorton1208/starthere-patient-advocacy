@@ -172,7 +172,11 @@ def view_client(client_id):
 @client_patient_bp.route("/patient-info")
 @employee_required
 def list_patients():
-    rows = Patient.query.join(Client).order_by(Patient.last_name, Patient.first_name).all()
+    rows = (
+        Patient.query.join(Client, Patient.client_id == Client.id)
+        .order_by(Patient.last_name, Patient.first_name)
+        .all()
+    )
     return render_template("client/patient_list.html", rows=rows)
 
 
