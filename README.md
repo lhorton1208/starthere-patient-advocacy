@@ -96,13 +96,14 @@ See `.env.example` for all contact variable names.
 1. Create a **PostgreSQL** database on Render and copy its **Internal Database URL**.
 2. Create a **Web Service**:
    - **Build command:** `pip install -r requirements.txt`
-   - **Start command:** `gunicorn app:app --bind 0.0.0.0:$PORT`
+   - **Pre-Deploy command:** `python scripts/migrate_schema.py`
+   - **Start command:** `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120`
 3. Add environment variables:
    - `SECRET_KEY` — generate a random string
    - `DATABASE_URL` — paste the PostgreSQL URL from step 1
 4. Deploy from your GitHub repo.
 
-Tables are created automatically on first startup.
+Schema updates run in the **Pre-Deploy command** (`python scripts/migrate_schema.py`), not during web server boot.
 
 ## Deploy elsewhere
 

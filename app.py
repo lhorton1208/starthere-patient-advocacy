@@ -94,27 +94,11 @@ def create_app(config_class=Config, *, run_migrate=True):
     return app
 
 
-class _LazyWSGIApp:
-    """Defer create_app() until first request (avoids migrate on import)."""
-
-    _flask_app = None
-
-    def _get(self):
-        if self._flask_app is None:
-            self._flask_app = create_app()
-        return self._flask_app
-
-    def __call__(self, environ, start_response):
-        return self._get()(environ, start_response)
-
-    def __getattr__(self, name):
-        return getattr(self._get(), name)
-
-
-app = _LazyWSGIApp()
+# Gunicorn/Render entrypoint — migrations run in releaseCommand, not on web boot.
+app = create_app(run_migrate=False)
 
 
 if __name__ == "__main__":
     # macOS often binds AirPlay to localhost:5000; use 5001 locally.
     port = int(os.environ.get("PORT", 5001))
-    create_app().run(debug=True, host="127.0.0.1", port=port)
+    create_app(run_migrate=True).run(debug=True, host="127.0.0.1", port=port)

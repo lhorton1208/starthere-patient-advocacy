@@ -120,8 +120,14 @@ def _column_exists(inspector, table: str, column: str) -> bool:
     return column in {c["name"] for c in inspector.get_columns(table)}
 
 
-def _add_column(table: str, column: str, col_type: str) -> None:
-    db.session.execute(text(f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type}'))
+def _add_column(table: str, column: str, col_type: str, *, is_pg: bool = False) -> None:
+    if is_pg:
+        stmt = (
+            f'ALTER TABLE "{table}" ADD COLUMN IF NOT EXISTS "{column}" {col_type}'
+        )
+    else:
+        stmt = f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type}'
+    db.session.execute(text(stmt))
     db.session.commit()
 
 
@@ -187,7 +193,13 @@ def _dedupe_emails_postgres(table: str) -> None:
     db.session.commit()
 
 
-def _backfill_names() -> None:
+def _backfill_names(inspector) -> None:
+    if "clients" not in inspector.get_table_names():
+        return
+    client_cols = {c["name"] for c in inspector.get_columns("clients")}
+    if "first_name" not in client_cols:
+        return
+
     clients = db.session.execute(
         text("SELECT id, name, phone, email, address FROM clients")
     ).fetchall()
@@ -220,8 +232,19 @@ def _backfill_names() -> None:
             },
         )
 
+    if "patients" not in inspector.get_table_names():
+        db.session.commit()
+        return
+
+    patient_cols = {c["name"] for c in inspector.get_columns("patients")}
+    if "client_id" not in patient_cols:
+        db.session.commit()
+        return
+
     patients = db.session.execute(
-        text("SELECT id, first_name, last_name, phone, email, date_of_birth, client_id FROM patients")
+        text(
+            "SELECT id, first_name, last_name, phone, email, date_of_birth, client_id FROM patients"
+        )
     ).fetchall()
     for row in patients:
         pid, first, last, phone, email, dob, client_id = row
@@ -307,7 +330,7 @@ def _ensure_schema_migrations_table() -> None:
     db.session.commit()
 
 
-def _purge_clients_and_patients() -> None:
+def _purge_clients_and_patients(inspector) -> None:
     """Remove all clients, patients, and rows that depend on them."""
     from models import (
         Account,
@@ -323,24 +346,40 @@ def _purge_clients_and_patients() -> None:
         TimeCard,
     )
 
-    Billing.query.delete()
-    InvoiceItem.query.delete()
-    Invoice.query.delete()
-    Account.query.delete()
-    TimeCard.query.filter(TimeCard.encounter_id.isnot(None)).delete(
-        synchronize_session=False
-    )
-    Note.query.delete()
-    Encounter.query.delete()
-    PatientRelationship.query.delete()
-    PatientMedication.query.delete()
-    db.session.execute(text("UPDATE clients SET patient_id = NULL"))
-    Patient.query.delete()
-    Client.query.delete()
+    tables = set(inspector.get_table_names())
+
+    if "billings" in tables:
+        Billing.query.delete()
+    if "invoice_items" in tables:
+        InvoiceItem.query.delete()
+    if "invoices" in tables:
+        Invoice.query.delete()
+    if "accounts" in tables:
+        Account.query.delete()
+    if "time_cards" in tables:
+        TimeCard.query.filter(TimeCard.encounter_id.isnot(None)).delete(
+            synchronize_session=False
+        )
+    if "notes" in tables:
+        Note.query.delete()
+    if "encounters" in tables:
+        Encounter.query.delete()
+    if "patient_relationships" in tables:
+        PatientRelationship.query.delete()
+    if "patients" in tables and "patient_medications" in tables:
+        db.session.execute(text("UPDATE patients SET patient_medications_id = NULL"))
+    if "patient_medications" in tables:
+        PatientMedication.query.delete()
+    if "clients" in tables:
+        db.session.execute(text("UPDATE clients SET patient_id = NULL"))
+    if "patients" in tables:
+        Patient.query.delete()
+    if "clients" in tables:
+        Client.query.delete()
     db.session.commit()
 
 
-def _purge_clients_and_patients_once() -> None:
+def _purge_clients_and_patients_once(inspector) -> None:
     _ensure_schema_migrations_table()
     done = db.session.execute(
         text(
@@ -349,12 +388,28 @@ def _purge_clients_and_patients_once() -> None:
     ).first()
     if done:
         return
-    _purge_clients_and_patients()
-    db.session.execute(
-        text(
-            "INSERT INTO schema_migrations (name) VALUES ('purge_clients_patients_v1')"
+    _purge_clients_and_patients(inspector)
+    is_pg = db.engine.dialect.name in ("postgresql", "postgres")
+    if is_pg:
+        db.session.execute(
+            text(
+                """
+                INSERT INTO schema_migrations (name)
+                VALUES ('purge_clients_patients_v1')
+                ON CONFLICT (name) DO NOTHING
+                """
+            )
         )
-    )
+    else:
+        try:
+            db.session.execute(
+                text(
+                    "INSERT INTO schema_migrations (name) VALUES ('purge_clients_patients_v1')"
+                )
+            )
+        except Exception:
+            db.session.rollback()
+            return
     db.session.commit()
     print("Removed all existing clients and patients (one-time).")
 
@@ -389,7 +444,7 @@ def run_migrations(app=None) -> None:
                 continue
             for column, col_type in columns.items():
                 if not _column_exists(inspector, table, column):
-                    _add_column(table, column, col_type)
+                    _add_column(table, column, col_type, is_pg=is_pg)
                     inspector = inspect(engine)
 
         if is_sqlite:
@@ -399,32 +454,31 @@ def run_migrations(app=None) -> None:
             _dedupe_emails_postgres("clients")
             _dedupe_emails_postgres("patients")
 
-        _backfill_names()
-        if is_pg:
-            try:
-                _backfill_notes()
-            except Exception:
-                db.session.rollback()
+        _backfill_names(inspector)
+        if "notes" in inspector.get_table_names():
+            if is_pg:
+                try:
+                    _backfill_notes()
+                except Exception:
+                    db.session.rollback()
+                    _backfill_notes_sqlite()
+            else:
                 _backfill_notes_sqlite()
-        else:
-            _backfill_notes_sqlite()
 
-        _purge_clients_and_patients_once()
-        _ensure_accounts_have_client()
+        _purge_clients_and_patients_once(inspector)
+        if "accounts" in inspector.get_table_names():
+            _ensure_accounts_have_client()
 
         # Unique indexes (best-effort; skip if duplicates remain)
         indexes = [
-            ('CREATE UNIQUE INDEX IF NOT EXISTS uq_clients_email ON clients (email) WHERE email IS NOT NULL'),
-            ('CREATE UNIQUE INDEX IF NOT EXISTS uq_patients_email ON patients (email) WHERE email IS NOT NULL'),
-            ('CREATE UNIQUE INDEX IF NOT EXISTS uq_patients_client_id ON patients (client_id)'),
-            ('CREATE UNIQUE INDEX IF NOT EXISTS uq_clients_patient_id ON clients (patient_id) WHERE patient_id IS NOT NULL'),
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_clients_email ON clients (email) WHERE email IS NOT NULL",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_patients_email ON patients (email) WHERE email IS NOT NULL",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_patients_client_id ON patients (client_id)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_clients_patient_id ON clients (patient_id) WHERE patient_id IS NOT NULL",
         ]
         for stmt in indexes:
             try:
-                if is_pg:
-                    db.session.execute(text(stmt.replace("IF NOT EXISTS ", "")))
-                else:
-                    db.session.execute(text(stmt))
+                db.session.execute(text(stmt))
                 db.session.commit()
             except Exception:
                 db.session.rollback()
@@ -436,4 +490,8 @@ def run_migrations(app=None) -> None:
 
 
 if __name__ == "__main__":
-    run_migrations()
+    try:
+        run_migrations()
+    except Exception as exc:
+        print(f"Schema migration failed: {exc}", flush=True)
+        raise SystemExit(1) from exc

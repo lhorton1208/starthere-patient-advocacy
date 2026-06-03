@@ -1,1 +1,2 @@
-web: gunicorn app:app --bind 0.0.0.0:$PORT
+release: python scripts/migrate_schema.py
+web: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
