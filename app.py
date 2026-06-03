@@ -33,6 +33,12 @@ def create_app(config_class=Config):
         db.create_all()
         seed_database()
 
+    @app.template_filter("static_image_exists")
+    def static_image_exists(filename):
+        if not filename:
+            return False
+        return os.path.isfile(os.path.join(static_dir, "images", filename))
+
     @app.context_processor
     def inject_globals():
         return {"current_year": datetime.now().year}
@@ -67,11 +73,8 @@ def create_app(config_class=Config):
 
     @app.route("/about")
     def about():
-        featured = next(
-            (c for c in CONTACTS if c.get("bio")),
-            CONTACTS[0] if CONTACTS else None,
-        )
-        return render_template("about.html", advocate=featured)
+        advocates = [c for c in CONTACTS if c.get("bio")]
+        return render_template("about.html", advocates=advocates)
 
     @app.route("/contacts")
     def contacts():

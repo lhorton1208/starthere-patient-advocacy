@@ -6,49 +6,19 @@
 <section class="page-header">
   <div class="container">
     <h1>About StartHere</h1>
-    <p>Experienced nursing advocacy for patients and families navigating modern healthcare.</p>
+    <p>
+      Meet the leaders behind StartHere — combining clinical experience, healthcare
+      technology expertise, and compassionate patient advocacy.
+    </p>
   </div>
 </section>
 
-{% if advocate %}
+{% if advocates %}
 <section class="content-section">
-  <div class="container">
-    <article class="advocate-profile">
-      <div class="advocate-profile-media">
-        {% if advocate.image %}
-        <img
-          src="{{ url_for('static', filename='images/' ~ advocate.image) }}"
-          alt="Portrait of {{ advocate.name }}"
-          class="advocate-photo"
-          width="280"
-          height="280"
-        >
-        {% else %}
-        <div class="contact-avatar advocate-photo-placeholder" aria-hidden="true">
-          {{ advocate.name.split()[0][0] }}{{ advocate.name.split()[-1][0] }}
-        </div>
-        {% endif %}
-        <h2 class="advocate-name">{{ advocate.name }}</h2>
-        <p class="advocate-title">{{ advocate.title }}</p>
-        {% if advocate.email or advocate.phone %}
-        <ul class="advocate-contact-links">
-          {% if advocate.email %}
-          <li><a href="mailto:{{ advocate.email }}">{{ advocate.email }}</a></li>
-          {% endif %}
-          {% if advocate.phone %}
-          <li>
-            <a href="tel:{{ advocate.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ advocate.phone }}</a>
-          </li>
-          {% endif %}
-        </ul>
-        {% endif %}
-      </div>
-      <div class="advocate-profile-bio">
-        {% for paragraph in advocate.bio %}
-        <p>{{ paragraph }}</p>
-        {% endfor %}
-      </div>
-    </article>
+  <div class="container advocate-profiles">
+    {% for advocate in advocates %}
+    {% include "_advocate_profile.html" %}
+    {% endfor %}
   </div>
 </section>
 {% endif %}

@@ -21,11 +21,11 @@
     <div class="contact-grid">
       {% for contact in contacts %}
       <div class="contact-card">
-        {% if contact.image %}
+        {% if contact.image and contact.image|static_image_exists %}
         <img
           src="{{ url_for('static', filename='images/' ~ contact.image) }}"
           alt=""
-          class="contact-photo"
+          class="contact-photo{% if contact.slug == 'dawn-criswell' %} contact-photo-dawn{% endif %}"
           width="96"
           height="96"
         >
@@ -35,8 +35,13 @@
         </div>
         {% endif %}
         <h2>{{ contact.name }}</h2>
+        {% if contact.credentials %}
+        <p class="contact-credentials">{{ contact.credentials }}</p>
+        {% endif %}
         {% if contact.bio %}
-        <p class="contact-bio-link"><a href="{{ url_for('about') }}">Read full bio</a></p>
+        <p class="contact-bio-link">
+          <a href="{{ url_for('about') }}#{{ contact.slug }}">Read full bio</a>
+        </p>
         {% endif %}
         <p class="contact-title">{{ contact.title }}</p>
         <ul class="contact-details">
