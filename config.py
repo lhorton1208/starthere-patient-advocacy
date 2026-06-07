@@ -100,6 +100,7 @@ CONTACTS = [
         "name": "Georgette Darnell",
         "slug": "georgette-darnell",
         "legacy_name": "Georgette Johnson",
+        "credentials": "RN, MHA",
         "title": "Founder & Principal, StartHere Patient Advocacy LLC",
         "email": os.environ.get("CONTACT_GEORGETTE_EMAIL", ""),
         "phone": os.environ.get("CONTACT_GEORGETTE_PHONE", ""),
