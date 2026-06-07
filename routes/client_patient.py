@@ -16,11 +16,16 @@ from models import (
     delete_patient_record,
     link_client_patient,
 )
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from datetime import date
+
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from seed import COMPANY_NAME
 from sqlalchemy.exc import IntegrityError
 
 client_patient_bp = Blueprint("client_patient", __name__, url_prefix="/client")
+
+PATIENT_DRAFT_SESSION_KEY = "patient_form_draft"
+NEW_CLIENT_OPTION = -1
 
 
 def _company():
@@ -56,13 +61,80 @@ def _populate_client_form(form, client=None):
 
 def _populate_patient_form(form, patient=None):
     clients = Client.query.order_by(Client.last_name, Client.first_name, Client.name).all()
-    form.client_id.choices = empty_select("client") + [
-        (c.id, c.display_name) for c in clients
-    ]
+    form.client_id.choices = (
+        empty_select("client")
+        + [(NEW_CLIENT_OPTION, "+ Add new client...")]
+        + [(c.id, c.display_name) for c in clients]
+    )
     if patient:
         form.client_id.data = patient.client_id
         if not patient.phone_mobile and patient.phone:
             form.phone_mobile.data = patient.phone
+
+
+def _patient_draft_from_form(form, patient_id=None):
+    dob = form.date_of_birth.data
+    return {
+        "patient_id": patient_id,
+        "client_id": form.client_id.data,
+        "prefix": form.prefix.data or "",
+        "first_name": form.first_name.data or "",
+        "middle_name": form.middle_name.data or "",
+        "last_name": form.last_name.data or "",
+        "suffix": form.suffix.data or "",
+        "date_of_birth": dob.isoformat() if dob else "",
+        "last4_ssn": form.last4_ssn.data or "",
+        "phone_mobile": form.phone_mobile.data or "",
+        "phone_landline": form.phone_landline.data or "",
+        "email": form.email.data or "",
+        "address": form.address.data or "",
+        "city": form.city.data or "",
+        "state": form.state.data or "",
+        "zip_code": form.zip_code.data or "",
+        "mood": form.mood.data or "",
+        "mental_state": form.mental_state.data or "",
+        "intake_notes": form.intake_notes.data or "",
+    }
+
+
+def _apply_patient_draft_to_form(form, draft):
+    form.prefix.data = draft.get("prefix") or None
+    form.first_name.data = draft.get("first_name") or ""
+    form.middle_name.data = draft.get("middle_name") or None
+    form.last_name.data = draft.get("last_name") or ""
+    form.suffix.data = draft.get("suffix") or None
+    dob = draft.get("date_of_birth") or ""
+    if dob:
+        try:
+            form.date_of_birth.data = date.fromisoformat(dob)
+        except ValueError:
+            form.date_of_birth.data = None
+    form.last4_ssn.data = draft.get("last4_ssn") or None
+    form.phone_mobile.data = draft.get("phone_mobile") or None
+    form.phone_landline.data = draft.get("phone_landline") or None
+    form.email.data = draft.get("email") or None
+    form.address.data = draft.get("address") or None
+    form.city.data = draft.get("city") or None
+    form.state.data = draft.get("state") or None
+    form.zip_code.data = draft.get("zip_code") or None
+    form.mood.data = draft.get("mood") or None
+    form.mental_state.data = draft.get("mental_state") or None
+    form.intake_notes.data = draft.get("intake_notes") or None
+    client_id = draft.get("client_id")
+    if client_id and client_id > 0:
+        form.client_id.data = client_id
+
+
+def _save_patient_draft(form, patient_id=None):
+    session[PATIENT_DRAFT_SESSION_KEY] = _patient_draft_from_form(form, patient_id)
+    session.modified = True
+
+
+def _patient_resume_url(draft):
+    patient_id = draft.get("patient_id")
+    if patient_id:
+        return url_for("client_patient.edit_patient", patient_id=patient_id)
+    return url_for("client_patient.edit_patient")
 
 
 def _apply_client_from_form(record, form):
@@ -158,12 +230,27 @@ def edit_client(client_id=None):
                 title="Edit Client" if client else "New Client",
             )
         flash("Client saved.", "success")
+        draft = session.get(PATIENT_DRAFT_SESSION_KEY)
+        if request.args.get("resume_patient") and draft is not None:
+            draft["client_id"] = record.id
+            session[PATIENT_DRAFT_SESSION_KEY] = draft
+            session.modified = True
+            flash("Client saved. Your patient entries have been restored.", "success")
+            return redirect(_patient_resume_url(draft))
+
         return redirect(url_for("client_patient.view_client", client_id=record.id))
+
+    resume_patient = request.args.get("resume_patient")
+    cancel_url = None
+    if resume_patient and session.get(PATIENT_DRAFT_SESSION_KEY):
+        cancel_url = _patient_resume_url(session[PATIENT_DRAFT_SESSION_KEY])
 
     return render_template(
         "client/client_form.html",
         form=form,
         client=client,
+        resume_patient=bool(resume_patient),
+        cancel_url=cancel_url,
         title="Edit Client" if client else "New Client",
     )
 
@@ -193,14 +280,36 @@ def list_patients():
 def edit_patient(patient_id=None):
     company = _company()
     patient = Patient.query.get(patient_id) if patient_id else None
-    form = PatientRecordForm(obj=patient)
+    if request.method == "POST":
+        form = PatientRecordForm(formdata=request.form, obj=patient)
+    else:
+        form = PatientRecordForm(obj=patient)
     delete_form = DeletePatientForm()
     _populate_patient_form(form, patient)
+
+    if request.method == "POST" and request.form.get("action") == "add_client":
+        _save_patient_draft(form, patient_id)
+        return redirect(url_for("client_patient.edit_client", resume_patient=1))
+
+    draft = session.get(PATIENT_DRAFT_SESSION_KEY)
+    if draft and (draft.get("patient_id") == patient_id or (not patient_id and not draft.get("patient_id"))):
+        _apply_patient_draft_to_form(form, draft)
+
     preselect_client = request.args.get("client_id", type=int)
-    if preselect_client and not patient:
+    if preselect_client and preselect_client > 0:
         form.client_id.data = preselect_client
 
-    if form.validate_on_submit():
+    if form.validate_on_submit() and request.form.get("action", "save") == "save":
+        if form.client_id.data == NEW_CLIENT_OPTION:
+            flash("Select a client or use Add New Client to create one.", "error")
+            return render_template(
+                "client/patient_form.html",
+                form=form,
+                delete_form=delete_form,
+                patient=patient,
+                title="Edit Patient" if patient else "New Patient",
+            )
+
         client = Client.query.get(form.client_id.data)
         if not client:
             flash("Please select a valid client.", "error")
@@ -256,6 +365,7 @@ def edit_patient(patient_id=None):
                 patient=patient,
                 title="Edit Patient" if patient else "New Patient",
             )
+        session.pop(PATIENT_DRAFT_SESSION_KEY, None)
         flash("Patient saved.", "success")
         return redirect(url_for("client_patient.view_patient", patient_id=record.id))
 

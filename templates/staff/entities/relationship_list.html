@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Relationships to Patient | StartHere{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>Relationships to Patient</h1>
+      <p>Define how clients relate to patients (e.g. Son, Daughter, Spouse, Self).</p>
+    </div>
+    <a href="{{ url_for('entities.edit_relationship') }}" class="btn btn-solid">Add Relationship</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Relationship</th>
+            <th>Description</th>
+            <th>Legal Guardian</th>
+            <th>Power of Attorney</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ row.relationship }}</td>
+            <td>{{ row.description }}</td>
+            <td>{{ 'Yes' if row.is_legal_guardian else 'No' }}</td>
+            <td>{{ 'Yes' if row.is_power_of_attorney else 'No' }}</td>
+            <td><a href="{{ url_for('entities.edit_relationship', item_id=row.id) }}">Edit</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="empty-state">No relationships yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

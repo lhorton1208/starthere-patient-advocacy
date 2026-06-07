@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}{{ title }} | StartHere{% endblock %}
+
+{% block content %}
+<section class="page-header"><div class="container"><h1>{{ title }}</h1></div></section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="form-card">
+      <form method="post">
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.relationship) }}
+        {{ render_form_field(form.description) }}
+        {{ render_form_field(form.is_legal_guardian) }}
+        {{ render_form_field(form.is_power_of_attorney) }}
+        <button type="submit" class="btn btn-solid">Save</button>
+        <a href="{{ url_for('entities.list_relationships') }}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

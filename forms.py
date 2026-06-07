@@ -272,6 +272,31 @@ class HomeHealthFacilityForm(FlaskForm):
     phone = StringField("Phone", validators=[Optional(), Length(max=50)])
 
 
+class RelationshipToPatientForm(FlaskForm):
+    relationship = StringField(
+        "Relationship",
+        validators=[DataRequired(), Length(max=255)],
+        render_kw={"placeholder": "e.g. Son, Daughter, Spouse, Self"},
+    )
+    description = StringField(
+        "Description",
+        validators=[DataRequired(), Length(max=255)],
+        render_kw={"placeholder": "e.g. Son of patient"},
+    )
+    is_legal_guardian = SelectField(
+        "Legal Guardian",
+        choices=[("0", "No"), ("1", "Yes")],
+        validators=[DataRequired()],
+        default="0",
+    )
+    is_power_of_attorney = SelectField(
+        "Power of Attorney",
+        choices=[("0", "No"), ("1", "Yes")],
+        validators=[DataRequired()],
+        default="0",
+    )
+
+
 class TimeCardForm(FlaskForm):
     advocate_id = SelectField("Advocate", coerce=int, validators=[DataRequired()])
     encounter_id = SelectField("Encounter", coerce=nullable_int, validators=[Optional()])

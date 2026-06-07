@@ -13,6 +13,8 @@ ACCOUNT_TYPES = [
 RELATIONSHIP_TYPES = [
     ("Self", "Patient is the client", False, False),
     ("Spouse", "Spouse or partner", False, False),
+    ("Son", "Son of patient", False, False),
+    ("Daughter", "Daughter of patient", False, False),
     ("Parent", "Parent of patient", False, True),
     ("Child", "Child of patient", True, False),
     ("Sibling", "Sibling of patient", False, False),

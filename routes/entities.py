@@ -1,8 +1,20 @@
 from auth import employee_required
 from flask import Blueprint, flash, redirect, render_template, url_for
 from seed import COMPANY_NAME
-from forms import AdvocateEntityForm, HomeHealthFacilityForm, HospitalForm
-from models import Advocate, Company, HomeHealthFacility, Hospital, db
+from forms import (
+    AdvocateEntityForm,
+    HomeHealthFacilityForm,
+    HospitalForm,
+    RelationshipToPatientForm,
+)
+from models import (
+    Advocate,
+    Company,
+    HomeHealthFacility,
+    Hospital,
+    RelationshipToPatient,
+    db,
+)
 
 entities_bp = Blueprint("entities", __name__, url_prefix="/entities")
 
@@ -103,4 +115,40 @@ def edit_home_care(item_id=None):
         "staff/entities/home_care_form.html",
         form=form,
         title="Edit Home Care Facility" if item else "New Home Care Facility",
+    )
+
+
+@entities_bp.route("/relationships")
+@employee_required
+def list_relationships():
+    rows = RelationshipToPatient.query.order_by(
+        RelationshipToPatient.relationship
+    ).all()
+    return render_template("staff/entities/relationship_list.html", rows=rows)
+
+
+@entities_bp.route("/relationships/new", methods=["GET", "POST"])
+@entities_bp.route("/relationships/<int:item_id>/edit", methods=["GET", "POST"])
+@employee_required
+def edit_relationship(item_id=None):
+    item = RelationshipToPatient.query.get(item_id) if item_id else None
+    form = RelationshipToPatientForm(obj=item)
+    if item:
+        form.is_legal_guardian.data = "1" if item.is_legal_guardian else "0"
+        form.is_power_of_attorney.data = "1" if item.is_power_of_attorney else "0"
+    if form.validate_on_submit():
+        record = item or RelationshipToPatient()
+        record.relationship = form.relationship.data.strip()
+        record.description = form.description.data.strip()
+        record.is_legal_guardian = form.is_legal_guardian.data == "1"
+        record.is_power_of_attorney = form.is_power_of_attorney.data == "1"
+        if not item:
+            db.session.add(record)
+        db.session.commit()
+        flash("Relationship saved.", "success")
+        return redirect(url_for("entities.list_relationships"))
+    return render_template(
+        "staff/entities/relationship_form.html",
+        form=form,
+        title="Edit Relationship" if item else "New Relationship",
     )
