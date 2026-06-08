@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% from "staff/_macros.html" import flash_messages %}
 
-{% block title %}Encounters | StartHere Patient Advocacy{% endblock %}
+{% block title %}Visits | StartHere Patient Advocacy{% endblock %}
 
 {% block content %}
 <section class="page-header">
   <div class="container page-header-row">
     <div>
-      <h1>Encounters</h1>
-      <p>Search, view, and manage patient encounters and notes.</p>
+      <h1>Visits</h1>
+      <p>Search, view, and manage patient visits and notes.</p>
     </div>
-    <a href="{{ url_for('encounters.new_encounter') }}" class="btn btn-solid">New Encounter</a>
+    <a href="{{ url_for('encounters.new_encounter') }}" class="btn btn-solid">New Visit</a>
   </div>
 </section>
 
@@ -43,7 +43,7 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>Visit #</th>
             <th>Patient</th>
             <th>Service</th>
             <th>Status</th>
@@ -68,7 +68,7 @@
       </table>
     </div>
     {% else %}
-    <p class="empty-state">No encounters found. <a href="{{ url_for('encounters.new_encounter') }}">Create one</a>.</p>
+    <p class="empty-state">No visits found. <a href="{{ url_for('encounters.new_encounter') }}">Create one</a>.</p>
     {% endif %}
   </div>
 </section>

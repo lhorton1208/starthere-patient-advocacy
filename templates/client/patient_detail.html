@@ -36,7 +36,7 @@
           </dd>
           {% if patient.mood %}<dt>Mood</dt><dd>{{ patient.mood }}</dd>{% endif %}
           {% if patient.mental_state %}<dt>Mental State</dt><dd>{{ patient.mental_state }}</dd>{% endif %}
-          <dt>Encounters</dt><dd>{{ patient.encounters.count() }}</dd>
+          <dt>Visits</dt><dd>{{ patient.encounters.count() }}</dd>
         </dl>
       </div>
       {% if patient.intake_notes %}

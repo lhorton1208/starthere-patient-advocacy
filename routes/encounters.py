@@ -1,8 +1,14 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from auth import employee_required
 from config import SERVICE_LABELS
-from forms import EncounterForm, EncounterSearchForm, NoteForm, empty_select
+from forms import (
+    EncounterForm,
+    EncounterSearchForm,
+    NoteForm,
+    VisitNoteForm,
+    empty_select,
+)
 from models import (
     Advocate,
     Encounter,
@@ -25,6 +31,10 @@ def _parse_datetime(value):
         return datetime.fromisoformat(value.strip())
     except ValueError:
         return None
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
 
 
 def _populate_encounter_form(form, encounter=None):
@@ -67,6 +77,32 @@ def _populate_encounter_form(form, encounter=None):
         )
 
 
+def _populate_visit_note_form(form, note=None):
+    visits = Encounter.query.join(
+        Patient, Encounter.patient_id == Patient.id
+    ).order_by(Encounter.id.desc()).all()
+    patients = Patient.query.order_by(Patient.last_name, Patient.first_name).all()
+    advocates = Advocate.query.order_by(Advocate.name).all()
+
+    form.visit_number.choices = [(0, "Select visit...")] + [
+        (v.id, f"Visit #{v.id} — {v.patient.full_name}") for v in visits
+    ]
+    form.patient_id.choices = empty_select("patient") + [
+        (p.id, f"{p.id} — {p.full_name}") for p in patients
+    ]
+    form.advocate_id.choices = [(0, "Select advocate...")] + [
+        (a.id, a.name) for a in advocates
+    ]
+
+    if note:
+        form.visit_number.data = note.encounter_id or 0
+        form.patient_id.data = note.patient_id
+        form.advocate_id.data = note.advocate_id or 0
+        form.internal_only.data = note.internal_only
+        form.description.data = note.description
+        form.note_text.data = note.note_text or note.content
+
+
 def _save_encounter_from_form(form, encounter=None):
     encounter = encounter or Encounter()
     encounter.patient_id = form.patient_id.data
@@ -83,6 +119,29 @@ def _save_encounter_from_form(form, encounter=None):
         db.session.add(encounter)
     db.session.commit()
     return encounter
+
+
+def _save_visit_note_from_form(form, note=None):
+    note = note or Note()
+    visit_id = form.visit_number.data
+    note.encounter_id = visit_id if visit_id else None
+    note.patient_id = form.patient_id.data
+    note.advocate_id = form.advocate_id.data or None
+    note.internal_only = bool(form.internal_only.data)
+    note.description = (form.description.data or "").strip() or None
+    body = form.note_text.data.strip()
+    note.note_text = body
+    note.content = body
+    if not note.note_datetime:
+        note.note_datetime = _utcnow()
+    if visit_id and not note.patient_id:
+        visit = Encounter.query.get(visit_id)
+        if visit:
+            note.patient_id = visit.patient_id
+    if not note.id:
+        db.session.add(note)
+    db.session.commit()
+    return note
 
 
 @encounters_bp.route("/")
@@ -120,9 +179,64 @@ def new_encounter():
     _populate_encounter_form(form)
     if form.validate_on_submit():
         encounter = _save_encounter_from_form(form)
-        flash("Encounter created successfully.", "success")
+        flash("Visit created successfully.", "success")
         return redirect(url_for("encounters.view_encounter", encounter_id=encounter.id))
-    return render_template("staff/encounters/form.html", form=form, title="New Encounter")
+    return render_template("staff/encounters/form.html", form=form, title="New Visit")
+
+
+@encounters_bp.route("/notes")
+@employee_required
+def list_notes():
+    notes = (
+        Note.query.outerjoin(Encounter, Note.encounter_id == Encounter.id)
+        .outerjoin(Patient, Note.patient_id == Patient.id)
+        .order_by(Note.created_at.desc())
+        .all()
+    )
+    return render_template("staff/encounters/notes_list.html", notes=notes)
+
+
+@encounters_bp.route("/notes/new", methods=["GET", "POST"])
+@employee_required
+def new_visit_note():
+    form = VisitNoteForm()
+    _populate_visit_note_form(form)
+    preselect_visit = request.args.get("visit_number", type=int)
+    preselect_patient = request.args.get("patient_id", type=int)
+    if preselect_visit:
+        form.visit_number.data = preselect_visit
+    if preselect_patient:
+        form.patient_id.data = preselect_patient
+
+    if form.validate_on_submit():
+        note = _save_visit_note_from_form(form)
+        flash("Note saved successfully.", "success")
+        return redirect(url_for("encounters.edit_visit_note", note_id=note.id))
+    return render_template(
+        "staff/encounters/note_record_form.html",
+        form=form,
+        note=None,
+        title="New Note",
+    )
+
+
+@encounters_bp.route("/notes/<int:note_id>/edit", methods=["GET", "POST"])
+@employee_required
+def edit_visit_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    form = VisitNoteForm(obj=note)
+    _populate_visit_note_form(form, note)
+
+    if form.validate_on_submit():
+        _save_visit_note_from_form(form, note)
+        flash("Note updated successfully.", "success")
+        return redirect(url_for("encounters.edit_visit_note", note_id=note.id))
+    return render_template(
+        "staff/encounters/note_record_form.html",
+        form=form,
+        note=note,
+        title=f"Edit Note #{note.id}",
+    )
 
 
 @encounters_bp.route("/<int:encounter_id>")
@@ -146,12 +260,12 @@ def edit_encounter(encounter_id):
     _populate_encounter_form(form, encounter)
     if form.validate_on_submit():
         _save_encounter_from_form(form, encounter)
-        flash("Encounter updated successfully.", "success")
+        flash("Visit updated successfully.", "success")
         return redirect(url_for("encounters.view_encounter", encounter_id=encounter.id))
     return render_template(
         "staff/encounters/form.html",
         form=form,
-        title=f"Edit Encounter #{encounter.id}",
+        title=f"Edit Visit #{encounter.id}",
         encounter=encounter,
     )
 
@@ -162,10 +276,15 @@ def new_note(encounter_id):
     encounter = Encounter.query.get_or_404(encounter_id)
     form = NoteForm()
     if form.validate_on_submit():
+        body = form.content.data.strip()
         note = Note(
             encounter_id=encounter.id,
-            content=form.content.data.strip(),
+            patient_id=encounter.patient_id,
+            advocate_id=encounter.advocate_id,
+            content=body,
+            note_text=body,
             author=(form.author.data or "").strip() or None,
+            note_datetime=_utcnow(),
         )
         db.session.add(note)
         db.session.commit()

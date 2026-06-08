@@ -89,6 +89,7 @@ NEW_COLUMNS = {
         "description": "TEXT",
         "note_text": "TEXT",
         "note_datetime": "TIMESTAMP",
+        "internal_only": "INTEGER DEFAULT 0",
     },
     "accounts": {
         "billing_address": "VARCHAR(255)",

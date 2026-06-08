@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% from "staff/_macros.html" import flash_messages, render_form_field %}
 
-{% block title %}Add Note | Encounter #{{ encounter.id }}{% endblock %}
+{% block title %}Add Note | Visit #{{ encounter.id }}{% endblock %}
 
 {% block content %}
 <section class="page-header">
   <div class="container">
     <h1>Add Note</h1>
-    <p>Encounter #{{ encounter.id }} — {{ encounter.patient.full_name }}</p>
+    <p>Visit #{{ encounter.id }} — {{ encounter.patient.full_name }}</p>
   </div>
 </section>
 

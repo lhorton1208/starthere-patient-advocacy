@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Notes | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>Notes</h1>
+      <p>View and manage visit notes.</p>
+    </div>
+    <a href="{{ url_for('encounters.new_visit_note') }}" class="btn btn-solid">New Note</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Note ID</th>
+            <th>Visit #</th>
+            <th>Patient</th>
+            <th>Advocate</th>
+            <th>Internal Only</th>
+            <th>Description</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for note in notes %}
+          <tr>
+            <td>{{ note.id }}</td>
+            <td>{% if note.encounter_id %}<a href="{{ url_for('encounters.view_encounter', encounter_id=note.encounter_id) }}">#{{ note.encounter_id }}</a>{% else %}—{% endif %}</td>
+            <td>
+              {% if note.patient %}
+              {{ note.patient.id }} — {{ note.patient.full_name }}
+              {% else %}—{% endif %}
+            </td>
+            <td>{{ note.advocate.name if note.advocate else '—' }}</td>
+            <td>{{ 'Yes' if note.internal_only else 'No' }}</td>
+            <td>{{ note.description or '—' }}</td>
+            <td><a href="{{ url_for('encounters.edit_visit_note', note_id=note.id) }}">Edit</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty-state">No notes yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

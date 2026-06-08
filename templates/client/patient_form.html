@@ -55,7 +55,7 @@
         method="post"
         action="{{ url_for('client_patient.delete_patient', patient_id=patient.id) }}"
         class="delete-form"
-        onsubmit="return confirm('Permanently delete {{ patient.full_name }} and related encounters? This cannot be undone.');"
+        onsubmit="return confirm('Permanently delete {{ patient.full_name }} and related visits? This cannot be undone.');"
       >
         {{ delete_form.hidden_tag() }}
         <button type="submit" class="btn btn-danger">Delete Patient</button>

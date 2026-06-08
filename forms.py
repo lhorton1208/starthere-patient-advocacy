@@ -2,6 +2,7 @@ from datetime import date
 
 from flask_wtf import FlaskForm
 from wtforms import (
+    BooleanField,
     DateField,
     DecimalField,
     EmailField,
@@ -93,6 +94,31 @@ class NoteForm(FlaskForm):
         validators=[DataRequired(), Length(max=5000)],
     )
     author = StringField("Author", validators=[Optional(), Length(max=200)])
+
+
+class VisitNoteForm(FlaskForm):
+    visit_number = SelectField(
+        "Visit Number",
+        coerce=nullable_int,
+        validators=[Optional()],
+    )
+    patient_id = SelectField(
+        "Patient ID / Name",
+        coerce=int,
+        validators=[DataRequired()],
+    )
+    advocate_id = SelectField(
+        "Advocate Name",
+        coerce=nullable_int,
+        validators=[Optional()],
+    )
+    internal_only = BooleanField("Internal Only", default=False)
+    description = StringField("Description", validators=[Optional(), Length(max=255)])
+    note_text = TextAreaField(
+        "Note",
+        validators=[DataRequired()],
+        render_kw={"rows": 14, "placeholder": "Enter note text..."},
+    )
 
 
 class EncounterSearchForm(FlaskForm):
@@ -299,7 +325,7 @@ class RelationshipToPatientForm(FlaskForm):
 
 class TimeCardForm(FlaskForm):
     advocate_id = SelectField("Advocate", coerce=int, validators=[DataRequired()])
-    encounter_id = SelectField("Encounter", coerce=nullable_int, validators=[Optional()])
+    encounter_id = SelectField("Visit", coerce=nullable_int, validators=[Optional()])
     work_date = DateField("Work Date", validators=[DataRequired()], default=date.today)
     hours = DecimalField(
         "Hours",

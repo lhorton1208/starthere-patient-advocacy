@@ -129,7 +129,7 @@ def new_billing(account_id):
     notes = _patient_notes_for_account(account)
     if not notes:
         flash(
-            "This account needs a linked patient with encounter notes before billing can be added.",
+            "This account needs a linked patient with visit notes before billing can be added.",
             "error",
         )
         return redirect(url_for("billing.view_account", account_id=account.id))

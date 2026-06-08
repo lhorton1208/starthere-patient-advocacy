@@ -7,7 +7,7 @@
 <section class="page-header">
   <div class="container">
     <h1>{{ title }}</h1>
-    <p>Record encounter details and link to patient, advocate, and facility.</p>
+    <p>Record visit details and link to patient, advocate, and facility.</p>
   </div>
 </section>
 
@@ -32,7 +32,7 @@
 
         <p class="form-note">Use ISO format for dates, e.g. 2026-05-24T14:30</p>
 
-        <button type="submit" class="btn btn-solid">Save Encounter</button>
+        <button type="submit" class="btn btn-solid">Save Visit</button>
         {% if encounter %}
         <a href="{{ url_for('encounters.view_encounter', encounter_id=encounter.id) }}" class="btn btn-secondary">Cancel</a>
         {% else %}

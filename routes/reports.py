@@ -38,7 +38,7 @@ def report_encounters():
         "staff/reports/encounters.html",
         rows=rows,
         service_labels=SERVICE_LABELS,
-        title="Encounters Report",
+        title="Visits Report",
     )
 
 

@@ -343,6 +343,7 @@ class Note(db.Model):
     content = db.Column(db.Text, nullable=False, default="")
     description = db.Column(db.Text)
     note_text = db.Column(db.Text)
+    internal_only = db.Column(db.Boolean, nullable=False, default=False)
     author = db.Column(db.String(200))
     note_datetime = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)

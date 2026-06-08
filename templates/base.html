@@ -54,7 +54,7 @@
             Reports <span class="chevron">&#9660;</span>
           </a>
           <div class="dropdown">
-            <a href="{{ url_for('reports.report_encounters') }}">Encounters</a>
+            <a href="{{ url_for('reports.report_encounters') }}">Visits</a>
             <a href="{{ url_for('reports.report_patients') }}">Patients</a>
             <a href="{{ url_for('reports.report_advocates') }}">Advocates</a>
             <a href="{{ url_for('reports.report_time_cards') }}">Time Cards</a>
@@ -86,11 +86,12 @@
 
         <div class="nav-item">
           <a href="#" class="nav-link {% if request.path.startswith('/encounters') %}active{% endif %}">
-            Encounters <span class="chevron">&#9660;</span>
+            Visits <span class="chevron">&#9660;</span>
           </a>
           <div class="dropdown">
-            <a href="{{ url_for('encounters.list_encounters') }}">View Encounters</a>
-            <a href="{{ url_for('encounters.new_encounter') }}">New Encounter</a>
+            <a href="{{ url_for('encounters.list_encounters') }}">View Visits</a>
+            <a href="{{ url_for('encounters.new_encounter') }}">New Visit</a>
+            <a href="{{ url_for('encounters.list_notes') }}">Notes</a>
           </div>
         </div>
 
@@ -145,7 +146,7 @@
         <div>
           <h4>Employee Tools</h4>
           <ul>
-            <li><a href="{{ url_for('encounters.list_encounters') }}">Encounters</a></li>
+            <li><a href="{{ url_for('encounters.list_encounters') }}">Visits</a></li>
             <li><a href="{{ url_for('billing.list_accounts') }}">Accounts &amp; Billing</a></li>
             <li><a href="{{ url_for('reports.report_encounters') }}">Reports</a></li>
             <li><a href="{{ url_for('entities.list_hospitals') }}">Add/Edit Entities</a></li>

@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 {% from "staff/_macros.html" import flash_messages %}
 
-{% block title %}Encounter #{{ encounter.id }} | StartHere Patient Advocacy{% endblock %}
+{% block title %}Visit #{{ encounter.id }} | StartHere Patient Advocacy{% endblock %}
 
 {% block content %}
 <section class="page-header">
   <div class="container page-header-row">
     <div>
-      <h1>Encounter #{{ encounter.id }}</h1>
+      <h1>Visit #{{ encounter.id }}</h1>
       <p>{{ encounter.patient.full_name }} — {{ service_labels.get(encounter.encounter_type, encounter.encounter_type) }}</p>
     </div>
     <div class="page-actions">
       <a href="{{ url_for('encounters.edit_encounter', encounter_id=encounter.id) }}" class="btn btn-solid">Edit</a>
-      <a href="{{ url_for('encounters.new_note', encounter_id=encounter.id) }}" class="btn btn-secondary">Add Note</a>
+      <a href="{{ url_for('encounters.new_visit_note', visit_number=encounter.id, patient_id=encounter.patient_id) }}" class="btn btn-secondary">Add Note</a>
     </div>
   </div>
 </section>
@@ -24,7 +24,7 @@
 
     <div class="detail-grid">
       <div class="detail-card">
-        <h2>Encounter Details</h2>
+        <h2>Visit Details</h2>
         <dl>
           <dt>Patient</dt><dd>{{ encounter.patient.full_name }}</dd>
           <dt>Status</dt><dd><span class="badge badge-{{ encounter.status }}">{{ encounter.status }}</span></dd>
@@ -46,19 +46,23 @@
           {% for note in notes %}
           <div class="note-item">
             <div class="note-meta">
-              {% if note.author %}<strong>{{ note.author }}</strong> · {% endif %}
-              {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}
+              Note #{{ note.id }}
+              {% if note.internal_only %} · <em>Internal only</em>{% endif %}
+              {% if note.author %} · <strong>{{ note.author }}</strong>{% endif %}
+              · {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}
+              · <a href="{{ url_for('encounters.edit_visit_note', note_id=note.id) }}">Edit</a>
             </div>
-            <p>{{ note.content }}</p>
+            {% if note.description %}<p><strong>{{ note.description }}</strong></p>{% endif %}
+            <p>{{ note.body }}</p>
           </div>
           {% endfor %}
         {% else %}
-        <p class="empty-state">No notes yet. <a href="{{ url_for('encounters.new_note', encounter_id=encounter.id) }}">Add a note</a>.</p>
+        <p class="empty-state">No notes yet. <a href="{{ url_for('encounters.new_visit_note', visit_number=encounter.id, patient_id=encounter.patient_id) }}">Add a note</a>.</p>
         {% endif %}
       </div>
     </div>
 
-    <a href="{{ url_for('encounters.list_encounters') }}" class="back-link">&larr; Back to encounters</a>
+    <a href="{{ url_for('encounters.list_encounters') }}" class="back-link">&larr; Back to visits</a>
   </div>
 </section>
 {% endblock %}
