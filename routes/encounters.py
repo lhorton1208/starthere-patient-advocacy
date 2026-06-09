@@ -20,6 +20,7 @@ from models import (
     db,
 )
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from sqlalchemy.exc import IntegrityError
 
 encounters_bp = Blueprint("encounters", __name__, url_prefix="/encounters")
 
@@ -77,6 +78,15 @@ def _populate_encounter_form(form, encounter=None):
         )
 
 
+def _choice_ids(choices):
+    return {choice[0] for choice in choices}
+
+
+def _append_choice(choices, value, label):
+    if value and value not in _choice_ids(choices):
+        choices.append((value, label))
+
+
 def _populate_visit_note_form(form, note=None):
     visits = Encounter.query.join(
         Patient, Encounter.patient_id == Patient.id
@@ -95,6 +105,25 @@ def _populate_visit_note_form(form, note=None):
     ]
 
     if note:
+        if note.encounter_id:
+            _append_choice(
+                form.visit_number.choices,
+                note.encounter_id,
+                f"Visit #{note.encounter_id}",
+            )
+        if note.patient_id:
+            patient = note.patient or Patient.query.get(note.patient_id)
+            label = (
+                f"{note.patient_id} — {patient.full_name}"
+                if patient
+                else f"{note.patient_id} — (removed)"
+            )
+            _append_choice(form.patient_id.choices, note.patient_id, label)
+        if note.advocate_id:
+            advocate = note.advocate or Advocate.query.get(note.advocate_id)
+            label = advocate.name if advocate else f"Advocate #{note.advocate_id}"
+            _append_choice(form.advocate_id.choices, note.advocate_id, label)
+
         form.visit_number.data = note.encounter_id or 0
         form.patient_id.data = note.patient_id
         form.advocate_id.data = note.advocate_id or 0
@@ -184,7 +213,7 @@ def new_encounter():
     return render_template("staff/encounters/form.html", form=form, title="New Visit")
 
 
-@encounters_bp.route("/notes")
+@encounters_bp.route("/notes", strict_slashes=False)
 @employee_required
 def list_notes():
     notes = (
@@ -196,7 +225,7 @@ def list_notes():
     return render_template("staff/encounters/notes_list.html", notes=notes)
 
 
-@encounters_bp.route("/notes/new", methods=["GET", "POST"])
+@encounters_bp.route("/notes/new", methods=["GET", "POST"], strict_slashes=False)
 @employee_required
 def new_visit_note():
     form = VisitNoteForm()
@@ -209,9 +238,17 @@ def new_visit_note():
         form.patient_id.data = preselect_patient
 
     if form.validate_on_submit():
-        note = _save_visit_note_from_form(form)
-        flash("Note saved successfully.", "success")
-        return redirect(url_for("encounters.edit_visit_note", note_id=note.id))
+        try:
+            note = _save_visit_note_from_form(form)
+        except IntegrityError:
+            db.session.rollback()
+            flash(
+                "Could not save the note. Check that the patient and visit are valid.",
+                "error",
+            )
+        else:
+            flash("Note saved successfully.", "success")
+            return redirect(url_for("encounters.edit_visit_note", note_id=note.id))
     return render_template(
         "staff/encounters/note_record_form.html",
         form=form,
@@ -220,7 +257,7 @@ def new_visit_note():
     )
 
 
-@encounters_bp.route("/notes/<int:note_id>/edit", methods=["GET", "POST"])
+@encounters_bp.route("/notes/<int:note_id>/edit", methods=["GET", "POST"], strict_slashes=False)
 @employee_required
 def edit_visit_note(note_id):
     note = Note.query.get_or_404(note_id)
@@ -228,9 +265,17 @@ def edit_visit_note(note_id):
     _populate_visit_note_form(form, note)
 
     if form.validate_on_submit():
-        _save_visit_note_from_form(form, note)
-        flash("Note updated successfully.", "success")
-        return redirect(url_for("encounters.edit_visit_note", note_id=note.id))
+        try:
+            _save_visit_note_from_form(form, note)
+        except IntegrityError:
+            db.session.rollback()
+            flash(
+                "Could not update the note. Check that the patient and visit are valid.",
+                "error",
+            )
+        else:
+            flash("Note updated successfully.", "success")
+            return redirect(url_for("encounters.edit_visit_note", note_id=note.id))
     return render_template(
         "staff/encounters/note_record_form.html",
         form=form,

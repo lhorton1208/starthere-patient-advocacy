@@ -269,6 +269,71 @@ def _backfill_names(inspector) -> None:
     db.session.commit()
 
 
+def _notes_encounter_id_nullable(inspector) -> bool:
+    if "notes" not in inspector.get_table_names():
+        return True
+    for col in inspector.get_columns("notes"):
+        if col["name"] == "encounter_id":
+            return bool(col.get("nullable", True))
+    return True
+
+
+def _relax_notes_encounter_nullable(inspector, *, is_pg: bool) -> None:
+    """Allow notes without a linked visit (matches VisitNoteForm optional visit field)."""
+    if _notes_encounter_id_nullable(inspector):
+        return
+    if is_pg:
+        db.session.execute(
+            text('ALTER TABLE notes ALTER COLUMN encounter_id DROP NOT NULL')
+        )
+        db.session.commit()
+        return
+
+    # SQLite: recreate table without NOT NULL on encounter_id.
+    db.session.execute(text("PRAGMA foreign_keys=OFF"))
+    db.session.execute(
+        text(
+            """
+            CREATE TABLE notes__nullable (
+                id INTEGER NOT NULL,
+                encounter_id INTEGER,
+                content TEXT NOT NULL,
+                author VARCHAR(200),
+                created_at DATETIME NOT NULL,
+                patient_id INTEGER,
+                advocate_id INTEGER,
+                description TEXT,
+                note_text TEXT,
+                note_datetime TIMESTAMP,
+                internal_only INTEGER DEFAULT 0,
+                PRIMARY KEY (id),
+                FOREIGN KEY(encounter_id) REFERENCES encounters (id)
+            )
+            """
+        )
+    )
+    db.session.execute(
+        text(
+            """
+            INSERT INTO notes__nullable (
+                id, encounter_id, content, author, created_at,
+                patient_id, advocate_id, description, note_text,
+                note_datetime, internal_only
+            )
+            SELECT
+                id, encounter_id, content, author, created_at,
+                patient_id, advocate_id, description, note_text,
+                note_datetime, internal_only
+            FROM notes
+            """
+        )
+    )
+    db.session.execute(text("DROP TABLE notes"))
+    db.session.execute(text("ALTER TABLE notes__nullable RENAME TO notes"))
+    db.session.execute(text("PRAGMA foreign_keys=ON"))
+    db.session.commit()
+
+
 def _backfill_notes() -> None:
     db.session.execute(
         text(
@@ -457,6 +522,8 @@ def run_migrations(app=None) -> None:
 
         _backfill_names(inspector)
         if "notes" in inspector.get_table_names():
+            _relax_notes_encounter_nullable(inspector, is_pg=is_pg)
+            inspector = inspect(engine)
             if is_pg:
                 try:
                     _backfill_notes()
