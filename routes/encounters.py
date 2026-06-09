@@ -216,12 +216,7 @@ def new_encounter():
 @encounters_bp.route("/notes", strict_slashes=False)
 @employee_required
 def list_notes():
-    notes = (
-        Note.query.outerjoin(Encounter, Note.encounter_id == Encounter.id)
-        .outerjoin(Patient, Note.patient_id == Patient.id)
-        .order_by(Note.created_at.desc())
-        .all()
-    )
+    notes = Note.query.order_by(Note.created_at.desc()).all()
     return render_template("staff/encounters/notes_list.html", notes=notes)
 
 

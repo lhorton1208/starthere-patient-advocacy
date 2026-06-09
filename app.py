@@ -94,8 +94,9 @@ def create_app(config_class=Config, *, run_migrate=True):
     return app
 
 
-# Gunicorn/Render entrypoint — migrations run in releaseCommand, not on web boot.
-app = create_app(run_migrate=False)
+# Gunicorn/Render entrypoint — run migrations on boot so schema stays current
+# even when Render pre-deploy hooks are missing or fail.
+app = create_app(run_migrate=os.environ.get("RUN_MIGRATE", "1") == "1")
 
 
 if __name__ == "__main__":

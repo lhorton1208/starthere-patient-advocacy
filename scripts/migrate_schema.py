@@ -121,7 +121,14 @@ def _column_exists(inspector, table: str, column: str) -> bool:
     return column in {c["name"] for c in inspector.get_columns(table)}
 
 
+def _migration_column_type(table: str, column: str, col_type: str, *, is_pg: bool) -> str:
+    if table == "notes" and column == "internal_only":
+        return "BOOLEAN DEFAULT FALSE" if is_pg else "INTEGER DEFAULT 0"
+    return col_type
+
+
 def _add_column(table: str, column: str, col_type: str, *, is_pg: bool = False) -> None:
+    col_type = _migration_column_type(table, column, col_type, is_pg=is_pg)
     if is_pg:
         stmt = (
             f'ALTER TABLE "{table}" ADD COLUMN IF NOT EXISTS "{column}" {col_type}'
