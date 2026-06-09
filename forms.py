@@ -121,6 +121,42 @@ class VisitNoteForm(FlaskForm):
     )
 
 
+class NotesReportForm(FlaskForm):
+    filter_by = SelectField(
+        "Filter By",
+        choices=[
+            ("all", "All notes"),
+            ("visit", "Visit ID"),
+            ("patient", "Patient ID"),
+            ("advocate", "Advocate"),
+        ],
+        default="all",
+    )
+    entity_id = SelectField(
+        "Selection",
+        coerce=nullable_int,
+        validators=[Optional()],
+        default=0,
+    )
+    internal_only = SelectField(
+        "Internal Only Notes",
+        choices=[
+            ("all", "Include all notes"),
+            ("exclude", "Exclude internal only"),
+            ("only", "Internal only"),
+        ],
+        default="all",
+    )
+    sort = SelectField(
+        "Order by Timestamp",
+        choices=[
+            ("desc", "Newest first"),
+            ("asc", "Oldest first"),
+        ],
+        default="desc",
+    )
+
+
 class EncounterSearchForm(FlaskForm):
     q = StringField("Search", validators=[Optional(), Length(max=200)])
     status = SelectField(

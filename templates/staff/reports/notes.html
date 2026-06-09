@@ -1,0 +1,87 @@
+{% extends "staff/reports/base_report.html" %}
+{% from "staff/_macros.html" import render_form_field %}
+
+{% block report_content %}
+<form method="get" class="search-bar" id="notes-report-form">
+  <div class="search-grid">
+    <div class="form-group">
+      {{ form.filter_by.label }}
+      {{ form.filter_by(id="filter_by") }}
+    </div>
+    <div class="form-group" id="entity-id-group"{% if form.filter_by.data == 'all' %} hidden{% endif %}>
+      {{ form.entity_id.label }}
+      {{ form.entity_id(id="entity_id") }}
+    </div>
+    <div class="form-group">
+      {{ form.internal_only.label }}
+      {{ form.internal_only(id="internal_only") }}
+    </div>
+    <div class="form-group">
+      {{ form.sort.label }}
+      {{ form.sort(id="sort") }}
+    </div>
+  </div>
+  <button type="submit" class="btn btn-solid">Run Report</button>
+  <a href="{{ url_for('reports.report_notes') }}" class="btn btn-secondary">Clear</a>
+</form>
+
+<p class="report-summary">{{ rows|length }} note{{ 's' if rows|length != 1 else '' }} found.</p>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Note ID</th>
+        <th>Timestamp</th>
+        <th>Visit #</th>
+        <th>Patient</th>
+        <th>Advocate</th>
+        <th>Internal Only</th>
+        <th>Description</th>
+        <th>Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for note in rows %}
+      <tr>
+        <td><a href="{{ url_for('encounters.edit_visit_note', note_id=note.id) }}">{{ note.id }}</a></td>
+        <td>{{ (note.note_datetime or note.created_at).strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          {% if note.encounter_id %}
+          <a href="{{ url_for('encounters.view_encounter', encounter_id=note.encounter_id) }}">#{{ note.encounter_id }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if note.patient %}
+          {{ note.patient.id }} — {{ note.patient.full_name }}
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ note.advocate.name if note.advocate else '—' }}</td>
+        <td>{{ 'Yes' if note.internal_only else 'No' }}</td>
+        <td>{{ note.description or '—' }}</td>
+        <td class="note-preview">
+          {% set body = note.body %}
+          {{ body[:120] + '...' if body|length > 120 else body }}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty-state">No notes match the selected filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+(function () {
+  var filterBy = document.getElementById("filter_by");
+  var entityGroup = document.getElementById("entity-id-group");
+  var form = document.getElementById("notes-report-form");
+  if (!filterBy || !entityGroup || !form) return;
+
+  filterBy.addEventListener("change", function () {
+    entityGroup.hidden = filterBy.value === "all";
+    form.submit();
+  });
+})();
+</script>
+{% endblock %}

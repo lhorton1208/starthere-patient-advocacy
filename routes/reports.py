@@ -2,10 +2,10 @@ import re
 
 from auth import employee_required
 from config import SERVICE_LABELS
-from forms import AdHocQueryForm
-from models import Advocate, Client, Encounter, Patient, TimeCard, db
-from flask import Blueprint, flash, render_template
-from sqlalchemy import text
+from forms import AdHocQueryForm, NotesReportForm
+from models import Advocate, Client, Encounter, Note, Patient, TimeCard, db
+from flask import Blueprint, flash, render_template, request
+from sqlalchemy import func, text
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/reports")
 
@@ -24,6 +24,63 @@ def _validate_select_only(sql: str):
     if ";" in cleaned:
         raise ValueError("Multiple statements are not allowed.")
     return cleaned
+
+
+def _populate_notes_report_form(form):
+    filter_by = form.filter_by.data or "all"
+    if filter_by == "visit":
+        visits = (
+            Encounter.query.join(Patient, Encounter.patient_id == Patient.id)
+            .order_by(Encounter.id.desc())
+            .all()
+        )
+        form.entity_id.choices = [(0, "All visits")] + [
+            (v.id, f"Visit #{v.id} — {v.patient.full_name}") for v in visits
+        ]
+    elif filter_by == "patient":
+        patients = Patient.query.order_by(Patient.last_name, Patient.first_name).all()
+        form.entity_id.choices = [(0, "All patients")] + [
+            (p.id, f"{p.id} — {p.full_name}") for p in patients
+        ]
+    elif filter_by == "advocate":
+        advocates = Advocate.query.order_by(Advocate.name).all()
+        form.entity_id.choices = [(0, "All advocates")] + [
+            (a.id, a.name) for a in advocates
+        ]
+    else:
+        form.entity_id.choices = [(0, "—")]
+
+    valid_ids = {choice[0] for choice in form.entity_id.choices}
+    if form.entity_id.data not in valid_ids:
+        form.entity_id.data = 0
+
+
+def _notes_report_rows(form):
+    timestamp = func.coalesce(Note.note_datetime, Note.created_at)
+    query = Note.query
+
+    filter_by = form.filter_by.data or "all"
+    entity_id = form.entity_id.data
+    if entity_id:
+        if filter_by == "visit":
+            query = query.filter(Note.encounter_id == entity_id)
+        elif filter_by == "patient":
+            query = query.filter(Note.patient_id == entity_id)
+        elif filter_by == "advocate":
+            query = query.filter(Note.advocate_id == entity_id)
+
+    internal_filter = form.internal_only.data or "all"
+    if internal_filter == "exclude":
+        query = query.filter(Note.internal_only.is_(False))
+    elif internal_filter == "only":
+        query = query.filter(Note.internal_only.is_(True))
+
+    if form.sort.data == "asc":
+        query = query.order_by(timestamp.asc(), Note.id.asc())
+    else:
+        query = query.order_by(timestamp.desc(), Note.id.desc())
+
+    return query.all()
 
 
 @reports_bp.route("/encounters")
@@ -80,6 +137,20 @@ def report_time_cards():
         "staff/reports/time_cards.html",
         rows=rows,
         title="Time Cards Report",
+    )
+
+
+@reports_bp.route("/notes")
+@employee_required
+def report_notes():
+    form = NotesReportForm(formdata=request.args)
+    _populate_notes_report_form(form)
+    rows = _notes_report_rows(form)
+    return render_template(
+        "staff/reports/notes.html",
+        form=form,
+        rows=rows,
+        title="Notes Report",
     )
 
 

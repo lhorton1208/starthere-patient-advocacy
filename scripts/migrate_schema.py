@@ -14,7 +14,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import inspect, text
 
-from app import create_app
 from models import db
 
 
@@ -503,7 +502,10 @@ def _ensure_accounts_have_client() -> None:
 
 
 def run_migrations(app=None) -> None:
-    app = app or create_app(run_migrate=False)
+    if app is None:
+        from app import create_app
+
+        app = create_app(run_migrate=False)
     with app.app_context():
         engine = db.engine
         inspector = inspect(engine)
