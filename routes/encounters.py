@@ -38,6 +38,32 @@ def _utcnow():
     return datetime.now(timezone.utc)
 
 
+def _choice_ids(choices):
+    return {choice[0] for choice in choices}
+
+
+def _append_choice(choices, value, label):
+    if value is not None and value not in _choice_ids(choices):
+        choices.append((value, label))
+
+
+def _advocate_choice_label(advocate_id):
+    advocate = Advocate.query.get(advocate_id)
+    if advocate:
+        suffix = "" if advocate.active else " (inactive)"
+        return f"{advocate.name}{suffix}"
+    return f"Advocate #{advocate_id}"
+
+
+def _ensure_advocate_in_choices(form, advocate_id):
+    if advocate_id:
+        _append_choice(
+            form.advocate_id.choices,
+            advocate_id,
+            _advocate_choice_label(advocate_id),
+        )
+
+
 def _populate_encounter_form(form, encounter=None):
     patients = Patient.query.order_by(Patient.last_name, Patient.first_name).all()
     advocates = Advocate.query.filter_by(active=True).order_by(Advocate.name).all()
@@ -56,35 +82,30 @@ def _populate_encounter_form(form, encounter=None):
     ]
 
     if encounter:
-        form.patient_id.data = encounter.patient_id
-        form.advocate_id.data = encounter.advocate_id or 0
-        form.provider_id.data = encounter.provider_id or 0
-        form.hospital_id.data = encounter.hospital_id or 0
-        form.home_health_facility_id.data = encounter.home_health_facility_id or 0
-        form.encounter_type.data = encounter.encounter_type
-        form.status.data = encounter.status
-        form.scheduled_at.data = (
-            encounter.scheduled_at.isoformat(timespec="minutes")
-            if encounter.scheduled_at
-            else ""
-        )
-        form.started_at.data = (
-            encounter.started_at.isoformat(timespec="minutes")
-            if encounter.started_at
-            else ""
-        )
-        form.ended_at.data = (
-            encounter.ended_at.isoformat(timespec="minutes") if encounter.ended_at else ""
-        )
-
-
-def _choice_ids(choices):
-    return {choice[0] for choice in choices}
-
-
-def _append_choice(choices, value, label):
-    if value and value not in _choice_ids(choices):
-        choices.append((value, label))
+        _ensure_advocate_in_choices(form, encounter.advocate_id)
+        if not form.is_submitted():
+            form.patient_id.data = encounter.patient_id
+            form.advocate_id.data = encounter.advocate_id or 0
+            form.provider_id.data = encounter.provider_id or 0
+            form.hospital_id.data = encounter.hospital_id or 0
+            form.home_health_facility_id.data = encounter.home_health_facility_id or 0
+            form.encounter_type.data = encounter.encounter_type
+            form.status.data = encounter.status
+            form.scheduled_at.data = (
+                encounter.scheduled_at.isoformat(timespec="minutes")
+                if encounter.scheduled_at
+                else ""
+            )
+            form.started_at.data = (
+                encounter.started_at.isoformat(timespec="minutes")
+                if encounter.started_at
+                else ""
+            )
+            form.ended_at.data = (
+                encounter.ended_at.isoformat(timespec="minutes") if encounter.ended_at else ""
+            )
+        else:
+            _ensure_advocate_in_choices(form, form.advocate_id.data)
 
 
 def _populate_visit_note_form(form, note=None):
@@ -101,10 +122,11 @@ def _populate_visit_note_form(form, note=None):
         (p.id, f"{p.id} — {p.full_name}") for p in patients
     ]
     form.advocate_id.choices = [(0, "Select advocate...")] + [
-        (a.id, a.name) for a in advocates
+        (a.id, f"{a.name}{'' if a.active else ' (inactive)'}") for a in advocates
     ]
 
-    if note:
+    visit_id = form.visit_number.data if form.is_submitted() else None
+    if note and not form.is_submitted():
         if note.encounter_id:
             _append_choice(
                 form.visit_number.choices,
@@ -119,10 +141,7 @@ def _populate_visit_note_form(form, note=None):
                 else f"{note.patient_id} — (removed)"
             )
             _append_choice(form.patient_id.choices, note.patient_id, label)
-        if note.advocate_id:
-            advocate = note.advocate or Advocate.query.get(note.advocate_id)
-            label = advocate.name if advocate else f"Advocate #{note.advocate_id}"
-            _append_choice(form.advocate_id.choices, note.advocate_id, label)
+        _ensure_advocate_in_choices(form, note.advocate_id)
 
         form.visit_number.data = note.encounter_id or 0
         form.patient_id.data = note.patient_id
@@ -130,6 +149,15 @@ def _populate_visit_note_form(form, note=None):
         form.internal_only.data = note.internal_only
         form.description.data = note.description
         form.note_text.data = note.note_text or note.content
+        visit_id = note.encounter_id or visit_id
+
+    if visit_id:
+        visit = Encounter.query.get(visit_id)
+        if visit and visit.advocate_id:
+            _ensure_advocate_in_choices(form, visit.advocate_id)
+
+    if form.is_submitted():
+        _ensure_advocate_in_choices(form, form.advocate_id.data)
 
 
 def _save_encounter_from_form(form, encounter=None):
@@ -224,13 +252,21 @@ def list_notes():
 @employee_required
 def new_visit_note():
     form = VisitNoteForm()
-    _populate_visit_note_form(form)
     preselect_visit = request.args.get("visit_number", type=int)
     preselect_patient = request.args.get("patient_id", type=int)
-    if preselect_visit:
-        form.visit_number.data = preselect_visit
-    if preselect_patient:
-        form.patient_id.data = preselect_patient
+    if not form.is_submitted():
+        if preselect_visit:
+            form.visit_number.data = preselect_visit
+        if preselect_patient:
+            form.patient_id.data = preselect_patient
+        if preselect_visit:
+            visit = Encounter.query.get(preselect_visit)
+            if visit:
+                if visit.advocate_id and not form.advocate_id.data:
+                    form.advocate_id.data = visit.advocate_id
+                if visit.patient_id and not preselect_patient:
+                    form.patient_id.data = visit.patient_id
+    _populate_visit_note_form(form)
 
     if form.validate_on_submit():
         try:
