@@ -336,6 +336,19 @@ a:hover {
   font-size: 0.9rem;
 }
 
+.required-marker {
+  color: #b91c1c;
+  margin-left: 0.15rem;
+  font-weight: 700;
+}
+
+.form-group.is-invalid input,
+.form-group.is-invalid textarea,
+.form-group.is-invalid select {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.15);
+}
+
 .form-group input,
 .form-group textarea,
 .form-group select {

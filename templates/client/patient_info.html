@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "staff/_macros.html" import render_form_field %}
 
 {% block title %}Patient Info | StartHere Patient Advocacy{% endblock %}
 
@@ -29,61 +30,13 @@
       <form method="post" novalidate>
         {{ form.hidden_tag() }}
 
-        <div class="form-group">
-          {{ form.patient_name.label }}
-          {{ form.patient_name(id="patient_name") }}
-          {% for error in form.patient_name.errors %}
-          <span class="field-error">{{ error }}</span>
-          {% endfor %}
-        </div>
-
-        <div class="form-group">
-          {{ form.contact_name.label }}
-          {{ form.contact_name(id="contact_name") }}
-          {% for error in form.contact_name.errors %}
-          <span class="field-error">{{ error }}</span>
-          {% endfor %}
-        </div>
-
-        <div class="form-group">
-          {{ form.phone.label }}
-          {{ form.phone(id="phone") }}
-          {% for error in form.phone.errors %}
-          <span class="field-error">{{ error }}</span>
-          {% endfor %}
-        </div>
-
-        <div class="form-group">
-          {{ form.email.label }}
-          {{ form.email(id="email") }}
-          {% for error in form.email.errors %}
-          <span class="field-error">{{ error }}</span>
-          {% endfor %}
-        </div>
-
-        <div class="form-group">
-          {{ form.service.label }}
-          {{ form.service(id="service") }}
-          {% for error in form.service.errors %}
-          <span class="field-error">{{ error }}</span>
-          {% endfor %}
-        </div>
-
-        <div class="form-group">
-          {{ form.hospital.label }}
-          {{ form.hospital(id="hospital") }}
-          {% for error in form.hospital.errors %}
-          <span class="field-error">{{ error }}</span>
-          {% endfor %}
-        </div>
-
-        <div class="form-group">
-          {{ form.notes.label }}
-          {{ form.notes(id="notes", placeholder="Describe your situation, timeline, and any immediate concerns.") }}
-          {% for error in form.notes.errors %}
-          <span class="field-error">{{ error }}</span>
-          {% endfor %}
-        </div>
+        {{ render_form_field(form.patient_name) }}
+        {{ render_form_field(form.contact_name) }}
+        {{ render_form_field(form.phone) }}
+        {{ render_form_field(form.email) }}
+        {{ render_form_field(form.service) }}
+        {{ render_form_field(form.hospital) }}
+        {{ render_form_field(form.notes) }}
 
         <button type="submit" class="btn btn-primary">Submit Request</button>
 

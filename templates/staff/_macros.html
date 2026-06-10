@@ -1,7 +1,14 @@
 {% macro render_form_field(field) %}
-<div class="form-group">
-  {{ field.label }}
-  {{ field() }}
+<div class="form-group{% if field.flags.required %} is-required{% endif %}{% if field.errors %} is-invalid{% endif %}">
+  <label class="field-label" for="{{ field.id }}">
+    {{ field.label.text }}
+    {%- if field.flags.required -%}<span class="required-marker" aria-hidden="true">*</span>{%- endif -%}
+  </label>
+  {% if field.flags.required %}
+    {{ field(required=true, data_required="true") }}
+  {% else %}
+    {{ field() }}
+  {% endif %}
   {% for error in field.errors %}
   <span class="field-error">{{ error }}</span>
   {% endfor %}
