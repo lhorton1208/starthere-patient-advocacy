@@ -14,8 +14,10 @@
   <div class="container">
     <p>
       Our advocates are ready to help you navigate emergency care, hospital stays,
-      discharge planning, and follow-up support. Contact a team member below or
-      <a href="{{ url_for('client_patient.service_request') }}">submit a patient information request</a>.
+      discharge planning, and follow-up support. Contact a team member below,
+      <a href="{{ url_for('client_patient.service_request') }}">submit a patient information request</a>,
+      or email <a href="mailto:{{ info_email }}">{{ info_email }}</a> for additional
+      information about our services.
     </p>
 
     <div class="contact-grid">

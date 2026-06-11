@@ -13,8 +13,34 @@
   </div>
 </section>
 
-{% if advocates %}
 <section class="content-section">
+  <div class="container mission-vision">
+    <div class="mission-vision-block">
+      <h2>Mission</h2>
+      <p>
+        To provide compassionate, professional advocacy and care coordination services
+        that empower seniors and support families through every stage of healthcare
+        and aging-related transitions.
+      </p>
+      <p class="mission-disclaimer">
+        StartHere Patient Advocacy is an independent advocacy practice. We are not a
+        medical provider and do not offer clinical diagnoses, treatment, or nursing
+        services.
+      </p>
+    </div>
+    <div class="mission-vision-block">
+      <h2>Vision</h2>
+      <p>
+        To become the Triangle's most trusted resource for senior healthcare navigation,
+        advocacy, and aging-related support. Where every patient and family feels
+        informed, empowered, and never alone.
+      </p>
+    </div>
+  </div>
+</section>
+
+{% if advocates %}
+<section class="content-section content-section-alt">
   <div class="container advocate-profiles">
     {% for advocate in advocates %}
     {% include "_advocate_profile.html" %}
@@ -23,12 +49,14 @@
 </section>
 {% endif %}
 
-<section class="content-section content-section-alt">
+<section class="content-section">
   <div class="container">
     <p>
       Ready to get support?
-      <a href="{{ url_for('client_patient.service_request') }}">Submit a patient information request</a>
-      or <a href="{{ url_for('contacts') }}">contact our team</a>.
+      <a href="{{ url_for('client_patient.service_request') }}">Submit a patient information request</a>,
+      <a href="{{ url_for('contacts') }}">contact our team</a>,
+      or email <a href="mailto:{{ info_email }}">{{ info_email }}</a> for additional
+      information about our services.
     </p>
   </div>
 </section>

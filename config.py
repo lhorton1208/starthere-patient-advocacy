@@ -20,24 +20,11 @@ class Config:
 
 GEORGETTE_BIO = [
     (
-        "With more than 20 years of nursing experience across inpatient, outpatient, "
-        "home health, nursing home, and case management settings, I have built my "
-        "career around one unwavering belief: that patients and their families deserve "
-        "to be at the center of every healthcare decision."
-    ),
-    (
         "Throughout my clinical career as a Registered Nurse, I approached each "
-        "patient relationship as a collaboration — meeting people where they were, "
+        "patient relationship as a collaboration, meeting people where they were, "
         "leading with empathy, and ensuring that compassion was never a secondary "
         "consideration. That commitment to patient-centered care is what drew me to "
         "nursing, and it is what drives the work I do today."
-    ),
-    (
-        "Healthcare has changed dramatically. Artificial intelligence now schedules "
-        "appointments. Patient portals have replaced phone calls. For many patients, "
-        "particularly older adults and those managing complex conditions, this shifting "
-        "landscape is disorienting and isolating. At StartHere, I serve as your guide, "
-        "your voice, and your advocate, so that you are never left behind."
     ),
 ]
 
@@ -85,13 +72,19 @@ LARRY_BIO = [
     ),
 ]
 
+INFO_EMAIL = os.environ.get(
+    "CONTACT_INFO_EMAIL", "info@startherepatientadvocacy.com"
+)
+
 CONTACTS = [
     {
         "name": "Dawn Criswell",
         "slug": "dawn-criswell",
         "credentials": "MS, RHIA, FAHIMA",
         "title": "Founder & Principal, StartHere Patient Advocacy LLC",
-        "email": os.environ.get("CONTACT_DAWN_EMAIL", ""),
+        "email": os.environ.get(
+            "CONTACT_DAWN_EMAIL", "Dawn.Criswell@startherepatientadvocacy.com"
+        ),
         "phone": os.environ.get("CONTACT_DAWN_PHONE", ""),
         "image": "dawn-criswell.png",
         "bio": DAWN_BIO,
@@ -102,7 +95,10 @@ CONTACTS = [
         "legacy_name": "Georgette Johnson",
         "credentials": "RN, MHA",
         "title": "Founder & Principal, StartHere Patient Advocacy LLC",
-        "email": os.environ.get("CONTACT_GEORGETTE_EMAIL", ""),
+        "email": os.environ.get(
+            "CONTACT_GEORGETTE_EMAIL",
+            "Georgette.Darnell@startherepatientadvocacy.com",
+        ),
         "phone": os.environ.get("CONTACT_GEORGETTE_PHONE", ""),
         "image": "georgette-darnell.png",
         "bio": GEORGETTE_BIO,
@@ -111,7 +107,9 @@ CONTACTS = [
         "name": "Larry Horton",
         "slug": "larry-horton",
         "title": "Founder & Principal, StartHere Patient Advocacy LLC",
-        "email": os.environ.get("CONTACT_LARRY_EMAIL", ""),
+        "email": os.environ.get(
+            "CONTACT_LARRY_EMAIL", "Larry.Horton@startherepatientadvocacy.com"
+        ),
         "phone": os.environ.get("CONTACT_LARRY_PHONE", ""),
         "image": "larry-horton.png",
         "bio": LARRY_BIO,
