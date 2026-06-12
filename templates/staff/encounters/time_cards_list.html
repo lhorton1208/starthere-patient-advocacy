@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Time Cards | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>Time Cards</h1>
+      <p>Record and manage advocate time spent on visits.</p>
+    </div>
+    <a href="{{ url_for('encounters.new_time_card') }}" class="btn btn-solid">New Time Card</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Advocate</th>
+            <th>Visit ID</th>
+            <th>Work Date</th>
+            <th>Hours</th>
+            <th>Description</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in time_cards %}
+          <tr>
+            <td>{{ row.id }}</td>
+            <td>{{ row.advocate.name if row.advocate else '—' }}</td>
+            <td>
+              {% if row.encounter_id %}
+              <a href="{{ url_for('encounters.view_encounter', encounter_id=row.encounter_id) }}">#{{ row.encounter_id }}</a>
+              {% else %}—{% endif %}
+            </td>
+            <td>{{ row.work_date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ '%.2f'|format(row.hours|float) }}</td>
+            <td>{{ row.description or '—' }}</td>
+            <td><a href="{{ url_for('encounters.edit_time_card', time_card_id=row.id) }}">Edit</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty-state">No time cards yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -449,8 +449,8 @@ a:hover {
 }
 
 .contact-avatar {
-  width: 72px;
-  height: 72px;
+  width: 120px;
+  height: 120px;
   margin: 0 auto 1rem;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
@@ -459,12 +459,12 @@ a:hover {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.75rem;
 }
 
 .contact-photo {
-  width: 96px;
-  height: 96px;
+  width: 160px;
+  height: 160px;
   margin: 0 auto 1rem;
   border-radius: 50%;
   object-fit: cover;

@@ -360,15 +360,27 @@ class RelationshipToPatientForm(FlaskForm):
 
 
 class TimeCardForm(FlaskForm):
-    advocate_id = SelectField("Advocate", coerce=int, validators=[DataRequired()])
-    encounter_id = SelectField("Visit", coerce=nullable_int, validators=[Optional()])
+    advocate_id = SelectField(
+        "Advocate",
+        coerce=int,
+        validators=[DataRequired(), NumberRange(min=1)],
+    )
+    encounter_id = SelectField(
+        "Visit ID",
+        coerce=int,
+        validators=[DataRequired(), NumberRange(min=1)],
+    )
     work_date = DateField("Work Date", validators=[DataRequired()], default=date.today)
     hours = DecimalField(
         "Hours",
         places=2,
         validators=[DataRequired(), NumberRange(min=0.01, max=24)],
     )
-    description = StringField("Description", validators=[Optional(), Length(max=300)])
+    description = TextAreaField(
+        "Description",
+        validators=[Optional(), Length(max=300)],
+        render_kw={"rows": 4, "placeholder": "Brief summary of work performed during the visit..."},
+    )
 
 
 class AdHocQueryForm(FlaskForm):

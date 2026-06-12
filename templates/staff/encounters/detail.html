@@ -13,6 +13,7 @@
     <div class="page-actions">
       <a href="{{ url_for('encounters.edit_encounter', encounter_id=encounter.id) }}" class="btn btn-solid">Edit</a>
       <a href="{{ url_for('encounters.new_visit_note', visit_number=encounter.id, patient_id=encounter.patient_id) }}" class="btn btn-secondary">Add Note</a>
+      <a href="{{ url_for('encounters.new_time_card', encounter_id=encounter.id) }}" class="btn btn-secondary">Add Time Card</a>
     </div>
   </div>
 </section>

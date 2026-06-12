@@ -6,6 +6,7 @@ from forms import (
     EncounterForm,
     EncounterSearchForm,
     NoteForm,
+    TimeCardForm,
     VisitNoteForm,
     empty_select,
 )
@@ -17,6 +18,7 @@ from models import (
     Note,
     Patient,
     Provider,
+    TimeCard,
     db,
 )
 from flask import Blueprint, flash, redirect, render_template, request, url_for
@@ -201,6 +203,74 @@ def _save_visit_note_from_form(form, note=None):
     return note
 
 
+def _visit_choice_label(visit):
+    return f"Visit #{visit.id} — {visit.patient.full_name}"
+
+
+def _populate_time_card_form(form, time_card=None):
+    visits = Encounter.query.join(
+        Patient, Encounter.patient_id == Patient.id
+    ).order_by(Encounter.id.desc()).all()
+    advocates = Advocate.query.order_by(Advocate.name).all()
+
+    form.encounter_id.choices = empty_select("visit") + [
+        (v.id, _visit_choice_label(v)) for v in visits
+    ]
+    form.advocate_id.choices = empty_select("advocate") + [
+        (a.id, f"{a.name}{'' if a.active else ' (inactive)'}") for a in advocates
+    ]
+
+    if time_card and not form.is_submitted():
+        if time_card.encounter_id:
+            _append_choice(
+                form.encounter_id.choices,
+                time_card.encounter_id,
+                f"Visit #{time_card.encounter_id}",
+            )
+        _ensure_advocate_in_choices(form, time_card.advocate_id)
+
+        form.advocate_id.data = time_card.advocate_id
+        form.encounter_id.data = time_card.encounter_id
+        form.work_date.data = time_card.work_date
+        form.hours.data = time_card.hours
+        form.description.data = time_card.description
+
+    visit_id = form.encounter_id.data if form.is_submitted() else None
+    if not visit_id and time_card and not form.is_submitted():
+        visit_id = time_card.encounter_id
+
+    if visit_id:
+        visit = Encounter.query.get(visit_id)
+        if visit:
+            _append_choice(form.encounter_id.choices, visit.id, _visit_choice_label(visit))
+            if visit.advocate_id and not form.is_submitted():
+                _ensure_advocate_in_choices(form, visit.advocate_id)
+                if not time_card:
+                    form.advocate_id.data = visit.advocate_id
+
+    if form.is_submitted():
+        _ensure_advocate_in_choices(form, form.advocate_id.data)
+        if form.encounter_id.data:
+            _append_choice(
+                form.encounter_id.choices,
+                form.encounter_id.data,
+                f"Visit #{form.encounter_id.data}",
+            )
+
+
+def _save_time_card_from_form(form, time_card=None):
+    time_card = time_card or TimeCard()
+    time_card.advocate_id = form.advocate_id.data
+    time_card.encounter_id = form.encounter_id.data
+    time_card.work_date = form.work_date.data
+    time_card.hours = form.hours.data
+    time_card.description = (form.description.data or "").strip() or None
+    if not time_card.id:
+        db.session.add(time_card)
+    db.session.commit()
+    return time_card
+
+
 @encounters_bp.route("/")
 @employee_required
 def list_encounters():
@@ -312,6 +382,82 @@ def edit_visit_note(note_id):
         form=form,
         note=note,
         title=f"Edit Note #{note.id}",
+    )
+
+
+@encounters_bp.route("/time-cards", strict_slashes=False)
+@employee_required
+def list_time_cards():
+    time_cards = (
+        TimeCard.query.join(Advocate)
+        .order_by(TimeCard.work_date.desc(), TimeCard.id.desc())
+        .all()
+    )
+    return render_template("staff/encounters/time_cards_list.html", time_cards=time_cards)
+
+
+@encounters_bp.route("/time-cards/new", methods=["GET", "POST"], strict_slashes=False)
+@employee_required
+def new_time_card():
+    form = TimeCardForm()
+    preselect_visit = request.args.get("encounter_id", type=int)
+    if not form.is_submitted() and preselect_visit:
+        form.encounter_id.data = preselect_visit
+        visit = Encounter.query.get(preselect_visit)
+        if visit and visit.advocate_id:
+            form.advocate_id.data = visit.advocate_id
+    _populate_time_card_form(form)
+
+    if form.validate_on_submit():
+        try:
+            time_card = _save_time_card_from_form(form)
+        except IntegrityError:
+            db.session.rollback()
+            flash(
+                "Could not save the time card. Check that the advocate and visit are valid.",
+                "error",
+            )
+        else:
+            flash("Time card saved successfully.", "success")
+            return redirect(
+                url_for("encounters.edit_time_card", time_card_id=time_card.id)
+            )
+    return render_template(
+        "staff/encounters/time_card_form.html",
+        form=form,
+        time_card=None,
+        title="New Time Card",
+    )
+
+
+@encounters_bp.route(
+    "/time-cards/<int:time_card_id>/edit", methods=["GET", "POST"], strict_slashes=False
+)
+@employee_required
+def edit_time_card(time_card_id):
+    time_card = TimeCard.query.get_or_404(time_card_id)
+    form = TimeCardForm(obj=time_card)
+    _populate_time_card_form(form, time_card)
+
+    if form.validate_on_submit():
+        try:
+            _save_time_card_from_form(form, time_card)
+        except IntegrityError:
+            db.session.rollback()
+            flash(
+                "Could not update the time card. Check that the advocate and visit are valid.",
+                "error",
+            )
+        else:
+            flash("Time card updated successfully.", "success")
+            return redirect(
+                url_for("encounters.edit_time_card", time_card_id=time_card.id)
+            )
+    return render_template(
+        "staff/encounters/time_card_form.html",
+        form=form,
+        time_card=time_card,
+        title=f"Edit Time Card #{time_card.id}",
     )
 
 
