@@ -20,11 +20,24 @@ class Config:
 
 GEORGETTE_BIO = [
     (
+        "With more than 20 years of nursing experience across inpatient, outpatient, "
+        "home health, nursing home, and case management settings, I have built my "
+        "career around one unwavering belief: that patients and their families deserve "
+        "to be at the center of every healthcare decision."
+    ),
+    (
         "Throughout my clinical career as a Registered Nurse, I approached each "
         "patient relationship as a collaboration, meeting people where they were, "
         "leading with empathy, and ensuring that compassion was never a secondary "
         "consideration. That commitment to patient-centered care is what drew me to "
         "nursing, and it is what drives the work I do today."
+    ),
+    (
+        "Healthcare has changed dramatically. Artificial intelligence now schedules "
+        "appointments. Patient portals have replaced phone calls. For many patients, "
+        "particularly older adults and those managing complex conditions, this shifting "
+        "landscape is disorienting and isolating. At StartHere, I serve as your guide, "
+        "your voice, and your advocate, so that you are never left behind."
     ),
 ]
 
