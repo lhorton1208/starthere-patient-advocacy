@@ -37,9 +37,7 @@
         </div>
         {% endif %}
         <h2>{{ contact.name }}</h2>
-        {% if contact.credentials %}
-        <p class="contact-credentials">{{ contact.credentials }}</p>
-        {% endif %}
+        <p class="contact-credentials">{% if contact.credentials %}{{ contact.credentials }}{% else %}&nbsp;{% endif %}</p>
         {% if contact.bio %}
         <p class="contact-bio-link">
           <a href="{{ url_for('about') }}#{{ contact.slug }}">Read full bio</a>

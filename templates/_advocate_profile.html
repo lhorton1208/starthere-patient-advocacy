@@ -16,9 +16,7 @@
     </div>
     {% endif %}
     <h2 class="advocate-name">{{ advocate.name }}</h2>
-    {% if advocate.credentials %}
-    <p class="advocate-credentials">{{ advocate.credentials }}</p>
-    {% endif %}
+    <p class="advocate-credentials">{% if advocate.credentials %}{{ advocate.credentials }}{% else %}&nbsp;{% endif %}</p>
     <p class="advocate-title">{{ advocate.title }}</p>
     {% if advocate.email or advocate.phone %}
     <ul class="advocate-contact-links">

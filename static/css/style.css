@@ -574,6 +574,15 @@ a:hover {
 
 .contact-credentials {
   margin: 0 0 0.25rem;
+  min-height: 1.35em;
+}
+
+.contact-details a,
+.advocate-contact-links a {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .advocate-contact-links {
