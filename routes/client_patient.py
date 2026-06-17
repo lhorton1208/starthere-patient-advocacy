@@ -2,11 +2,16 @@ from auth import employee_required
 from forms import (
     ClientInfoForm,
     DeletePatientForm,
+    OutpatientProcedureForm,
     PatientInfoForm,
     PatientRecordForm,
     empty_select,
 )
-from intake import create_intake_request, normalize_email
+from intake import (
+    create_intake_request,
+    format_outpatient_procedure_notes,
+    normalize_email,
+)
 from models import (
     Client,
     Company,
@@ -399,6 +404,48 @@ def delete_patient(patient_id):
 def view_patient(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     return render_template("client/patient_detail.html", patient=patient)
+
+
+@client_patient_bp.route("/outpatient-procedure-request", methods=["GET", "POST"])
+def outpatient_procedure_request():
+    form = OutpatientProcedureForm()
+    if form.validate_on_submit():
+        intake_notes = format_outpatient_procedure_notes(
+            procedure=form.procedure.data,
+            procedure_location=form.procedure_location.data,
+            procedure_duration=form.procedure_duration.data,
+            provider_name=form.provider_name.data,
+            provider_phone=form.provider_phone.data,
+            procedure_preparation=form.procedure_preparation.data,
+            procedure_medications=form.procedure_medications.data,
+            notes=form.notes.data,
+        )
+        try:
+            _client, patient, encounter = create_intake_request(
+                patient_name=form.patient_name.data.strip(),
+                contact_name=form.contact_name.data.strip(),
+                phone=form.phone.data.strip(),
+                email=form.email.data.strip().lower(),
+                service="outpatient-procedure",
+                hospital_name=(form.procedure_location.data or "").strip() or None,
+                notes=intake_notes,
+            )
+            if patient and encounter:
+                msg = (
+                    "Thank you! Your outpatient procedure advocacy request has been "
+                    "submitted. Our team will contact you soon."
+                )
+            else:
+                msg = "Thank you! Your request has been submitted. Our team will contact you soon."
+            flash(msg, "success")
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return render_template(
+                "client/outpatient_procedure_request.html",
+                form=form,
+            )
+        return redirect(url_for("client_patient.outpatient_procedure_request"))
+    return render_template("client/outpatient_procedure_request.html", form=form)
 
 
 @client_patient_bp.route("/service-request", methods=["GET", "POST"])

@@ -20,6 +20,61 @@ from config import (
 )
 
 
+class OutpatientProcedureForm(FlaskForm):
+    """Intake form for outpatient procedure advocacy requests."""
+    patient_name = StringField(
+        "Patient Name and/or Patient ID",
+        validators=[DataRequired(), Length(max=200)],
+    )
+    contact_name = StringField(
+        "Primary Contact Name",
+        validators=[DataRequired(), Length(max=200)],
+    )
+    phone = StringField(
+        "Phone Number",
+        validators=[DataRequired(), Length(max=50)],
+    )
+    email = EmailField(
+        "Email Address",
+        validators=[DataRequired(), Email(), Length(max=200)],
+    )
+    procedure = StringField(
+        "What is the procedure?",
+        validators=[DataRequired(), Length(max=300)],
+    )
+    procedure_location = StringField(
+        "Where is the procedure?",
+        validators=[DataRequired(), Length(max=300)],
+    )
+    procedure_duration = StringField(
+        "Duration of the procedure",
+        validators=[Optional(), Length(max=100)],
+    )
+    provider_name = StringField(
+        "Healthcare Provider Name",
+        validators=[Optional(), Length(max=200)],
+    )
+    provider_phone = StringField(
+        "Healthcare Provider Phone Number",
+        validators=[Optional(), Length(max=50)],
+    )
+    procedure_preparation = TextAreaField(
+        "Procedure Preparation",
+        validators=[Optional(), Length(max=5000)],
+        render_kw={"rows": 4},
+    )
+    procedure_medications = TextAreaField(
+        "Procedure Medications",
+        validators=[Optional(), Length(max=5000)],
+        render_kw={"rows": 4},
+    )
+    notes = TextAreaField(
+        "Notes",
+        validators=[Optional(), Length(max=5000)],
+        render_kw={"rows": 4},
+    )
+
+
 class PatientInfoForm(FlaskForm):
     """Public service request form (creates client, patient, and encounter)."""
     patient_name = StringField(

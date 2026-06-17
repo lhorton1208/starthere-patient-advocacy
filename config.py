@@ -134,6 +134,7 @@ SERVICE_CHOICES = [
     ("in-hospital", "In-Hospital Patient Visits"),
     ("discharge", "Discharge Support – Patient Advocacy"),
     ("followup", "After Encounter 10/20/30 Days Followup"),
+    ("outpatient-procedure", "OutPatient Procedure Advocacy"),
 ]
 
 SERVICE_LABELS = dict(SERVICE_CHOICES)

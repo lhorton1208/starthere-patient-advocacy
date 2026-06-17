@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}OutPatient Procedure Request | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>OutPatient Procedure Advocacy Request</h1>
+    <p>Request an advocate to support you before, during, and/or after your procedure.</p>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {{ flash_messages() }}
+    <div class="form-card">
+      <form method="post">
+        {{ form.hidden_tag() }}
+        <h2>Patient &amp; Contact Information</h2>
+        {{ render_form_field(form.patient_name) }}
+        {{ render_form_field(form.contact_name) }}
+        {{ render_form_field(form.phone) }}
+        {{ render_form_field(form.email) }}
+
+        <h2>Procedure Details</h2>
+        {{ render_form_field(form.procedure) }}
+        {{ render_form_field(form.procedure_location) }}
+        {{ render_form_field(form.procedure_duration) }}
+        {{ render_form_field(form.provider_name) }}
+        {{ render_form_field(form.provider_phone) }}
+        {{ render_form_field(form.procedure_preparation) }}
+        {{ render_form_field(form.procedure_medications) }}
+        {{ render_form_field(form.notes) }}
+
+        <button type="submit" class="btn btn-solid">Submit Request</button>
+        <p class="form-note">
+          Your information is handled in accordance with our
+          <a href="{{ url_for('hipaa_forms') }}">HIPAA privacy practices</a>.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

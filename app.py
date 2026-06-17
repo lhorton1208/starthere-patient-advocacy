@@ -65,6 +65,10 @@ def create_app(config_class=Config, *, run_migrate=True):
     def after_encounter_followup():
         return render_template("services/after_encounter_followup.html")
 
+    @app.route("/services/outpatient-procedure")
+    def outpatient_procedure():
+        return render_template("services/outpatient_procedure.html")
+
     @app.route("/client/patient-info")
     def patient_info_redirect():
         return redirect(url_for("client_patient.list_patients"))

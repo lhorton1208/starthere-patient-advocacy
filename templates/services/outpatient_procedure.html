@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}OutPatient Procedure Advocacy | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>OutPatient Procedure Advocacy</h1>
+    <p>Support before, during, and after your outpatient procedure.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    <p>
+      Outpatient procedures can still feel overwhelming. A StartHere patient advocate
+      can be with you before, during, and/or after your procedure to help you
+      understand instructions, communicate with your care team, and ensure your
+      questions are answered every step of the way.
+    </p>
+
+    <h2>What We Do</h2>
+    <ul>
+      <li>Review procedure preparation instructions with you and your family</li>
+      <li>Help you understand medications before and after the procedure</li>
+      <li>Accompany you to the facility and support you during the visit</li>
+      <li>Assist with communication between you and your healthcare providers</li>
+      <li>Provide follow-up support after the procedure as needed</li>
+    </ul>
+
+    <h2>When to Request an Advocate</h2>
+    <p>
+      Consider requesting outpatient procedure advocacy if you want a trusted advocate
+      by your side for a scheduled procedure, need help understanding preparation
+      steps or medications, or want support coordinating with your healthcare team.
+    </p>
+
+    <a href="{{ url_for('client_patient.outpatient_procedure_request') }}" class="btn btn-primary">Submit Procedure Request</a>
+  </div>
+</section>
+{% endblock %}

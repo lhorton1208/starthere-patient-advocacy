@@ -139,6 +139,40 @@ def create_patient_for_client(
     return patient
 
 
+def format_outpatient_procedure_notes(
+    *,
+    procedure: str,
+    procedure_location: str,
+    procedure_duration: Optional[str] = None,
+    provider_name: Optional[str] = None,
+    provider_phone: Optional[str] = None,
+    procedure_preparation: Optional[str] = None,
+    procedure_medications: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> str:
+    sections = [
+        "OutPatient Procedure Advocacy Intake",
+        f"Procedure: {procedure.strip()}",
+        f"Procedure Location: {procedure_location.strip()}",
+    ]
+    if procedure_duration and procedure_duration.strip():
+        sections.append(f"Procedure Duration: {procedure_duration.strip()}")
+    if provider_name and provider_name.strip():
+        provider_line = f"Healthcare Provider: {provider_name.strip()}"
+        if provider_phone and provider_phone.strip():
+            provider_line += f" ({provider_phone.strip()})"
+        sections.append(provider_line)
+    elif provider_phone and provider_phone.strip():
+        sections.append(f"Healthcare Provider Phone: {provider_phone.strip()}")
+    if procedure_preparation and procedure_preparation.strip():
+        sections.append(f"Procedure Preparation:\n{procedure_preparation.strip()}")
+    if procedure_medications and procedure_medications.strip():
+        sections.append(f"Procedure Medications:\n{procedure_medications.strip()}")
+    if notes and notes.strip():
+        sections.append(f"Notes:\n{notes.strip()}")
+    return "\n\n".join(sections)
+
+
 def create_intake_request(
     *,
     patient_name: Optional[str],
