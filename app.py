@@ -49,6 +49,10 @@ def create_app(config_class=Config, *, run_migrate=True):
     def index():
         return render_template("index.html")
 
+    @app.route("/services/pricing")
+    def pricing():
+        return render_template("services/pricing.html")
+
     @app.route("/services/er-admittance")
     def er_admittance():
         return render_template("services/er_admittance.html")

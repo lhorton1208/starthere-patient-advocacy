@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Pricing | StartHere Patient Advocacy{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Pricing</h1>
+    <p>Advocacy services, priced for the support you need.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container pricing-page">
+
+    <h2 class="sr-only">StartHere Patient Advocacy pricing page showing hourly rate, monthly retainer, and fixed-fee package options including ER admittance, inpatient visit, hospital discharge, outpatient procedure, and after-encounter follow-up</h2>
+
+    <style>
+      .pricing-page {
+        --color-text-primary: var(--color-text);
+        --color-text-secondary: var(--color-text-muted);
+        --color-background-primary: var(--color-surface);
+        --color-background-secondary: var(--color-bg);
+        --color-border-tertiary: var(--color-border);
+        --color-border-secondary: var(--color-border);
+        --border-radius-lg: var(--radius);
+        --border-radius-md: var(--radius);
+      }
+
+      .pricing-page .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .sh-eyebrow { font-size: 12px; font-weight: 500; color: #1A6E6E; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 8px; }
+      .sh-h1 { font-size: 24px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 10px; }
+      .sh-sub { font-size: 14px; color: var(--color-text-secondary); line-height: 1.6; max-width: 560px; margin-bottom: 28px; }
+
+      .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+      .tier-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 22px 20px; display: flex; flex-direction: column; }
+      .tier-card.featured { border: 2px solid #1A6E6E; }
+      .tier-badge { display: inline-block; background: #E1F5EE; color: #085041; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: var(--border-radius-md); margin-bottom: 12px; width: fit-content; }
+      .tier-name { font-size: 15px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+      .tier-desc { font-size: 12.5px; color: var(--color-text-secondary); line-height: 1.5; margin-bottom: 16px; min-height: 36px; }
+      .tier-price { font-size: 26px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
+      .tier-price span { font-size: 13px; font-weight: 400; color: var(--color-text-secondary); }
+      .tier-price-sub { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 18px; }
+      .tier-features { list-style: none; padding: 0; margin: 0 0 18px; flex-grow: 1; }
+      .tier-features li { font-size: 13px; color: var(--color-text-primary); padding: 6px 0; display: flex; gap: 8px; align-items: flex-start; border-top: 0.5px solid var(--color-border-tertiary); }
+      .tier-features li:first-child { border-top: none; }
+      .tier-features i { color: #1A6E6E; font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+      .tier-btn {
+        display: block;
+        width: 100%;
+        background: transparent;
+        border: 0.5px solid var(--color-border-secondary);
+        border-radius: var(--border-radius-md);
+        padding: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+      }
+      .tier-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+      .tier-btn.primary { background: #1A6E6E; color: #F5F0E8; border: none; }
+      .tier-btn.primary:hover { background: #0F4A4A; color: #F5F0E8; }
+
+      .packages-section { margin-bottom: 28px; }
+      .section-label { font-size: 16px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+      .section-sub { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px; }
+      .pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .pkg-card {
+        display: block;
+        background: var(--color-background-secondary);
+        border-radius: var(--border-radius-md);
+        padding: 16px 18px;
+        text-decoration: none;
+        color: inherit;
+        border: 0.5px solid transparent;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+      .pkg-card:hover {
+        border-color: var(--color-border-secondary);
+        box-shadow: var(--shadow-sm);
+        color: inherit;
+      }
+      .pkg-name { font-size: 13.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+      .pkg-name i { color: #D4833A; font-size: 17px; }
+      .pkg-price { font-size: 17px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 6px; }
+      .pkg-desc { font-size: 12.5px; color: var(--color-text-secondary); line-height: 1.5; }
+
+      .faq-note { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 18px 22px; display: flex; gap: 14px; align-items: flex-start; }
+      .faq-note i { color: #1A6E6E; font-size: 20px; margin-top: 2px; flex-shrink: 0; }
+      .faq-note-text { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
+      .faq-note-text strong { color: var(--color-text-primary); font-weight: 500; }
+
+      @media (max-width: 900px) {
+        .tier-grid,
+        .pkg-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .tier-desc {
+          min-height: 0;
+        }
+      }
+    </style>
+
+    <div class="sh-eyebrow">Pricing</div>
+    <div class="sh-h1">Advocacy services, priced for the support you need</div>
+    <div class="sh-sub">All services are private pay. We offer flexible structures so you can choose what fits your situation — from a single appointment to ongoing care coordination.</div>
+
+    <div class="tier-grid">
+
+      <div class="tier-card">
+        <div class="tier-badge">Pay as you go</div>
+        <div class="tier-name">Hourly advocacy</div>
+        <div class="tier-desc">For one-time needs — a single appointment, a specific question, or a short-term issue.</div>
+        <div class="tier-price">$95<span>–$125/hr</span></div>
+        <div class="tier-price-sub">Billed in 30-minute increments</div>
+        <ul class="tier-features">
+          <li><i class="ti ti-check" aria-hidden="true"></i>One-time appointment accompaniment</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>Insurance or billing question resolution</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>No long-term commitment</li>
+        </ul>
+        <a href="{{ url_for('client_patient.service_request') }}" class="tier-btn">Request a quote</a>
+      </div>
+
+      <div class="tier-card featured">
+        <div class="tier-badge" style="background:#FAEEDA; color:#633806;">Most chosen</div>
+        <div class="tier-name">Monthly care navigation</div>
+        <div class="tier-desc">Ongoing coordination across providers, appointments, and paperwork — built for peace of mind.</div>
+        <div class="tier-price">$600<span>–$1,800/mo</span></div>
+        <div class="tier-price-sub">6–15 hours included monthly</div>
+        <ul class="tier-features">
+          <li><i class="ti ti-check" aria-hidden="true"></i>Dedicated advocate &amp; direct phone line</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>Appointment scheduling &amp; coordination</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>Family updates &amp; communication</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>Priority response within 24 hours</li>
+        </ul>
+        <a href="{{ url_for('contacts') }}" class="tier-btn primary">Schedule a consultation</a>
+      </div>
+
+      <div class="tier-card">
+        <div class="tier-badge">Project-based</div>
+        <div class="tier-name">Fixed-fee packages</div>
+        <div class="tier-desc">For a defined situation with a clear beginning and end, like a hospital stay or procedure.</div>
+        <div class="tier-price">$300<span>–$2,500</span></div>
+        <div class="tier-price-sub">Per engagement, scoped upfront</div>
+        <ul class="tier-features">
+          <li><i class="ti ti-check" aria-hidden="true"></i>Defined scope &amp; flat fee, no surprises</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>Ideal for acute &amp; episodic care events</li>
+          <li><i class="ti ti-check" aria-hidden="true"></i>See package details below</li>
+        </ul>
+        <a href="#fixed-fee-packages" class="tier-btn">See package details</a>
+      </div>
+
+    </div>
+
+    <div class="packages-section" id="fixed-fee-packages">
+      <div class="section-label">Fixed-fee packages</div>
+      <div class="section-sub">Common situations our clients bring to us, scoped as a flat fee.</div>
+      <div class="pkg-grid">
+
+        <a href="{{ url_for('er_admittance') }}" class="pkg-card">
+          <div class="pkg-name"><i class="ti ti-ambulance" aria-hidden="true"></i>ER admittance</div>
+          <div class="pkg-price">$500–$1,500</div>
+          <div class="pkg-desc">On-site or remote support during an emergency room visit — communicating with staff, tracking decisions, and keeping family informed.</div>
+        </a>
+
+        <a href="{{ url_for('in_hospital_visits') }}" class="pkg-card">
+          <div class="pkg-name"><i class="ti ti-building-hospital" aria-hidden="true"></i>Inpatient visit</div>
+          <div class="pkg-price">$600–$2,500</div>
+          <div class="pkg-desc">Ongoing presence and coordination throughout a hospital stay — daily updates, care team communication, and decision support for the family.</div>
+        </a>
+
+        <a href="{{ url_for('discharge_support') }}" class="pkg-card">
+          <div class="pkg-name"><i class="ti ti-door-exit" aria-hidden="true"></i>Hospital discharge</div>
+          <div class="pkg-price">$750–$2,000</div>
+          <div class="pkg-desc">Coordinating a safe transition home or to rehab, including follow-up care setup and home health referrals.</div>
+        </a>
+
+        <a href="{{ url_for('outpatient_procedure') }}" class="pkg-card">
+          <div class="pkg-name"><i class="ti ti-stethoscope" aria-hidden="true"></i>Outpatient procedure</div>
+          <div class="pkg-price">$350–$900</div>
+          <div class="pkg-desc">Accompaniment and coordination before, during, and after a scheduled outpatient procedure.</div>
+        </a>
+
+        <a href="{{ url_for('after_encounter_followup') }}" class="pkg-card">
+          <div class="pkg-name"><i class="ti ti-clipboard-check" aria-hidden="true"></i>After-encounter follow-up</div>
+          <div class="pkg-price">$300–$750</div>
+          <div class="pkg-desc">Reviewing discharge instructions, scheduling follow-ups, and confirming nothing falls through the cracks after a visit.</div>
+        </a>
+
+      </div>
+    </div>
+
+    <div class="faq-note">
+      <i class="ti ti-info-circle" aria-hidden="true"></i>
+      <div class="faq-note-text">
+        <strong>Free initial consultation.</strong> Every relationship starts with a complimentary 30-minute conversation to understand your situation and recommend the right level of support — no obligation. <strong>StartHere Patient Advocacy is not a medical provider</strong> and does not bill insurance or Medicare directly; all services are private pay.
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

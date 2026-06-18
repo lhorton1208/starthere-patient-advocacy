@@ -6,6 +6,7 @@
   <title>{% block title %}StartHere Patient Advocacy{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='images/starthere-logo-favicon.png') }}" type="image/png">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <header class="site-header">
@@ -30,6 +31,7 @@
             Services <span class="chevron">&#9660;</span>
           </a>
           <div class="dropdown">
+            <a href="{{ url_for('pricing') }}">Pricing</a>
             <a href="{{ url_for('er_admittance') }}">ER Admittance – Patient Advocate</a>
             <a href="{{ url_for('in_hospital_visits') }}">In-Hospital Patient Visits</a>
             <a href="{{ url_for('discharge_support') }}">Discharge Support – Patient Advocacy</a>
@@ -125,6 +127,7 @@
         <div>
           <h4>Services</h4>
           <ul>
+            <li><a href="{{ url_for('pricing') }}">Pricing</a></li>
             <li><a href="{{ url_for('er_admittance') }}">ER Admittance</a></li>
             <li><a href="{{ url_for('in_hospital_visits') }}">In-Hospital Visits</a></li>
             <li><a href="{{ url_for('discharge_support') }}">Discharge Support</a></li>
