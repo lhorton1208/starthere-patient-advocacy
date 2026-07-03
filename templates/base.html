@@ -41,6 +41,18 @@
         </div>
 
         <div class="nav-item">
+          <a href="#" class="nav-link {% if request.path.startswith('/blog') %}active{% endif %}">
+            Blog &amp; Educational Resources <span class="chevron">&#9660;</span>
+          </a>
+          <div class="dropdown">
+            <a href="{{ url_for('blog_index') }}">All Articles</a>
+            {% for article in blog_articles %}
+            <a href="{{ url_for('blog_article', slug=article.slug) }}">{{ article.title }}</a>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="nav-item">
           <a href="#" class="nav-link {% if request.path.startswith('/client') %}active{% endif %}">
             Client Information <span class="chevron">&#9660;</span>
           </a>
@@ -145,6 +157,15 @@
             <li><a href="{{ url_for('client_patient.list_clients') }}">Client Info</a></li>
             <li><a href="{{ url_for('client_patient.list_patients') }}">Patient Info</a></li>
             <li><a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Blog &amp; Educational Resources</h4>
+          <ul>
+            <li><a href="{{ url_for('blog_index') }}">All Articles</a></li>
+            {% for article in blog_articles %}
+            <li><a href="{{ url_for('blog_article', slug=article.slug) }}">{{ article.title }}</a></li>
+            {% endfor %}
           </ul>
         </div>
         <div>

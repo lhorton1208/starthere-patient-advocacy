@@ -1,9 +1,10 @@
 import os
 from datetime import datetime
 
-from flask import Flask, flash, redirect, render_template, send_from_directory, url_for
+from flask import Flask, abort, flash, redirect, render_template, send_from_directory, url_for
 from whitenoise import WhiteNoise
 
+from blog_content import ARTICLES, get_article
 from config import BASE_DIR, CONTACTS, Config, INFO_EMAIL, INSTANCE_DIR, ORG_PHONE
 from models import db
 from routes.billing import billing_bp
@@ -47,6 +48,7 @@ def create_app(config_class=Config, *, run_migrate=True):
             "current_year": datetime.now().year,
             "info_email": INFO_EMAIL,
             "org_phone": ORG_PHONE,
+            "blog_articles": ARTICLES,
         }
 
     @app.route("/")
@@ -93,6 +95,17 @@ def create_app(config_class=Config, *, run_migrate=True):
     @app.route("/contacts")
     def contacts():
         return render_template("contacts.html", contacts=CONTACTS)
+
+    @app.route("/blog")
+    def blog_index():
+        return render_template("blog/index.html", articles=ARTICLES)
+
+    @app.route("/blog/<slug>")
+    def blog_article(slug):
+        article = get_article(slug)
+        if article is None:
+            abort(404)
+        return render_template(f"blog/{slug}.html", article=article)
 
     @app.route("/static/images/starthere-logo-icon.png")
     def logo_asset():

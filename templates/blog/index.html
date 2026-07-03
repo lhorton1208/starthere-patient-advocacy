@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Blog &amp; Educational Resources | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Blog &amp; Educational Resources</h1>
+    <p>Practical guidance to help patients and families navigate healthcare with confidence.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% if articles %}
+    <div class="card-grid">
+      {% for article in articles %}
+      <article class="card">
+        <h2 class="blog-card-title">
+          <a href="{{ url_for('blog_article', slug=article.slug) }}">{{ article.title }}</a>
+        </h2>
+        <p>{{ article.summary }}</p>
+        <a href="{{ url_for('blog_article', slug=article.slug) }}" class="card-link">Read article &rarr;</a>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p>New articles are coming soon. Check back for educational resources from StartHere.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
