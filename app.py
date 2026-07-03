@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Flask, flash, redirect, render_template, send_from_directory, url_for
 from whitenoise import WhiteNoise
 
-from config import BASE_DIR, CONTACTS, Config, INFO_EMAIL, INSTANCE_DIR
+from config import BASE_DIR, CONTACTS, Config, INFO_EMAIL, INSTANCE_DIR, ORG_PHONE
 from models import db
 from routes.billing import billing_bp
 from routes.client_patient import client_patient_bp
@@ -43,7 +43,11 @@ def create_app(config_class=Config, *, run_migrate=True):
 
     @app.context_processor
     def inject_globals():
-        return {"current_year": datetime.now().year, "info_email": INFO_EMAIL}
+        return {
+            "current_year": datetime.now().year,
+            "info_email": INFO_EMAIL,
+            "org_phone": ORG_PHONE,
+        }
 
     @app.route("/")
     def index():

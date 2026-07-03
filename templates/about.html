@@ -55,6 +55,7 @@
       Ready to get support?
       <a href="{{ url_for('client_patient.service_request') }}">Submit a patient information request</a>,
       <a href="{{ url_for('contacts') }}">contact our team</a>,
+      call <a href="tel:{{ org_phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ org_phone }}</a>,
       or email <a href="mailto:{{ info_email }}">{{ info_email }}</a> for additional
       information about our services.
     </p>

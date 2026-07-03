@@ -88,6 +88,7 @@ LARRY_BIO = [
 INFO_EMAIL = os.environ.get(
     "CONTACT_INFO_EMAIL", "info@startherepatientadvocacy.com"
 )
+ORG_PHONE = os.environ.get("CONTACT_ORG_PHONE", "919-583-6484")
 
 CONTACTS = [
     {

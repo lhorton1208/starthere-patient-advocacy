@@ -123,6 +123,10 @@
         <div>
           <h4>StartHere Patient Advocacy</h4>
           <p style="margin:0;font-size:0.9rem;">Compassionate support when you need it most.</p>
+          <p style="margin:0.75rem 0 0;font-size:0.9rem;">
+            <a href="tel:{{ org_phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ org_phone }}</a><br>
+            <a href="mailto:{{ info_email }}">{{ info_email }}</a>
+          </p>
         </div>
         <div>
           <h4>Services</h4>

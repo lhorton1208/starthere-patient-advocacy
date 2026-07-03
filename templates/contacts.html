@@ -16,6 +16,7 @@
       Our advocates are ready to help you navigate emergency care, hospital stays,
       discharge planning, and follow-up support. Contact a team member below,
       <a href="{{ url_for('client_patient.service_request') }}">submit a patient information request</a>,
+      call <a href="tel:{{ org_phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ org_phone }}</a>,
       or email <a href="mailto:{{ info_email }}">{{ info_email }}</a> for additional
       information about our services.
     </p>
