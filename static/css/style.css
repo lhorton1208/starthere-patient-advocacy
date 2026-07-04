@@ -158,6 +158,11 @@ a:hover {
   position: relative;
 }
 
+.nav-item:hover,
+.nav-item:focus-within {
+  z-index: 210;
+}
+
 .nav-link {
   display: flex;
   align-items: center;
@@ -194,7 +199,7 @@ a:hover {
   top: calc(100% + 4px);
   left: 0;
   min-width: 280px;
-  background: var(--color-surface);
+  background: #ffffff;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
@@ -203,9 +208,11 @@ a:hover {
   transform: translateY(-6px);
   transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
   padding: 0.5rem;
+  z-index: 220;
 }
 
-.nav-item:hover .dropdown {
+.nav-item:hover .dropdown,
+.nav-item:focus-within .dropdown {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -217,6 +224,7 @@ a:hover {
   border-radius: 6px;
   color: var(--color-text);
   font-size: 0.9rem;
+  background: #ffffff;
 }
 
 .dropdown a:hover {
