@@ -21,6 +21,24 @@ ARTICLES = [
         ),
         "published": "2026-07-03",
     },
+    {
+        "slug": "what-does-a-patient-advocate-actually-do",
+        "title": "What Does a Patient Advocate Actually Do?",
+        "summary": (
+            "Many people hear the term patient advocate but are not sure what it means. "
+            "Learn how StartHere helps patients understand, organize, and navigate healthcare."
+        ),
+        "published": "2026-07-04",
+    },
+    {
+        "slug": "the-hidden-costs-of-navigating-healthcare-alone",
+        "title": "The Hidden Costs of Navigating Healthcare Alone",
+        "summary": (
+            "Beyond doctor bills and copays, managing healthcare alone can bring stress, "
+            "missed information, and caregiver burnout. See how an advocate can help."
+        ),
+        "published": "2026-07-04",
+    },
 ]
 
 ARTICLES_BY_SLUG = {article["slug"]: article for article in ARTICLES}
