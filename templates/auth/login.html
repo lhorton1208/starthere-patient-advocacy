@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import render_form_field, flash_messages %}
+
+{% block title %}Advocate Login | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Advocate Login</h1>
+    <p>Sign in to access reports, visits, billing, and other staff tools.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container auth-panel-wrap">
+    <div class="form-card auth-panel">
+      {{ flash_messages() }}
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.username) }}
+        {{ render_form_field(form.password) }}
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Log In</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

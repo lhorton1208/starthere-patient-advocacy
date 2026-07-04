@@ -231,6 +231,9 @@ class Advocate(db.Model):
     state = db.Column(db.String(255))
     zip_code = db.Column(db.String(255))
     active = db.Column(db.Boolean, nullable=False, default=True)
+    username = db.Column(db.String(64), unique=True)
+    password_hash = db.Column(db.String(255))
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     company = db.relationship("Company", back_populates="advocates")
@@ -243,6 +246,27 @@ class Advocate(db.Model):
             self.name = " ".join(
                 p for p in [self.first_name, self.last_name] if p
             ).strip()
+
+    @property
+    def has_login(self) -> bool:
+        return bool(self.username and self.password_hash)
+
+    def set_password(self, password: str) -> None:
+        from werkzeug.security import generate_password_hash
+
+        self.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
+
+    def check_password(self, password: str) -> bool:
+        if not self.password_hash:
+            return False
+        from werkzeug.security import check_password_hash
+
+        return check_password_hash(self.password_hash, password)
+
+    def clear_login(self) -> None:
+        self.username = None
+        self.password_hash = None
+        self.is_admin = False
 
 
 class Provider(db.Model):

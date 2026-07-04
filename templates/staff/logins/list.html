@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Manage Advocate Logins | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Manage Advocate Logins</h1>
+    <p>Create usernames and passwords for advocates who need access to staff tools.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Advocate</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for advocate in advocates %}
+          <tr>
+            <td>{{ advocate.name }}</td>
+            <td>{{ advocate.username or '—' }}</td>
+            <td>{% if advocate.is_admin %}Administrator{% else %}Advocate{% endif %}</td>
+            <td>
+              {% if advocate.has_login and advocate.active %}
+              Active
+              {% elif advocate.has_login %}
+              Inactive
+              {% else %}
+              No login
+              {% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('auth.edit_login', advocate_id=advocate.id) }}">
+                {% if advocate.has_login %}Edit{% else %}Create login{% endif %}
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

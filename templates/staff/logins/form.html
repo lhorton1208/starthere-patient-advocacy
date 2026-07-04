@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import render_form_field, flash_messages %}
+
+{% block title %}Advocate Login | {{ advocate.name }} | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>Advocate Login</h1>
+      <p>{{ advocate.name }}{% if advocate.title %} · {{ advocate.title }}{% endif %}</p>
+    </div>
+    <a href="{{ url_for('auth.manage_logins') }}" class="btn btn-outline">Back to logins</a>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container auth-panel-wrap">
+    <div class="form-card auth-panel">
+      {% include "staff/_banner.html" %}
+      {{ flash_messages() }}
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.username) }}
+        {{ render_form_field(form.password) }}
+        {{ render_form_field(form.confirm_password) }}
+        <div class="form-group">
+          <label class="checkbox-label">
+            {{ form.is_admin() }}
+            {{ form.is_admin.label.text }}
+          </label>
+        </div>
+        <p class="form-help">
+          {% if advocate.has_login %}
+          Leave the password fields blank to keep the current password.
+          {% else %}
+          Password must be at least 8 characters.
+          {% endif %}
+        </p>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Login</button>
+          {% if advocate.has_login %}
+          <button type="submit" name="action" value="remove" class="btn btn-outline" formnovalidate>
+            Remove Login
+          </button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

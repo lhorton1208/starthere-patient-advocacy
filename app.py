@@ -4,9 +4,11 @@ from datetime import datetime
 from flask import Flask, abort, flash, redirect, render_template, send_from_directory, url_for
 from whitenoise import WhiteNoise
 
+from auth import get_current_advocate
 from blog_content import ARTICLES, get_article
 from config import BASE_DIR, CONTACTS, Config, INFO_EMAIL, INSTANCE_DIR, ORG_PHONE
 from models import db
+from routes.auth_routes import auth_bp
 from routes.billing import billing_bp
 from routes.client_patient import client_patient_bp
 from routes.encounters import encounters_bp
@@ -25,6 +27,7 @@ def create_app(config_class=Config, *, run_migrate=True):
     db.init_app(app)
 
     app.register_blueprint(encounters_bp)
+    app.register_blueprint(auth_bp)
     app.register_blueprint(billing_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(entities_bp)
@@ -49,6 +52,7 @@ def create_app(config_class=Config, *, run_migrate=True):
             "info_email": INFO_EMAIL,
             "org_phone": ORG_PHONE,
             "blog_articles": ARTICLES,
+            "current_advocate": get_current_advocate(),
         }
 
     @app.route("/")

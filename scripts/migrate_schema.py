@@ -60,6 +60,9 @@ NEW_COLUMNS = {
         "city": "VARCHAR(255)",
         "state": "VARCHAR(255)",
         "zip_code": "VARCHAR(255)",
+        "username": "VARCHAR(64)",
+        "password_hash": "VARCHAR(255)",
+        "is_admin": "BOOLEAN DEFAULT FALSE",
     },
     "providers": {
         "first_name": "VARCHAR(255)",
@@ -122,6 +125,8 @@ def _column_exists(inspector, table: str, column: str) -> bool:
 
 def _migration_column_type(table: str, column: str, col_type: str, *, is_pg: bool) -> str:
     if table == "notes" and column == "internal_only":
+        return "BOOLEAN DEFAULT FALSE" if is_pg else "INTEGER DEFAULT 0"
+    if table == "advocates" and column == "is_admin":
         return "BOOLEAN DEFAULT FALSE" if is_pg else "INTEGER DEFAULT 0"
     return col_type
 

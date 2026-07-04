@@ -57,13 +57,16 @@
             Client Information <span class="chevron">&#9660;</span>
           </a>
           <div class="dropdown">
+            {% if current_advocate %}
             <a href="{{ url_for('client_patient.list_clients') }}">Client Info</a>
             <a href="{{ url_for('client_patient.list_patients') }}">Patient Info</a>
+            {% endif %}
             <a href="{{ url_for('client_patient.service_request') }}">Service Request</a>
             <a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a>
           </div>
         </div>
 
+        {% if current_advocate %}
         <div class="nav-item">
           <a href="#" class="nav-link {% if request.path.startswith('/reports') %}active{% endif %}">
             Reports <span class="chevron">&#9660;</span>
@@ -79,7 +82,7 @@
         </div>
 
         <div class="nav-item">
-          <a href="#" class="nav-link {% if request.path.startswith('/entities') %}active{% endif %}">
+          <a href="#" class="nav-link {% if request.path.startswith('/entities') or request.path.startswith('/staff/logins') %}active{% endif %}">
             Add/Edit Entities <span class="chevron">&#9660;</span>
           </a>
           <div class="dropdown">
@@ -87,8 +90,12 @@
             <a href="{{ url_for('entities.list_advocates') }}">Advocates</a>
             <a href="{{ url_for('entities.list_home_care') }}">Home Care Facilities</a>
             <a href="{{ url_for('entities.list_relationships') }}">Relationships to Patient</a>
+            {% if current_advocate.is_admin %}
+            <a href="{{ url_for('auth.manage_logins') }}">Manage Advocate Logins</a>
+            {% endif %}
           </div>
         </div>
+        {% endif %}
 
         <div class="nav-item">
           <a href="#" class="nav-link {% if request.path in ['/about', '/contacts'] %}active{% endif %}">
@@ -100,6 +107,7 @@
           </div>
         </div>
 
+        {% if current_advocate %}
         <div class="nav-item">
           <a href="#" class="nav-link {% if request.path.startswith('/encounters') %}active{% endif %}">
             Visits <span class="chevron">&#9660;</span>
@@ -121,7 +129,18 @@
             <a href="{{ url_for('billing.new_account') }}">New Account</a>
           </div>
         </div>
+        {% endif %}
       </nav>
+
+      <div class="header-auth">
+        {% if current_advocate %}
+        <span class="header-auth-name">{{ current_advocate.name }}</span>
+        <a href="{{ url_for('auth.change_password') }}">Password</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-solid btn-sm">Advocate Login</a>
+        {% endif %}
+      </div>
     </div>
   </header>
 
@@ -175,6 +194,7 @@
             <li><a href="{{ url_for('contacts') }}">Contacts</a></li>
           </ul>
         </div>
+        {% if current_advocate %}
         <div>
           <h4>Employee Tools</h4>
           <ul>
@@ -182,8 +202,12 @@
             <li><a href="{{ url_for('billing.list_accounts') }}">Accounts &amp; Billing</a></li>
             <li><a href="{{ url_for('reports.report_encounters') }}">Reports</a></li>
             <li><a href="{{ url_for('entities.list_hospitals') }}">Add/Edit Entities</a></li>
+            {% if current_advocate.is_admin %}
+            <li><a href="{{ url_for('auth.manage_logins') }}">Manage Advocate Logins</a></li>
+            {% endif %}
           </ul>
         </div>
+        {% endif %}
       </div>
       <div class="footer-bottom">
         &copy; {{ current_year }} StartHere Patient Advocacy. All rights reserved.

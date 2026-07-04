@@ -1,3 +1,8 @@
 <div class="staff-banner">
-  <strong>Employee area</strong> — authentication for StartHere staff will be added soon.
+  {% if current_advocate %}
+  Signed in as <strong>{{ current_advocate.name }}</strong>
+  {% if current_advocate.is_admin %} · Administrator{% endif %}
+  {% else %}
+  <strong>Employee area</strong> — please log in to continue.
+  {% endif %}
 </div>

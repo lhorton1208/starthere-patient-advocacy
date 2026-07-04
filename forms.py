@@ -6,11 +6,12 @@ from wtforms import (
     DateField,
     DecimalField,
     EmailField,
+    PasswordField,
     SelectField,
     StringField,
     TextAreaField,
 )
-from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
+from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional
 
 from config import (
     ACCOUNT_STATUS_CHOICES,
@@ -444,3 +445,50 @@ class AdHocQueryForm(FlaskForm):
         validators=[DataRequired(), Length(max=5000)],
         render_kw={"rows": 8, "placeholder": "SELECT id, name FROM clients LIMIT 25;"},
     )
+
+
+class LoginForm(FlaskForm):
+    username = StringField(
+        "Username",
+        validators=[DataRequired(), Length(max=64)],
+    )
+    password = PasswordField(
+        "Password",
+        validators=[DataRequired(), Length(max=128)],
+    )
+
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField(
+        "Current Password",
+        validators=[DataRequired(), Length(min=8, max=128)],
+    )
+    new_password = PasswordField(
+        "New Password",
+        validators=[DataRequired(), Length(min=8, max=128)],
+    )
+    confirm_password = PasswordField(
+        "Confirm New Password",
+        validators=[
+            DataRequired(),
+            EqualTo("new_password", message="Passwords must match."),
+        ],
+    )
+
+
+class AdvocateLoginForm(FlaskForm):
+    username = StringField(
+        "Username",
+        validators=[DataRequired(), Length(min=3, max=64)],
+        render_kw={"autocomplete": "username"},
+    )
+    password = PasswordField(
+        "Password",
+        validators=[Optional(), Length(min=8, max=128)],
+        render_kw={"autocomplete": "new-password"},
+    )
+    confirm_password = PasswordField(
+        "Confirm Password",
+        validators=[Optional(), Length(min=8, max=128)],
+    )
+    is_admin = BooleanField("Administrator (can manage advocate logins)")
