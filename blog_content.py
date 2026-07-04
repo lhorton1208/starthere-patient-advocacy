@@ -11,6 +11,16 @@ ARTICLES = [
         ),
         "published": "2026-07-03",
     },
+    {
+        "slug": "10-signs-your-loved-one-may-need-a-patient-advocate",
+        "title": "10 Signs Your Loved One May Need a Patient Advocate",
+        "summary": (
+            "Caring for an aging parent or family member can become overwhelming "
+            "when medical appointments, medications, and insurance questions pile up. "
+            "Here are ten signs a patient advocate may help."
+        ),
+        "published": "2026-07-03",
+    },
 ]
 
 ARTICLES_BY_SLUG = {article["slug"]: article for article in ARTICLES}
