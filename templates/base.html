@@ -90,24 +90,9 @@
             <a href="{{ url_for('entities.list_advocates') }}">Advocates</a>
             <a href="{{ url_for('entities.list_home_care') }}">Home Care Facilities</a>
             <a href="{{ url_for('entities.list_relationships') }}">Relationships to Patient</a>
-            {% if current_advocate.is_admin %}
-            <a href="{{ url_for('auth.manage_logins') }}">Manage Advocate Logins</a>
-            {% endif %}
-          </div>
-        </div>
-        {% endif %}
-
-        <div class="nav-item">
-          <a href="#" class="nav-link {% if request.path in ['/about', '/contacts'] %}active{% endif %}">
-            About StartHere <span class="chevron">&#9660;</span>
-          </a>
-          <div class="dropdown">
-            <a href="{{ url_for('about') }}">About StartHere</a>
-            <a href="{{ url_for('contacts') }}">Contacts</a>
           </div>
         </div>
 
-        {% if current_advocate %}
         <div class="nav-item">
           <a href="#" class="nav-link {% if request.path.startswith('/encounters') %}active{% endif %}">
             Visits <span class="chevron">&#9660;</span>
@@ -130,17 +115,37 @@
           </div>
         </div>
         {% endif %}
-      </nav>
 
-      <div class="header-auth">
-        {% if current_advocate %}
-        <span class="header-auth-name">{{ current_advocate.name }}</span>
-        <a href="{{ url_for('auth.change_password') }}">Password</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
-        {% else %}
-        <a href="{{ url_for('auth.login') }}" class="btn btn-solid btn-sm">Advocate Login</a>
-        {% endif %}
-      </div>
+        <div class="nav-item">
+          <a href="{{ url_for('about') }}" class="nav-link {% if request.path == '/about' %}active{% endif %}">
+            About StartHere
+          </a>
+        </div>
+
+        <div class="nav-item">
+          <a href="{{ url_for('contacts') }}" class="nav-link {% if request.path == '/contacts' %}active{% endif %}">
+            Contact Us
+          </a>
+        </div>
+
+        <div class="nav-item">
+          <a href="#" class="nav-link {% if request.path.startswith('/login') or request.path.startswith('/account') or request.path.startswith('/staff/logins') %}active{% endif %}">
+            Administration <span class="chevron">&#9660;</span>
+          </a>
+          <div class="dropdown">
+            {% if current_advocate %}
+            <span class="dropdown-heading">{{ current_advocate.name }}</span>
+            <a href="{{ url_for('auth.change_password') }}">Change Password</a>
+            {% if current_advocate.is_admin %}
+            <a href="{{ url_for('auth.manage_logins') }}">Manage Advocate Logins</a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}">Logout</a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}">Advocate Login</a>
+            {% endif %}
+          </div>
+        </div>
+      </nav>
     </div>
   </header>
 
@@ -191,7 +196,26 @@
           <h4>About StartHere</h4>
           <ul>
             <li><a href="{{ url_for('about') }}">About StartHere</a></li>
-            <li><a href="{{ url_for('contacts') }}">Contacts</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contact Us</h4>
+          <ul>
+            <li><a href="{{ url_for('contacts') }}">Contact Us</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Administration</h4>
+          <ul>
+            {% if current_advocate %}
+            <li><a href="{{ url_for('auth.change_password') }}">Change Password</a></li>
+            {% if current_advocate.is_admin %}
+            <li><a href="{{ url_for('auth.manage_logins') }}">Manage Advocate Logins</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+            {% else %}
+            <li><a href="{{ url_for('auth.login') }}">Advocate Login</a></li>
+            {% endif %}
           </ul>
         </div>
         {% if current_advocate %}
@@ -202,9 +226,6 @@
             <li><a href="{{ url_for('billing.list_accounts') }}">Accounts &amp; Billing</a></li>
             <li><a href="{{ url_for('reports.report_encounters') }}">Reports</a></li>
             <li><a href="{{ url_for('entities.list_hospitals') }}">Add/Edit Entities</a></li>
-            {% if current_advocate.is_admin %}
-            <li><a href="{{ url_for('auth.manage_logins') }}">Manage Advocate Logins</a></li>
-            {% endif %}
           </ul>
         </div>
         {% endif %}
