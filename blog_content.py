@@ -39,6 +39,15 @@ ARTICLES = [
         ),
         "published": "2026-07-04",
     },
+    {
+        "slug": "the-7-rights-of-medication-administration",
+        "title": "The 7 Rights of Medication Administration",
+        "summary": (
+            "Medication errors harm millions of Americans each year. Learn the 7 Rights "
+            "every patient and family should know to prevent errors and protect loved ones."
+        ),
+        "published": "2026-07-04",
+    },
 ]
 
 ARTICLES_BY_SLUG = {article["slug"]: article for article in ARTICLES}

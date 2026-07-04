@@ -374,6 +374,40 @@ a:hover {
   color: var(--color-primary);
 }
 
+.blog-stat-grid {
+  margin-bottom: 2rem;
+}
+
+.blog-stat-card {
+  text-align: center;
+}
+
+.blog-stat-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.blog-stat-value {
+  font-size: 1.5rem !important;
+  font-weight: 700;
+  color: var(--color-primary-dark) !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.article-note {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+
+.article-disclaimer {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

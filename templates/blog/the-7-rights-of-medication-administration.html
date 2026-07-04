@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}The 7 Rights of Medication Administration | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <p class="article-back-link"><a href="{{ url_for('blog_index') }}">&larr; Blog &amp; Educational Resources</a></p>
+    <h1>The 7 Rights of Medication Administration</h1>
+    <p>What every patient and family should know to prevent medication errors and protect their loved ones during care.</p>
+  </div>
+</section>
+
+<section class="content-section article-body">
+  <div class="container">
+    <div class="card-grid blog-stat-grid">
+      <div class="card blog-stat-card">
+        <p class="blog-stat-value">1.5M/yr</p>
+        <p>Americans harmed by medication errors annually</p>
+      </div>
+      <div class="card blog-stat-card">
+        <p class="blog-stat-value">5+</p>
+        <p>Avg. prescriptions managed by older adults daily</p>
+      </div>
+      <div class="card blog-stat-card">
+        <p class="blog-stat-value">~80%</p>
+        <p>Of medication errors are considered preventable</p>
+      </div>
+    </div>
+
+    <h2>Why This Matters</h2>
+    <p>
+      Healthcare professionals are trained to follow the 7 Rights of Medication Administration — a
+      foundational safety framework used in hospitals and clinical settings nationwide. But these rights
+      don't belong only to nurses and pharmacists. They belong to you, too.
+    </p>
+    <p>
+      Understanding them can make you a more empowered advocate for yourself or a loved one, whether in
+      a hospital room, a skilled nursing facility, or at home.
+    </p>
+    <p>
+      For older adults managing multiple prescriptions across multiple providers, the risk of medication
+      error is not hypothetical — it is ongoing. The sections below explain each of the 7 Rights and
+      provide a practical action step you can take right now.
+    </p>
+
+    <h2>Right 1: Right Patient</h2>
+    <p>
+      Every medication must be verified for the correct person using at least two identifiers — full name
+      and date of birth — before it is administered. Patient mix-ups happen even in high-quality
+      facilities, particularly when names are similar or a patient cannot speak for themselves.
+    </p>
+    <p><strong>Tip:</strong> Always state your full name and date of birth before receiving any medication — even if the nurse does not ask.</p>
+
+    <h2>Right 2: Right Medication</h2>
+    <p>
+      The exact prescribed medication must be given — not a similar-sounding drug. Confusion between
+      names like Hydroxyzine and Hydralazine, or Celebrex and Celexa, has caused serious patient harm.
+      Allergy information must also be reviewed before any new medication is introduced.
+    </p>
+    <p><strong>Tip:</strong> Ask "What is this medication and what is it for?" before accepting any drug in a hospital or care facility.</p>
+
+    <h2>Right 3: Right Dose</h2>
+    <p>
+      The correct amount must be administered. Older adults are especially vulnerable — declining kidney
+      and liver function changes how the body processes medications, meaning a standard adult dose may
+      be too high. Dosing errors can occur at prescribing, dispensing, or administration.
+    </p>
+    <p><strong>Tip:</strong> Ask your provider: "Is this dose appropriate for my age and kidney function?" Any change in dose warrants an explanation.</p>
+
+    <h2>Right 4: Right Route</h2>
+    <p>
+      Medication must be given the correct way — oral, intravenous, topical, inhaled, injected, or by
+      another designated route. Routes are not interchangeable. An extended-release tablet that is
+      crushed releases its full dose at once, which can be dangerous or even fatal.
+    </p>
+    <p><strong>Tip:</strong> Never crush, split, or alter a medication without first confirming with a pharmacist that it is safe to do so.</p>
+
+    <h2>Right 5: Right Time</h2>
+    <p>
+      Medications must be given at the correct time and interval. Blood thinners, thyroid drugs, seizure
+      medications, and insulin all require precise timing. Care transitions — ICU to step-down unit,
+      hospital to rehab — are high-risk moments when doses are frequently missed or duplicated.
+    </p>
+    <p><strong>Tip:</strong> At any care transition, request a written, reconciled medication list and compare it carefully to what was given before the transfer.</p>
+
+    <h2>Right 6: Right Documentation</h2>
+    <p>
+      Every medication given must be accurately recorded — what was given, when, by whom, and at what
+      dose. Without accurate documentation, the next provider has no reliable picture of what has already
+      been administered, raising the risk of duplicate or missed doses, especially at shift changes.
+    </p>
+    <p><strong>Tip:</strong> During any hospital stay, keep a simple medication log noting what was given and when. Good care teams welcome this engagement.</p>
+
+    <h2>Right 7: Right Reason</h2>
+    <p>
+      The right reason — sometimes called the 7th right — means a medication must be given for a
+      clinically appropriate, documented reason. A patient should always understand why a medication is
+      being prescribed, not just what it is. This right protects against over-medication, inappropriate
+      prescribing, and treatments that no longer match the patient's current condition.
+    </p>
+    <p><strong>Tip:</strong> Ask "Why am I taking this, and is it still needed?" — particularly for any medication that was started during a hospitalization.</p>
+
+    <p class="article-note">
+      <strong>Note:</strong> Polypharmacy — taking 5 or more medications — significantly raises the risk
+      of receiving drugs without clear ongoing indication. Review your full medication list with your
+      provider at least once per year.
+    </p>
+
+    <h2>How a Patient Advocate Can Help</h2>
+    <p>
+      A patient advocate does not replace your pharmacist, physician, or nursing team. But an advocate
+      who understands the 7 Rights can ask the questions your care team may not have time to ask — and
+      catch the errors that happen in the gaps between providers, between shifts, and between care
+      settings.
+    </p>
+    <p>
+      Whether accompanying you to a specialist appointment, coordinating your hospital discharge, or
+      reviewing your current medication list, <strong>StartHere Patient Advocacy Services</strong> is here
+      to help you navigate the healthcare system.
+    </p>
+
+    <h2>Have Questions About Your Medications?</h2>
+    <p>
+      StartHere Patient Advocacy can review your medication list, attend appointments with you, and
+      advocate on your behalf during care transitions — backed by 20+ years of nursing experience.
+    </p>
+    <p>
+      Contact us at <a href="mailto:{{ info_email }}">{{ info_email }}</a> or
+      <a href="tel:{{ org_phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ org_phone }}</a>.
+      Serving Raleigh and the Triangle, NC — guiding you from the very first step.
+    </p>
+
+    <p class="article-cta">
+      <a href="{{ url_for('client_patient.service_request') }}" class="btn btn-primary">Get Started</a>
+      <a href="{{ url_for('contacts') }}" class="btn btn-outline">Contact Our Team</a>
+    </p>
+
+    <p class="article-disclaimer">
+      This article is intended for educational purposes only and does not constitute medical advice.
+      StartHere Patient Advocacy is not a medical provider and does not prescribe, administer, or adjust
+      medications. Always consult your physician, pharmacist, or licensed healthcare provider regarding
+      your medications and treatment plan.
+    </p>
+  </div>
+</section>
+{% endblock %}
