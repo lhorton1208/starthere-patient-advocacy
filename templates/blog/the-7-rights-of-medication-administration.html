@@ -2,146 +2,262 @@
 
 {% block title %}The 7 Rights of Medication Administration | StartHere Patient Advocacy{% endblock %}
 
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/blog-7-rights-medication.css') }}" />
+{% endblock %}
+
 {% block content %}
-<section class="page-header">
+<section class="content-section medication-rights-section">
   <div class="container">
     <p class="article-back-link"><a href="{{ url_for('blog_index') }}">&larr; Blog &amp; Educational Resources</a></p>
-    <h1>The 7 Rights of Medication Administration</h1>
-    <p>What every patient and family should know to prevent medication errors and protect their loved ones during care.</p>
-  </div>
-</section>
+    <div class="medication-rights-article">
+<article class="page">
 
-<section class="content-section article-body">
-  <div class="container">
-    <div class="card-grid blog-stat-grid">
-      <div class="card blog-stat-card">
-        <p class="blog-stat-value">1.5M/yr</p>
-        <p>Americans harmed by medication errors annually</p>
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-meta">
+      <span class="hero-badge">StartHere Patient Advocacy</span>
+      <span class="hero-category">Patient Safety · Raleigh, NC</span>
+    </div>
+    <h1>The 7 Rights of<br><em>Medication Administration</em></h1>
+    <p class="hero-sub">What every patient and family should know to prevent medication errors and protect loved ones during care.</p>
+
+    <!-- Watermark compass SVG -->
+    <svg class="hero-logo-watermark" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="60" cy="60" r="58" fill="none" stroke="#fff" stroke-width="2"/>
+      <circle cx="60" cy="60" r="44" fill="none" stroke="#fff" stroke-width="1"/>
+      <polygon points="60,18 63,55 60,58 57,55" fill="#fff"/>
+      <polygon points="60,102 57,65 60,62 63,65" fill="#fff" opacity="0.3"/>
+      <polygon points="18,60 55,57 58,60 55,63" fill="#fff" opacity="0.3"/>
+      <polygon points="102,60 65,63 62,60 65,57" fill="#fff"/>
+      <circle cx="60" cy="60" r="6" fill="#fff"/>
+      <circle cx="60" cy="60" r="3" fill="#1A6E6E"/>
+    </svg>
+  </header>
+
+  <!-- STATS -->
+  <section class="stats" aria-label="Key medication safety statistics">
+    <div class="stat">
+      <div class="stat-num">1.5M<sup>/yr</sup></div>
+      <div class="stat-label">Americans harmed by medication errors annually</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">5+</div>
+      <div class="stat-label">Avg. prescriptions managed by older adults daily</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">~80%</div>
+      <div class="stat-label">Of medication errors are considered preventable</div>
+    </div>
+  </section>
+
+  <!-- INTRO -->
+  <section class="intro">
+    <div class="section-eyebrow">Why this matters</div>
+    <p>Healthcare professionals are trained to follow the 7 Rights of Medication Administration — a foundational safety framework used in hospitals and clinical settings nationwide. But these rights don't belong only to nurses and pharmacists. They belong to you, too.</p>
+    <p>For older adults managing multiple prescriptions across multiple providers, the risk of medication error is not hypothetical — it is ongoing. Understanding these rights makes you a more empowered advocate for yourself or a loved one, whether in a hospital room, a skilled nursing facility, or at home.</p>
+  </section>
+
+  <!-- RIGHTS 1–6 -->
+  <section class="rights">
+    <div class="rights-heading">The 7 Rights</div>
+
+    <!-- Right 1: Right Patient -->
+    <div class="right-card card-teal">
+      <div class="right-tab">
+        <div class="right-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+            <polyline points="16 11 18 13 22 9" stroke-width="2.5"/>
+          </svg>
+        </div>
+        <span class="right-num-label">Right<br>1</span>
       </div>
-      <div class="card blog-stat-card">
-        <p class="blog-stat-value">5+</p>
-        <p>Avg. prescriptions managed by older adults daily</p>
-      </div>
-      <div class="card blog-stat-card">
-        <p class="blog-stat-value">~80%</p>
-        <p>Of medication errors are considered preventable</p>
+      <div class="right-body-wrap">
+        <div class="right-title">Right patient</div>
+        <p class="right-desc">Every medication must be verified for the correct person using at least two identifiers — full name and date of birth — before it is administered. Patient mix-ups happen even in high-quality facilities, particularly when names are similar or a patient cannot speak for themselves.</p>
+        <div class="right-tip">
+          <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p><strong>Tip:</strong> Always state your full name and date of birth before receiving any medication — even if the nurse does not ask.</p>
+        </div>
       </div>
     </div>
 
-    <h2>Why This Matters</h2>
-    <p>
-      Healthcare professionals are trained to follow the 7 Rights of Medication Administration — a
-      foundational safety framework used in hospitals and clinical settings nationwide. But these rights
-      don't belong only to nurses and pharmacists. They belong to you, too.
-    </p>
-    <p>
-      Understanding them can make you a more empowered advocate for yourself or a loved one, whether in
-      a hospital room, a skilled nursing facility, or at home.
-    </p>
-    <p>
-      For older adults managing multiple prescriptions across multiple providers, the risk of medication
-      error is not hypothetical — it is ongoing. The sections below explain each of the 7 Rights and
-      provide a practical action step you can take right now.
-    </p>
+    <!-- Right 2: Right Medication -->
+    <div class="right-card card-blue">
+      <div class="right-tab">
+        <div class="right-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+            <path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"/>
+          </svg>
+        </div>
+        <span class="right-num-label">Right<br>2</span>
+      </div>
+      <div class="right-body-wrap">
+        <div class="right-title">Right medication</div>
+        <p class="right-desc">The exact prescribed medication must be given — not a similar-sounding drug. Confusion between names like Hydroxyzine and Hydralazine, or Celebrex and Celexa, has caused serious harm. Allergy information must also be reviewed before any new medication is introduced.</p>
+        <div class="right-tip">
+          <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p><strong>Tip:</strong> Ask "What is this medication and what is it for?" before accepting any drug in a hospital or care facility.</p>
+        </div>
+      </div>
+    </div>
 
-    <h2>Right 1: Right Patient</h2>
-    <p>
-      Every medication must be verified for the correct person using at least two identifiers — full name
-      and date of birth — before it is administered. Patient mix-ups happen even in high-quality
-      facilities, particularly when names are similar or a patient cannot speak for themselves.
-    </p>
-    <p><strong>Tip:</strong> Always state your full name and date of birth before receiving any medication — even if the nurse does not ask.</p>
+    <!-- Right 3: Right Dose -->
+    <div class="right-card card-teal">
+      <div class="right-tab">
+        <div class="right-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <span class="right-num-label">Right<br>3</span>
+      </div>
+      <div class="right-body-wrap">
+        <div class="right-title">Right dose</div>
+        <p class="right-desc">The correct amount must be administered. Older adults are especially vulnerable — declining kidney and liver function changes how the body processes medications, meaning a standard adult dose may be too high. Dosing errors can occur at prescribing, dispensing, or administration.</p>
+        <div class="right-tip">
+          <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p><strong>Tip:</strong> Ask your provider: "Is this dose appropriate for my age and kidney function?" Any change in dose warrants an explanation.</p>
+        </div>
+      </div>
+    </div>
 
-    <h2>Right 2: Right Medication</h2>
-    <p>
-      The exact prescribed medication must be given — not a similar-sounding drug. Confusion between
-      names like Hydroxyzine and Hydralazine, or Celebrex and Celexa, has caused serious patient harm.
-      Allergy information must also be reviewed before any new medication is introduced.
-    </p>
-    <p><strong>Tip:</strong> Ask "What is this medication and what is it for?" before accepting any drug in a hospital or care facility.</p>
+    <!-- Right 4: Right Route -->
+    <div class="right-card card-green">
+      <div class="right-tab">
+        <div class="right-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+        <span class="right-num-label">Right<br>4</span>
+      </div>
+      <div class="right-body-wrap">
+        <div class="right-title">Right route</div>
+        <p class="right-desc">Medication must be given the correct way — oral, intravenous, topical, inhaled, or injected. Routes are not interchangeable. An extended-release tablet that is crushed releases its full dose at once, which can be dangerous or fatal. Post-surgical patients with multiple lines are particularly at risk.</p>
+        <div class="right-tip">
+          <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="#2E6B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p><strong>Tip:</strong> Never crush, split, or alter a medication without first confirming with a pharmacist that it is safe to do so.</p>
+        </div>
+      </div>
+    </div>
 
-    <h2>Right 3: Right Dose</h2>
-    <p>
-      The correct amount must be administered. Older adults are especially vulnerable — declining kidney
-      and liver function changes how the body processes medications, meaning a standard adult dose may
-      be too high. Dosing errors can occur at prescribing, dispensing, or administration.
-    </p>
-    <p><strong>Tip:</strong> Ask your provider: "Is this dose appropriate for my age and kidney function?" Any change in dose warrants an explanation.</p>
+    <!-- Right 5: Right Time -->
+    <div class="right-card card-slate">
+      <div class="right-tab">
+        <div class="right-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <span class="right-num-label">Right<br>5</span>
+      </div>
+      <div class="right-body-wrap">
+        <div class="right-title">Right time</div>
+        <p class="right-desc">Medications must be given at the correct time and interval. Blood thinners, thyroid drugs, seizure medications, and insulin all require precise timing. Care transitions — ICU to step-down unit, hospital to rehab facility — are high-risk moments when doses are frequently missed or duplicated.</p>
+        <div class="right-tip">
+          <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="#3D5A72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p><strong>Tip:</strong> At any care transition, request a written, reconciled medication list and compare it carefully to what was given before the transfer.</p>
+        </div>
+      </div>
+    </div>
 
-    <h2>Right 4: Right Route</h2>
-    <p>
-      Medication must be given the correct way — oral, intravenous, topical, inhaled, injected, or by
-      another designated route. Routes are not interchangeable. An extended-release tablet that is
-      crushed releases its full dose at once, which can be dangerous or even fatal.
-    </p>
-    <p><strong>Tip:</strong> Never crush, split, or alter a medication without first confirming with a pharmacist that it is safe to do so.</p>
+    <!-- Right 6: Right Documentation -->
+    <div class="right-card card-rust">
+      <div class="right-tab">
+        <div class="right-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <span class="right-num-label">Right<br>6</span>
+      </div>
+      <div class="right-body-wrap">
+        <div class="right-title">Right documentation</div>
+        <p class="right-desc">Every medication given must be accurately recorded — what was given, when, by whom, and at what dose. Without accurate documentation, the next provider has no reliable picture of what has already been administered, raising the risk of duplicate or missed doses at shift changes.</p>
+        <div class="right-tip">
+          <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="#8B3A20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p><strong>Tip:</strong> During any hospital stay, keep a simple medication log noting what was given and when. Good care teams welcome this engagement.</p>
+        </div>
+      </div>
+    </div>
 
-    <h2>Right 5: Right Time</h2>
-    <p>
-      Medications must be given at the correct time and interval. Blood thinners, thyroid drugs, seizure
-      medications, and insulin all require precise timing. Care transitions — ICU to step-down unit,
-      hospital to rehab — are high-risk moments when doses are frequently missed or duplicated.
-    </p>
-    <p><strong>Tip:</strong> At any care transition, request a written, reconciled medication list and compare it carefully to what was given before the transfer.</p>
+    <!-- Right 7: Right Reason (Featured) -->
+    <div class="right-7">
+      <div class="right-7-header">
+        <div class="right-7-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div>
+          <div class="right-7-label">Right 7 — Featured</div>
+          <div class="right-7-title">Right reason</div>
+        </div>
+      </div>
+      <div class="right-7-body">
+        <p>The right reason — sometimes called the 7th right — means a medication must be given for a clinically appropriate, documented reason. A patient should always understand <em>why</em> a medication is being prescribed, not just what it is. This right protects against over-medication, inappropriate prescribing, and treatments that no longer match the patient's current condition.</p>
+        <div class="right-7-tips">
+          <div class="right-7-tip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p><strong>Tip:</strong> Ask "Why am I taking this, and is it still needed?" — particularly for any medication started during a hospitalization.</p>
+          </div>
+          <div class="right-7-tip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p><strong>Note:</strong> Polypharmacy — taking 5 or more medications — significantly raises the risk of receiving drugs without clear ongoing indication. Review your full medication list with your provider at least once per year.</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <h2>Right 6: Right Documentation</h2>
-    <p>
-      Every medication given must be accurately recorded — what was given, when, by whom, and at what
-      dose. Without accurate documentation, the next provider has no reliable picture of what has already
-      been administered, raising the risk of duplicate or missed doses, especially at shift changes.
-    </p>
-    <p><strong>Tip:</strong> During any hospital stay, keep a simple medication log noting what was given and when. Good care teams welcome this engagement.</p>
+  </section>
 
-    <h2>Right 7: Right Reason</h2>
-    <p>
-      The right reason — sometimes called the 7th right — means a medication must be given for a
-      clinically appropriate, documented reason. A patient should always understand why a medication is
-      being prescribed, not just what it is. This right protects against over-medication, inappropriate
-      prescribing, and treatments that no longer match the patient's current condition.
-    </p>
-    <p><strong>Tip:</strong> Ask "Why am I taking this, and is it still needed?" — particularly for any medication that was started during a hospitalization.</p>
+  <!-- HOW AN ADVOCATE HELPS -->
+  <section class="advocate">
+    <h2>How a patient advocate can help</h2>
+    <p>A patient advocate does not replace your pharmacist, physician, or nursing team. But an advocate who understands the 7 Rights can ask the questions your care team may not have time to ask — and catch errors that happen in the gaps between providers, shifts, and care settings. Whether accompanying you to a specialist appointment, coordinating a hospital discharge, or reviewing your medication list with clinical eyes, StartHere brings over 20 years of nursing experience to every engagement.</p>
+  </section>
 
-    <p class="article-note">
-      <strong>Note:</strong> Polypharmacy — taking 5 or more medications — significantly raises the risk
-      of receiving drugs without clear ongoing indication. Review your full medication list with your
-      provider at least once per year.
-    </p>
+  <!-- CTA -->
+  <section class="cta">
+    <div class="cta-text">
+      <h3>Have questions about your medications?</h3>
+      <p>StartHere can review your medication list, attend appointments, and advocate on your behalf during care transitions.</p>
+      <div class="cta-contact">
+        <a href="mailto:{{ info_email }}">{{ info_email }}</a>
+        &nbsp;·&nbsp;
+        <a href="tel:{{ org_phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ org_phone }}</a>
+      </div>
+    </div>
+    <a href="{{ url_for('contacts') }}" class="cta-btn">Free consultation</a>
+  </section>
 
-    <h2>How a Patient Advocate Can Help</h2>
-    <p>
-      A patient advocate does not replace your pharmacist, physician, or nursing team. But an advocate
-      who understands the 7 Rights can ask the questions your care team may not have time to ask — and
-      catch the errors that happen in the gaps between providers, between shifts, and between care
-      settings.
-    </p>
-    <p>
-      Whether accompanying you to a specialist appointment, coordinating your hospital discharge, or
-      reviewing your current medication list, <strong>StartHere Patient Advocacy Services</strong> is here
-      to help you navigate the healthcare system.
-    </p>
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="footer-brand">Start<span>Here</span> Patient Advocacy &nbsp;·&nbsp; Raleigh &amp; the Triangle, NC</div>
+      <div class="footer-tagline">Guiding you from the very first step.</div>
+    </div>
+    <p class="footer-disclaimer">This article is intended for educational purposes only and does not constitute medical advice. StartHere Patient Advocacy is not a medical provider and does not prescribe, administer, or adjust medications. Always consult your physician, pharmacist, or licensed healthcare provider regarding your medications and treatment plan.</p>
+  </footer>
 
-    <h2>Have Questions About Your Medications?</h2>
-    <p>
-      StartHere Patient Advocacy can review your medication list, attend appointments with you, and
-      advocate on your behalf during care transitions — backed by 20+ years of nursing experience.
-    </p>
-    <p>
-      Contact us at <a href="mailto:{{ info_email }}">{{ info_email }}</a> or
-      <a href="tel:{{ org_phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ org_phone }}</a>.
-      Serving Raleigh and the Triangle, NC — guiding you from the very first step.
-    </p>
-
-    <p class="article-cta">
-      <a href="{{ url_for('client_patient.service_request') }}" class="btn btn-primary">Get Started</a>
-      <a href="{{ url_for('contacts') }}" class="btn btn-outline">Contact Our Team</a>
-    </p>
-
-    <p class="article-disclaimer">
-      This article is intended for educational purposes only and does not constitute medical advice.
-      StartHere Patient Advocacy is not a medical provider and does not prescribe, administer, or adjust
-      medications. Always consult your physician, pharmacist, or licensed healthcare provider regarding
-      your medications and treatment plan.
-    </p>
+</article>
+    </div>
   </div>
 </section>
 {% endblock %}
