@@ -13,6 +13,7 @@ from routes.billing import billing_bp
 from routes.client_patient import client_patient_bp
 from routes.encounters import encounters_bp
 from routes.entities import entities_bp
+from routes.portal import portal_bp
 from routes.reports import reports_bp
 from seed import seed_database
 
@@ -32,6 +33,7 @@ def create_app(config_class=Config, *, run_migrate=True):
     app.register_blueprint(reports_bp)
     app.register_blueprint(entities_bp)
     app.register_blueprint(client_patient_bp)
+    app.register_blueprint(portal_bp)
 
     if run_migrate:
         with app.app_context():

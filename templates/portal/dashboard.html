@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Patient/Advocate Portal | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Patient/Advocate Portal</h1>
+    <p>
+      View test results, insurance approvals, procedures, and encounters
+      retrieved from connected healthcare systems via FHIR.
+    </p>
+  </div>
+</section>
+
+<section class="content-section portal-dashboard">
+  <div class="container">
+    <div class="portal-connection portal-connection--{{ dashboard.connection.mode }}">
+      <div class="portal-connection-label">{{ dashboard.connection.label }}</div>
+      <p>{{ dashboard.connection.detail }}</p>
+      {% if dashboard.connection.base_url %}
+      <p class="portal-connection-url"><code>{{ dashboard.connection.base_url }}</code></p>
+      {% endif %}
+    </div>
+
+    <div class="portal-patient-bar">
+      <div>
+        <span class="portal-eyebrow">Patient</span>
+        <h2 class="portal-patient-name">{{ dashboard.patient_display_name }}</h2>
+      </div>
+      <div class="portal-summary-pills" aria-label="Dashboard summary">
+        <span class="portal-pill">{{ dashboard.summary_counts.test_results }} test results</span>
+        <span class="portal-pill">{{ dashboard.summary_counts.insurance_approvals }} approvals</span>
+        <span class="portal-pill">{{ dashboard.summary_counts.procedures }} procedures</span>
+        <span class="portal-pill">{{ dashboard.summary_counts.encounters }} encounters</span>
+      </div>
+    </div>
+
+    <div class="portal-section" id="test-results">
+      <h2>Test Results</h2>
+      <p class="portal-section-desc">Laboratory and imaging results from Observation and DiagnosticReport resources.</p>
+      {% if dashboard.test_results %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Result</th>
+              <th>Date</th>
+              <th>Ordered by</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dashboard.test_results %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.category }}</td>
+              <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+              <td>{{ item.result_summary }}</td>
+              <td>{{ item.effective_date }}</td>
+              <td>{{ item.ordered_by or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No test results returned from the connected endpoint.</p>
+      {% endif %}
+    </div>
+
+    <div class="portal-section" id="insurance-approvals">
+      <h2>Insurance Approvals</h2>
+      <p class="portal-section-desc">Prior authorizations and coverage decisions from ClaimResponse / coverage resources.</p>
+      {% if dashboard.insurance_approvals %}
+      <div class="detail-grid">
+        {% for item in dashboard.insurance_approvals %}
+        <div class="detail-card">
+          <h3>{{ item.service_name }}</h3>
+          <dl>
+            <dt>Status</dt>
+            <dd><span class="badge badge-{{ item.status }}">{{ item.status }}</span></dd>
+            <dt>Payer</dt>
+            <dd>{{ item.payer }}</dd>
+            <dt>Decision date</dt>
+            <dd>{{ item.decision_date }}</dd>
+            {% if item.authorization_number %}
+            <dt>Authorization #</dt>
+            <dd>{{ item.authorization_number }}</dd>
+            {% endif %}
+            {% if item.notes %}
+            <dt>Notes</dt>
+            <dd>{{ item.notes }}</dd>
+            {% endif %}
+          </dl>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="portal-empty">No insurance approvals returned from the connected endpoint.</p>
+      {% endif %}
+    </div>
+
+    <div class="portal-section" id="procedures">
+      <h2>Procedures</h2>
+      <p class="portal-section-desc">Ordered and completed procedures from ServiceRequest and Procedure resources.</p>
+      {% if dashboard.procedures %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Procedure</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Location</th>
+              <th>Performer</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dashboard.procedures %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+              <td>{{ item.scheduled_or_performed }}</td>
+              <td>{{ item.location or "—" }}</td>
+              <td>{{ item.performer or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No procedures returned from the connected endpoint.</p>
+      {% endif %}
+    </div>
+
+    <div class="portal-section" id="encounters">
+      <h2>Encounters</h2>
+      <p class="portal-section-desc">Scheduled and completed visits from Encounter resources.</p>
+      {% if dashboard.encounters %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Status</th>
+              <th>When</th>
+              <th>Location</th>
+              <th>Reason</th>
+              <th>Provider</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dashboard.encounters %}
+            <tr>
+              <td>{{ item.encounter_type }}</td>
+              <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+              <td>{{ item.when }}</td>
+              <td>{{ item.location or "—" }}</td>
+              <td>{{ item.reason or "—" }}</td>
+              <td>{{ item.provider or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No encounters returned from the connected endpoint.</p>
+      {% endif %}
+    </div>
+
+    <p class="portal-footnote">
+      This portal is scaffolding for FHIR vendor connections. Live data will appear
+      after patient or advocate credentials are linked to a healthcare endpoint.
+      Educational and advocacy use only — not a substitute for your care team’s
+      official records.
+    </p>
+  </div>
+</section>
+{% endblock %}

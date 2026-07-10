@@ -16,6 +16,10 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-in-production")
     SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # FHIR vendor endpoint for the Patient/Advocate Portal (optional).
+    # When unset, the portal dashboard uses demo FHIR-shaped sample data.
+    FHIR_BASE_URL = os.environ.get("FHIR_BASE_URL", "").strip()
+    FHIR_ACCESS_TOKEN = os.environ.get("FHIR_ACCESS_TOKEN", "").strip()
 
 
 GEORGETTE_BIO = [

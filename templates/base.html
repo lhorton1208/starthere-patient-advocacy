@@ -66,6 +66,12 @@
           </div>
         </div>
 
+        <div class="nav-item">
+          <a href="{{ url_for('portal.dashboard') }}" class="nav-link {% if request.path.startswith('/portal') %}active{% endif %}">
+            Portal
+          </a>
+        </div>
+
         {% if current_advocate %}
         <div class="nav-item">
           <a href="#" class="nav-link {% if request.path.startswith('/reports') %}active{% endif %}">
@@ -181,6 +187,12 @@
             <li><a href="{{ url_for('client_patient.list_clients') }}">Client Info</a></li>
             <li><a href="{{ url_for('client_patient.list_patients') }}">Patient Info</a></li>
             <li><a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Portal</h4>
+          <ul>
+            <li><a href="{{ url_for('portal.dashboard') }}">Patient/Advocate Dashboard</a></li>
           </ul>
         </div>
         <div>
