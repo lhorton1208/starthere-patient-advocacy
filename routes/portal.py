@@ -8,6 +8,7 @@ with a portal-specific auth decorator (separate from staff @employee_required).
 from flask import Blueprint, render_template, request
 
 from fhir import get_fhir_client
+from fhir.jwks import public_jwks_uri
 
 portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
 
@@ -23,4 +24,8 @@ def dashboard():
     client = get_fhir_client()
     patient_id = request.args.get("patient_id") or None
     data = client.fetch_dashboard(patient_id=patient_id)
+    if not data.connection.jwks_uri:
+        data.connection.jwks_uri = public_jwks_uri(
+            preferred_base=request.url_root.rstrip("/")
+        )
     return render_template("portal/dashboard.html", dashboard=data)

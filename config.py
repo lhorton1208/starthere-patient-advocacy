@@ -16,10 +16,23 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-in-production")
     SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # FHIR vendor endpoint for the Patient/Advocate Portal (optional).
-    # When unset, the portal dashboard uses demo FHIR-shaped sample data.
+    # FHIR / SMART Backend Services (client_credentials + client secret)
     FHIR_BASE_URL = os.environ.get("FHIR_BASE_URL", "").strip()
+    FHIR_TOKEN_URL = os.environ.get("FHIR_TOKEN_URL", "").strip()
+    FHIR_CLIENT_ID = os.environ.get("FHIR_CLIENT_ID", "").strip()
+    FHIR_CLIENT_SECRET = os.environ.get("FHIR_CLIENT_SECRET", "").strip()
+    FHIR_SCOPE = os.environ.get("FHIR_SCOPE", "").strip()
     FHIR_ACCESS_TOKEN = os.environ.get("FHIR_ACCESS_TOKEN", "").strip()
+    # Public origin for building jwks_uri (or set PORTAL_JWKS_URI directly)
+    PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip()
+    PORTAL_JWKS_URI = os.environ.get("PORTAL_JWKS_URI", "").strip()
+    PORTAL_JWKS_JSON = os.environ.get("PORTAL_JWKS_JSON", "").strip()
+    PORTAL_JWT_PRIVATE_KEY = os.environ.get("PORTAL_JWT_PRIVATE_KEY", "").strip()
+    PORTAL_JWT_PRIVATE_KEY_PATH = os.environ.get(
+        "PORTAL_JWT_PRIVATE_KEY_PATH", ""
+    ).strip()
+    PORTAL_JWT_KID = os.environ.get("PORTAL_JWT_KID", "").strip()
+    PORTAL_JWT_ALG = os.environ.get("PORTAL_JWT_ALG", "RS384").strip() or "RS384"
 
 
 GEORGETTE_BIO = [

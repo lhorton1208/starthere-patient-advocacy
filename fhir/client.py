@@ -1,8 +1,8 @@
 """FHIR client interface and demo implementation.
 
-Replace DemoFHIRClient with a live HTTP client (SMART on FHIR / OAuth2)
-once a vendor endpoint and credentials are configured. Keep mapping logic
-in `_map_*` helpers so the dashboard contract stays unchanged.
+Live backend-services auth uses OAuth2 client_credentials with a client secret.
+Register PORTAL_JWKS_URI (/.well-known/jwks.json) with the vendor as requested.
+Keep mapping logic in `_map_*` helpers so the dashboard contract stays unchanged.
 """
 
 from __future__ import annotations
@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 
+from fhir.jwks import jwks_is_configured, public_jwks_uri
 from fhir.models import (
     ConnectionStatus,
     EncounterItem,
@@ -18,6 +19,7 @@ from fhir.models import (
     ProcedureItem,
     TestResult,
 )
+from fhir.oauth import request_client_credentials_token
 
 
 class FHIRClient(ABC):
@@ -44,15 +46,30 @@ class DemoFHIRClient(FHIRClient):
     """Returns sample data shaped like live FHIR mappings for UI scaffolding."""
 
     def get_connection_status(self) -> ConnectionStatus:
+        jwks_uri = public_jwks_uri()
+        jwks_note = (
+            f" JWKS URI for vendor registration: {jwks_uri}."
+            if jwks_uri and jwks_is_configured()
+            else (
+                " Generate portal keys (scripts/generate_portal_jwks_keys.py) and "
+                "set PUBLIC_BASE_URL so /.well-known/jwks.json can be registered."
+                if not jwks_is_configured()
+                else " Set PUBLIC_BASE_URL or PORTAL_JWKS_URI for the absolute JWKS URL."
+            )
+        )
         return ConnectionStatus(
             mode="demo",
             label="Demo mode",
             detail=(
-                "Showing sample FHIR-shaped data. Connect a vendor base URL and "
-                "credentials to load live test results, approvals, procedures, "
-                "and encounters."
+                "Showing sample FHIR-shaped data. Configure FHIR_BASE_URL, "
+                "FHIR_TOKEN_URL, FHIR_CLIENT_ID, and FHIR_CLIENT_SECRET for "
+                "backend services (client_credentials)."
+                + jwks_note
             ),
             base_url=None,
+            jwks_uri=jwks_uri,
+            auth_method="client_secret",
+            grant_type="client_credentials",
         )
 
     def fetch_dashboard(self, patient_id: str | None = None) -> PortalDashboard:
@@ -159,43 +176,103 @@ class DemoFHIRClient(FHIRClient):
 
 
 class LiveFHIRClient(FHIRClient):
-    """Placeholder for a real FHIR R4 HTTP client.
+    """FHIR R4 client using SMART Backend Services (client_credentials + secret).
 
-    Wire SMART on FHIR / OAuth2 token exchange here, then GET:
-      {base}/Observation?patient={id}
-      {base}/DiagnosticReport?patient={id}
-      {base}/Encounter?patient={id}
-      {base}/ServiceRequest?patient={id}
-      {base}/Procedure?patient={id}
-      {base}/ClaimResponse?patient={id}   (or vendor-specific prior-auth)
+    Token exchange is implemented. Resource GETs still fall back to demo data
+    until Bundle mapping is completed for the vendor's FHIR API.
     """
 
-    def __init__(self, base_url: str, access_token: str | None = None):
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        token_url: str | None = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        scope: str | None = None,
+        access_token: str | None = None,
+    ):
         self.base_url = base_url.rstrip("/")
-        self.access_token = access_token
+        self.token_url = (token_url or "").rstrip("/") or None
+        self.client_id = client_id or None
+        self.client_secret = client_secret or None
+        self.scope = scope or None
+        self._static_access_token = access_token
+        self._cached_access_token: str | None = None
+
+    def _obtain_access_token(self) -> str | None:
+        if self._static_access_token:
+            return self._static_access_token
+        if self._cached_access_token:
+            return self._cached_access_token
+        if not (self.token_url and self.client_id and self.client_secret):
+            return None
+        token = request_client_credentials_token(
+            token_url=self.token_url,
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            scope=self.scope,
+        )
+        self._cached_access_token = token.access_token
+        return self._cached_access_token
 
     def get_connection_status(self) -> ConnectionStatus:
-        if not self.access_token:
+        jwks_uri = public_jwks_uri()
+        has_creds = bool(self.token_url and self.client_id and self.client_secret)
+        has_static = bool(self._static_access_token)
+        jwks_ready = jwks_is_configured()
+
+        if not (has_creds or has_static):
+            detail = (
+                "Set FHIR_TOKEN_URL, FHIR_CLIENT_ID, and FHIR_CLIENT_SECRET for "
+                "client_credentials, or FHIR_ACCESS_TOKEN for a pre-issued token."
+            )
+            if not jwks_ready:
+                detail += (
+                    " Also publish PORTAL_JWKS_JSON (or PORTAL_JWT_PRIVATE_KEY) so "
+                    "/.well-known/jwks.json can be registered as jwks_uri."
+                )
             return ConnectionStatus(
                 mode="unconfigured",
-                label="Endpoint configured — not authenticated",
-                detail=(
-                    "FHIR_BASE_URL is set, but no access token is available yet. "
-                    "Complete patient/advocate login and vendor authorization to "
-                    "load live data."
-                ),
+                label="Endpoint configured — credentials missing",
+                detail=detail,
                 base_url=self.base_url,
+                jwks_uri=jwks_uri,
+                auth_method="client_secret",
+                grant_type="client_credentials",
             )
+
+        detail = (
+            f"FHIR base {self.base_url} with client_credentials / client_secret. "
+            "Dashboard resource queries still use sample data until live Bundle "
+            "mapping is enabled."
+        )
+        if not jwks_ready:
+            detail += (
+                " JWKS is not published yet — generate keys and register "
+                "/.well-known/jwks.json with the vendor."
+            )
+        elif jwks_uri:
+            detail += f" JWKS URI: {jwks_uri}."
+
         return ConnectionStatus(
             mode="live",
-            label="Connected",
-            detail=f"Querying FHIR endpoint at {self.base_url}",
+            label="Connected (backend services)",
+            detail=detail,
             base_url=self.base_url,
+            jwks_uri=jwks_uri,
+            auth_method="client_secret",
+            grant_type="client_credentials",
         )
 
     def fetch_dashboard(self, patient_id: str | None = None) -> PortalDashboard:
-        # TODO: Implement HTTP GETs + Bundle parsing. Until then, fall back to
-        # demo data so the dashboard remains usable during development.
+        # Attempt token acquisition so misconfiguration surfaces early in logs/status.
+        try:
+            self._obtain_access_token()
+        except RuntimeError:
+            # Keep demo dashboard usable; connection status reflects config state.
+            pass
+
         demo = DemoFHIRClient().fetch_dashboard(patient_id)
         demo.connection = self.get_connection_status()
         demo.patient_display_name = patient_id or "Connected Patient"
@@ -206,6 +283,12 @@ def get_fhir_client() -> FHIRClient:
     """Factory: live client when FHIR_BASE_URL is set, otherwise demo."""
     base_url = os.environ.get("FHIR_BASE_URL", "").strip()
     if base_url:
-        token = os.environ.get("FHIR_ACCESS_TOKEN", "").strip() or None
-        return LiveFHIRClient(base_url=base_url, access_token=token)
+        return LiveFHIRClient(
+            base_url=base_url,
+            token_url=os.environ.get("FHIR_TOKEN_URL", "").strip() or None,
+            client_id=os.environ.get("FHIR_CLIENT_ID", "").strip() or None,
+            client_secret=os.environ.get("FHIR_CLIENT_SECRET", "").strip() or None,
+            scope=os.environ.get("FHIR_SCOPE", "").strip() or None,
+            access_token=os.environ.get("FHIR_ACCESS_TOKEN", "").strip() or None,
+        )
     return DemoFHIRClient()

@@ -1,12 +1,14 @@
+import json
 import os
 from datetime import datetime
 
-from flask import Flask, abort, flash, redirect, render_template, send_from_directory, url_for
+from flask import Flask, abort, flash, jsonify, redirect, render_template, send_from_directory, url_for
 from whitenoise import WhiteNoise
 
 from auth import get_current_advocate
 from blog_content import ARTICLES, get_article
 from config import BASE_DIR, CONTACTS, Config, INFO_EMAIL, INSTANCE_DIR, ORG_PHONE
+from fhir.jwks import get_jwks
 from models import db
 from routes.auth_routes import auth_bp
 from routes.billing import billing_bp
@@ -56,6 +58,17 @@ def create_app(config_class=Config, *, run_migrate=True):
             "blog_articles": ARTICLES,
             "current_advocate": get_current_advocate(),
         }
+
+    @app.route("/.well-known/jwks.json")
+    def portal_jwks():
+        """Public JWKS URI for FHIR vendor registration (jwks_uri)."""
+        try:
+            payload = get_jwks()
+        except (ValueError, json.JSONDecodeError) as exc:
+            abort(500, description=f"JWKS configuration error: {exc}")
+        response = jsonify(payload)
+        response.headers["Cache-Control"] = "public, max-age=300"
+        return response
 
     @app.route("/")
     def index():

@@ -18,8 +18,20 @@
     <div class="portal-connection portal-connection--{{ dashboard.connection.mode }}">
       <div class="portal-connection-label">{{ dashboard.connection.label }}</div>
       <p>{{ dashboard.connection.detail }}</p>
+      {% if dashboard.connection.auth_method or dashboard.connection.grant_type %}
+      <p class="portal-connection-meta">
+        {% if dashboard.connection.auth_method %}Auth: <code>{{ dashboard.connection.auth_method }}</code>{% endif %}
+        {% if dashboard.connection.auth_method and dashboard.connection.grant_type %} · {% endif %}
+        {% if dashboard.connection.grant_type %}Grant: <code>{{ dashboard.connection.grant_type }}</code>{% endif %}
+      </p>
+      {% endif %}
       {% if dashboard.connection.base_url %}
-      <p class="portal-connection-url"><code>{{ dashboard.connection.base_url }}</code></p>
+      <p class="portal-connection-url">FHIR base: <code>{{ dashboard.connection.base_url }}</code></p>
+      {% endif %}
+      {% if dashboard.connection.jwks_uri %}
+      <p class="portal-connection-url">JWKS URI: <a href="{{ dashboard.connection.jwks_uri }}"><code>{{ dashboard.connection.jwks_uri }}</code></a></p>
+      {% else %}
+      <p class="portal-connection-url">JWKS URI: <a href="{{ url_for('portal_jwks', _external=True) }}"><code>{{ url_for('portal_jwks', _external=True) }}</code></a></p>
       {% endif %}
     </div>
 

@@ -1197,6 +1197,12 @@ a:hover {
   font-size: 0.85rem !important;
 }
 
+.portal-connection-meta {
+  margin-top: 0.5rem !important;
+  font-size: 0.85rem !important;
+  color: var(--color-text-muted);
+}
+
 .portal-patient-bar {
   display: flex;
   flex-wrap: wrap;

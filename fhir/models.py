@@ -20,6 +20,9 @@ class ConnectionStatus:
     label: str
     detail: str
     base_url: str | None = None
+    jwks_uri: str | None = None
+    auth_method: str | None = None
+    grant_type: str | None = None
 
 
 @dataclass
