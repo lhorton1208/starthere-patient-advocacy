@@ -24,6 +24,7 @@
         {{ render_form_field(form.status) }}
         {{ render_form_field(form.advocate_id) }}
         {{ render_form_field(form.provider_id) }}
+        <p class="form-note">Choose <strong>+ Add new provider...</strong>, then click <strong>Add New Provider</strong> to create one and return here with your visit draft restored.</p>
         {{ render_form_field(form.hospital_id) }}
         {{ render_form_field(form.home_health_facility_id) }}
         {{ render_form_field(form.scheduled_at) }}
@@ -32,7 +33,8 @@
 
         <p class="form-note">Use ISO format for dates, e.g. 2026-05-24T14:30</p>
 
-        <button type="submit" class="btn btn-solid">Save Visit</button>
+        <button type="submit" name="action" value="save" class="btn btn-solid">Save Visit</button>
+        <button type="submit" name="action" value="add_provider" class="btn btn-secondary">Add New Provider</button>
         {% if encounter %}
         <a href="{{ url_for('encounters.view_encounter', encounter_id=encounter.id) }}" class="btn btn-secondary">Cancel</a>
         {% else %}

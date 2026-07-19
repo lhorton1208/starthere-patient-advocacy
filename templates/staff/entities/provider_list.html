@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Providers | StartHere{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div><h1>Providers</h1><p>Add and edit physicians and other care providers.</p></div>
+    <a href="{{ url_for('entities.edit_provider') }}" class="btn btn-solid">Add Provider</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Specialty</th>
+            <th>Affiliation</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ row.display_name }}</td>
+            <td>{{ row.specialty or '—' }}</td>
+            <td>{{ row.affiliation or '—' }}</td>
+            <td>{{ row.phone or '—' }}</td>
+            <td>{{ row.email or '—' }}</td>
+            <td><a href="{{ url_for('entities.edit_provider', item_id=row.id) }}">Edit</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="empty-state">No providers yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

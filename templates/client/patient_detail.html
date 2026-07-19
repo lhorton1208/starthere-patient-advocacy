@@ -23,6 +23,12 @@
         <dl>
           <dt>Linked Client</dt>
           <dd><a href="{{ url_for('client_patient.view_client', client_id=patient.client_id) }}">{{ patient.client.display_name }}</a></dd>
+          <dt>Primary Care Provider</dt>
+          <dd>
+            {% if patient.primary_provider %}
+              {{ patient.primary_provider.display_name }}{% if patient.primary_provider.specialty %} — {{ patient.primary_provider.specialty }}{% endif %}
+            {% else %}—{% endif %}
+          </dd>
           <dt>Date of Birth</dt><dd>{{ patient.date_of_birth.strftime('%Y-%m-%d') if patient.date_of_birth else '—' }}</dd>
           {% if patient.last4_ssn %}<dt>Last 4 SSN</dt><dd>{{ patient.last4_ssn }}</dd>{% endif %}
           <dt>Mobile</dt><dd>{{ patient.phone_mobile or '—' }}</dd>

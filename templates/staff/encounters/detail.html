@@ -31,7 +31,7 @@
           <dt>Status</dt><dd><span class="badge badge-{{ encounter.status }}">{{ encounter.status }}</span></dd>
           <dt>Service</dt><dd>{{ service_labels.get(encounter.encounter_type, encounter.encounter_type) }}</dd>
           <dt>Advocate</dt><dd>{{ encounter.advocate.name if encounter.advocate else '—' }}</dd>
-          <dt>Provider</dt><dd>{{ encounter.provider.name if encounter.provider else '—' }}</dd>
+          <dt>Provider</dt><dd>{{ encounter.provider.display_name if encounter.provider else '—' }}</dd>
           <dt>Hospital</dt><dd>{{ encounter.hospital.name if encounter.hospital else '—' }}</dd>
           <dt>Home Health</dt><dd>{{ encounter.home_health_facility.name if encounter.home_health_facility else '—' }}</dd>
           <dt>Scheduled</dt><dd>{{ encounter.scheduled_at.strftime('%Y-%m-%d %H:%M') if encounter.scheduled_at else '—' }}</dd>

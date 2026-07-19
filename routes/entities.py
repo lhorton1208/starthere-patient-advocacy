@@ -1,10 +1,11 @@
 from auth import employee_required
-from flask import Blueprint, flash, redirect, render_template, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from seed import COMPANY_NAME
 from forms import (
     AdvocateEntityForm,
     HomeHealthFacilityForm,
     HospitalForm,
+    ProviderForm,
     RelationshipToPatientForm,
 )
 from models import (
@@ -12,6 +13,7 @@ from models import (
     Company,
     HomeHealthFacility,
     Hospital,
+    Provider,
     RelationshipToPatient,
     db,
 )
@@ -21,6 +23,26 @@ entities_bp = Blueprint("entities", __name__, url_prefix="/entities")
 
 def _company():
     return Company.query.filter_by(name=COMPANY_NAME).first()
+
+
+def _strip(value):
+    return (value or "").strip() or None
+
+
+def _apply_provider_from_form(record, form):
+    record.prefix = _strip(form.prefix.data)
+    record.first_name = form.first_name.data.strip()
+    record.last_name = form.last_name.data.strip()
+    record.title = _strip(form.title.data)
+    record.specialty = _strip(form.specialty.data)
+    record.affiliation = _strip(form.affiliation.data)
+    record.address = _strip(form.address.data)
+    record.city = _strip(form.city.data)
+    record.state = _strip(form.state.data)
+    record.zip_code = _strip(form.zip_code.data)
+    record.phone = _strip(form.phone.data)
+    record.email = _strip(form.email.data)
+    record.sync_name_fields()
 
 
 @entities_bp.route("/hospitals")
@@ -50,6 +72,88 @@ def edit_hospital(item_id=None):
         "staff/entities/hospital_form.html",
         form=form,
         title="Edit Hospital" if item else "New Hospital",
+    )
+
+
+@entities_bp.route("/providers")
+@employee_required
+def list_providers():
+    rows = Provider.query.order_by(
+        Provider.last_name, Provider.first_name, Provider.name
+    ).all()
+    return render_template("staff/entities/provider_list.html", rows=rows)
+
+
+@entities_bp.route("/providers/new", methods=["GET", "POST"])
+@entities_bp.route("/providers/<int:item_id>/edit", methods=["GET", "POST"])
+@employee_required
+def edit_provider(item_id=None):
+    item = Provider.query.get(item_id) if item_id else None
+    form = ProviderForm(obj=item)
+    resume_patient = request.args.get("resume_patient")
+    resume_visit = request.args.get("resume_visit")
+
+    if form.validate_on_submit():
+        provider = item or Provider()
+        _apply_provider_from_form(provider, form)
+        if not item:
+            db.session.add(provider)
+        db.session.commit()
+        flash("Provider saved.", "success")
+
+        if resume_patient and session.get("patient_form_draft") is not None:
+            draft = session["patient_form_draft"]
+            draft["primary_provider_id"] = provider.id
+            session["patient_form_draft"] = draft
+            session.modified = True
+            flash("Provider saved. Your patient entries have been restored.", "success")
+            patient_id = draft.get("patient_id")
+            if patient_id:
+                return redirect(
+                    url_for("client_patient.edit_patient", patient_id=patient_id)
+                )
+            return redirect(url_for("client_patient.edit_patient"))
+
+        if resume_visit and session.get("visit_form_draft") is not None:
+            draft = session["visit_form_draft"]
+            draft["provider_id"] = provider.id
+            session["visit_form_draft"] = draft
+            session.modified = True
+            flash("Provider saved. Your visit entries have been restored.", "success")
+            encounter_id = draft.get("encounter_id")
+            if encounter_id:
+                return redirect(
+                    url_for("encounters.edit_encounter", encounter_id=encounter_id)
+                )
+            return redirect(url_for("encounters.new_encounter"))
+
+        return redirect(url_for("entities.list_providers"))
+
+    cancel_url = None
+    if resume_patient and session.get("patient_form_draft"):
+        draft = session["patient_form_draft"]
+        patient_id = draft.get("patient_id")
+        cancel_url = (
+            url_for("client_patient.edit_patient", patient_id=patient_id)
+            if patient_id
+            else url_for("client_patient.edit_patient")
+        )
+    elif resume_visit and session.get("visit_form_draft"):
+        draft = session["visit_form_draft"]
+        encounter_id = draft.get("encounter_id")
+        cancel_url = (
+            url_for("encounters.edit_encounter", encounter_id=encounter_id)
+            if encounter_id
+            else url_for("encounters.new_encounter")
+        )
+
+    return render_template(
+        "staff/entities/provider_form.html",
+        form=form,
+        title="Edit Provider" if item else "New Provider",
+        resume_patient=bool(resume_patient),
+        resume_visit=bool(resume_visit),
+        cancel_url=cancel_url,
     )
 
 

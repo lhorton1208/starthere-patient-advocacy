@@ -16,6 +16,7 @@ from models import (
     Client,
     Company,
     Patient,
+    Provider,
     RelationshipToPatient,
     db,
     delete_patient_record,
@@ -31,6 +32,7 @@ client_patient_bp = Blueprint("client_patient", __name__, url_prefix="/client")
 
 PATIENT_DRAFT_SESSION_KEY = "patient_form_draft"
 NEW_CLIENT_OPTION = -1
+NEW_PROVIDER_OPTION = -1
 
 
 def _company():
@@ -38,6 +40,17 @@ def _company():
     if not company:
         raise RuntimeError("StartHere company record is missing.")
     return company
+
+
+def _provider_choices():
+    providers = Provider.query.order_by(
+        Provider.last_name, Provider.first_name, Provider.name
+    ).all()
+    return (
+        [(0, "None")]
+        + [(NEW_PROVIDER_OPTION, "+ Add new provider...")]
+        + [(p.id, p.choice_label) for p in providers]
+    )
 
 
 def _strip(value):
@@ -71,10 +84,13 @@ def _populate_patient_form(form, patient=None):
         + [(NEW_CLIENT_OPTION, "+ Add new client...")]
         + [(c.id, c.display_name) for c in clients]
     )
+    form.primary_provider_id.choices = _provider_choices()
     if patient:
         form.client_id.data = patient.client_id
         if not patient.phone_mobile and patient.phone:
             form.phone_mobile.data = patient.phone
+        if not form.is_submitted():
+            form.primary_provider_id.data = patient.primary_provider_id or 0
 
 
 def _patient_draft_from_form(form, patient_id=None):
@@ -82,6 +98,7 @@ def _patient_draft_from_form(form, patient_id=None):
     return {
         "patient_id": patient_id,
         "client_id": form.client_id.data,
+        "primary_provider_id": form.primary_provider_id.data,
         "prefix": form.prefix.data or "",
         "first_name": form.first_name.data or "",
         "middle_name": form.middle_name.data or "",
@@ -128,6 +145,11 @@ def _apply_patient_draft_to_form(form, draft):
     client_id = draft.get("client_id")
     if client_id and client_id > 0:
         form.client_id.data = client_id
+    provider_id = draft.get("primary_provider_id")
+    if provider_id and provider_id > 0:
+        form.primary_provider_id.data = provider_id
+    elif provider_id == 0 or provider_id is None:
+        form.primary_provider_id.data = 0
 
 
 def _save_patient_draft(form, patient_id=None):
@@ -183,6 +205,8 @@ def _apply_patient_from_form(record, form):
     record.mood = _strip(form.mood.data)
     record.mental_state = _strip(form.mental_state.data)
     record.intake_notes = _strip(form.intake_notes.data)
+    provider_id = form.primary_provider_id.data
+    record.primary_provider_id = provider_id if provider_id and provider_id > 0 else None
 
 
 @client_patient_bp.route("/client-info")
@@ -296,6 +320,10 @@ def edit_patient(patient_id=None):
         _save_patient_draft(form, patient_id)
         return redirect(url_for("client_patient.edit_client", resume_patient=1))
 
+    if request.method == "POST" and request.form.get("action") == "add_provider":
+        _save_patient_draft(form, patient_id)
+        return redirect(url_for("entities.edit_provider", resume_patient=1))
+
     draft = session.get(PATIENT_DRAFT_SESSION_KEY)
     if draft and (draft.get("patient_id") == patient_id or (not patient_id and not draft.get("patient_id"))):
         _apply_patient_draft_to_form(form, draft)
@@ -307,6 +335,19 @@ def edit_patient(patient_id=None):
     if form.validate_on_submit() and request.form.get("action", "save") == "save":
         if form.client_id.data == NEW_CLIENT_OPTION:
             flash("Select a client or use Add New Client to create one.", "error")
+            return render_template(
+                "client/patient_form.html",
+                form=form,
+                delete_form=delete_form,
+                patient=patient,
+                title="Edit Patient" if patient else "New Patient",
+            )
+
+        if form.primary_provider_id.data == NEW_PROVIDER_OPTION:
+            flash(
+                "Select a primary care provider or use Add New Provider to create one.",
+                "error",
+            )
             return render_template(
                 "client/patient_form.html",
                 form=form,

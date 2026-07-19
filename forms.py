@@ -356,6 +356,11 @@ class PatientRecordForm(FlaskForm):
     zip_code = StringField("ZIP Code", validators=[Optional(), Length(max=255)])
     mood = StringField("Mood", validators=[Optional(), Length(max=255)])
     mental_state = StringField("Mental State", validators=[Optional(), Length(max=255)])
+    primary_provider_id = SelectField(
+        "Primary Care Provider",
+        coerce=nullable_int,
+        validators=[Optional()],
+    )
     intake_notes = TextAreaField(
         "Interview Notes",
         validators=[Optional(), Length(max=10000)],
@@ -364,6 +369,36 @@ class PatientRecordForm(FlaskForm):
             "placeholder": "Notes from the patient interview (advocate use).",
         },
     )
+
+
+class ProviderForm(FlaskForm):
+    prefix = StringField(
+        "Prefix",
+        validators=[Optional(), Length(max=32)],
+        render_kw={"placeholder": "e.g. Dr, Mr, Ms"},
+    )
+    first_name = StringField("First Name", validators=[DataRequired(), Length(max=255)])
+    last_name = StringField("Last Name", validators=[DataRequired(), Length(max=255)])
+    title = StringField(
+        "Title",
+        validators=[Optional(), Length(max=100)],
+        render_kw={"placeholder": "e.g. MD, DO, NP"},
+    )
+    specialty = StringField(
+        "Medical Specialty",
+        validators=[Optional(), Length(max=150)],
+        render_kw={"placeholder": "e.g. Family Medicine, Cardiology"},
+    )
+    affiliation = StringField(
+        "Affiliated Institution / Practice",
+        validators=[Optional(), Length(max=255)],
+    )
+    address = StringField("Street Address", validators=[Optional(), Length(max=300)])
+    city = StringField("City", validators=[Optional(), Length(max=255)])
+    state = StringField("State", validators=[Optional(), Length(max=255)])
+    zip_code = StringField("ZIP Code", validators=[Optional(), Length(max=255)])
+    phone = StringField("Phone", validators=[Optional(), Length(max=50)])
+    email = EmailField("Email", validators=[Optional(), Email(), Length(max=200)])
 
 
 class HospitalForm(FlaskForm):

@@ -48,6 +48,7 @@ NEW_COLUMNS = {
         "mood": "VARCHAR(255)",
         "mental_state": "VARCHAR(255)",
         "patient_medications_id": "INTEGER",
+        "primary_provider_id": "INTEGER",
         "intake_notes": "TEXT",
     },
     "advocates": {
@@ -65,10 +66,17 @@ NEW_COLUMNS = {
         "is_admin": "BOOLEAN DEFAULT FALSE",
     },
     "providers": {
+        "prefix": "VARCHAR(32)",
         "first_name": "VARCHAR(255)",
         "middle_name": "VARCHAR(255)",
         "last_name": "VARCHAR(255)",
+        "title": "VARCHAR(100)",
         "location_id": "INTEGER",
+        "affiliation": "VARCHAR(255)",
+        "address": "VARCHAR(300)",
+        "city": "VARCHAR(255)",
+        "state": "VARCHAR(255)",
+        "zip_code": "VARCHAR(255)",
     },
     "hospitals": {
         "city": "VARCHAR(255)",

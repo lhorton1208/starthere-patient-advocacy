@@ -131,6 +131,7 @@ class Patient(db.Model):
     patient_medications_id = db.Column(
         db.Integer, db.ForeignKey("patient_medications.id")
     )
+    primary_provider_id = db.Column(db.Integer, db.ForeignKey("providers.id"))
     intake_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
@@ -145,6 +146,11 @@ class Patient(db.Model):
         foreign_keys="Client.patient_id",
         back_populates="linked_patient",
         uselist=False,
+    )
+    primary_provider = db.relationship(
+        "Provider",
+        foreign_keys=[primary_provider_id],
+        back_populates="primary_patients",
     )
     relationships = db.relationship(
         "PatientRelationship", back_populates="patient", lazy="dynamic"
@@ -274,23 +280,58 @@ class Provider(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False, default="")
+    prefix = db.Column(db.String(32))
     first_name = db.Column(db.String(255))
     middle_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
+    title = db.Column(db.String(100))
     location_id = db.Column(db.Integer)
     specialty = db.Column(db.String(150))
+    affiliation = db.Column(db.String(255))
     phone = db.Column(db.String(50))
     email = db.Column(db.String(200))
     npi = db.Column(db.String(20))
+    address = db.Column(db.String(300))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    zip_code = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     encounters = db.relationship("Encounter", back_populates="provider", lazy="dynamic")
+    primary_patients = db.relationship(
+        "Patient",
+        foreign_keys="Patient.primary_provider_id",
+        back_populates="primary_provider",
+        lazy="dynamic",
+    )
 
     @property
     def display_name(self):
         if self.first_name or self.last_name:
-            return " ".join(p for p in [self.first_name, self.last_name] if p).strip()
-        return self.name
+            return " ".join(
+                p
+                for p in [self.prefix, self.first_name, self.middle_name, self.last_name]
+                if p
+            ).strip()
+        return self.name or ""
+
+    def sync_name_fields(self):
+        if self.first_name or self.last_name:
+            self.name = self.display_name
+        elif self.name and not self.first_name:
+            parts = self.name.strip().split()
+            if parts:
+                self.first_name = parts[0]
+                self.last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
+
+    @property
+    def choice_label(self):
+        label = self.display_name or f"Provider #{self.id}"
+        if self.specialty:
+            label = f"{label} — {self.specialty}"
+        elif self.affiliation:
+            label = f"{label} — {self.affiliation}"
+        return label
 
 
 class Hospital(db.Model):

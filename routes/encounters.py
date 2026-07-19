@@ -21,10 +21,13 @@ from models import (
     TimeCard,
     db,
 )
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy.exc import IntegrityError
 
 encounters_bp = Blueprint("encounters", __name__, url_prefix="/encounters")
+
+VISIT_DRAFT_SESSION_KEY = "visit_form_draft"
+NEW_PROVIDER_OPTION = -1
 
 
 def _parse_datetime(value):
@@ -66,10 +69,69 @@ def _ensure_advocate_in_choices(form, advocate_id):
         )
 
 
+def _provider_choice_label(provider_id):
+    provider = Provider.query.get(provider_id)
+    if provider:
+        return provider.choice_label
+    return f"Provider #{provider_id}"
+
+
+def _ensure_provider_in_choices(form, provider_id):
+    if provider_id and provider_id > 0:
+        _append_choice(
+            form.provider_id.choices,
+            provider_id,
+            _provider_choice_label(provider_id),
+        )
+
+
+def _visit_draft_from_form(form, encounter_id=None):
+    return {
+        "encounter_id": encounter_id,
+        "patient_id": form.patient_id.data,
+        "advocate_id": form.advocate_id.data,
+        "provider_id": form.provider_id.data,
+        "hospital_id": form.hospital_id.data,
+        "home_health_facility_id": form.home_health_facility_id.data,
+        "encounter_type": form.encounter_type.data or "",
+        "status": form.status.data or "",
+        "scheduled_at": form.scheduled_at.data or "",
+        "started_at": form.started_at.data or "",
+        "ended_at": form.ended_at.data or "",
+    }
+
+
+def _apply_visit_draft_to_form(form, draft):
+    if draft.get("patient_id"):
+        form.patient_id.data = draft["patient_id"]
+    form.advocate_id.data = draft.get("advocate_id") or 0
+    provider_id = draft.get("provider_id")
+    if provider_id and provider_id > 0:
+        form.provider_id.data = provider_id
+    elif provider_id == 0 or provider_id is None:
+        form.provider_id.data = 0
+    form.hospital_id.data = draft.get("hospital_id") or 0
+    form.home_health_facility_id.data = draft.get("home_health_facility_id") or 0
+    if draft.get("encounter_type"):
+        form.encounter_type.data = draft["encounter_type"]
+    if draft.get("status"):
+        form.status.data = draft["status"]
+    form.scheduled_at.data = draft.get("scheduled_at") or ""
+    form.started_at.data = draft.get("started_at") or ""
+    form.ended_at.data = draft.get("ended_at") or ""
+
+
+def _save_visit_draft(form, encounter_id=None):
+    session[VISIT_DRAFT_SESSION_KEY] = _visit_draft_from_form(form, encounter_id)
+    session.modified = True
+
+
 def _populate_encounter_form(form, encounter=None):
     patients = Patient.query.order_by(Patient.last_name, Patient.first_name).all()
     advocates = Advocate.query.filter_by(active=True).order_by(Advocate.name).all()
-    providers = Provider.query.order_by(Provider.name).all()
+    providers = Provider.query.order_by(
+        Provider.last_name, Provider.first_name, Provider.name
+    ).all()
     hospitals = Hospital.query.order_by(Hospital.name).all()
     facilities = HomeHealthFacility.query.order_by(HomeHealthFacility.name).all()
 
@@ -77,7 +139,11 @@ def _populate_encounter_form(form, encounter=None):
         (p.id, p.full_name) for p in patients
     ]
     form.advocate_id.choices = [(0, "None")] + [(a.id, a.name) for a in advocates]
-    form.provider_id.choices = [(0, "None")] + [(p.id, p.name) for p in providers]
+    form.provider_id.choices = (
+        [(0, "None")]
+        + [(NEW_PROVIDER_OPTION, "+ Add new provider...")]
+        + [(p.id, p.choice_label) for p in providers]
+    )
     form.hospital_id.choices = [(0, "None")] + [(h.id, h.name) for h in hospitals]
     form.home_health_facility_id.choices = [(0, "None")] + [
         (f.id, f.name) for f in facilities
@@ -85,6 +151,7 @@ def _populate_encounter_form(form, encounter=None):
 
     if encounter:
         _ensure_advocate_in_choices(form, encounter.advocate_id)
+        _ensure_provider_in_choices(form, encounter.provider_id)
         if not form.is_submitted():
             form.patient_id.data = encounter.patient_id
             form.advocate_id.data = encounter.advocate_id or 0
@@ -108,6 +175,7 @@ def _populate_encounter_form(form, encounter=None):
             )
         else:
             _ensure_advocate_in_choices(form, form.advocate_id.data)
+            _ensure_provider_in_choices(form, form.provider_id.data)
 
 
 def _populate_visit_note_form(form, note=None):
@@ -166,7 +234,8 @@ def _save_encounter_from_form(form, encounter=None):
     encounter = encounter or Encounter()
     encounter.patient_id = form.patient_id.data
     encounter.advocate_id = form.advocate_id.data
-    encounter.provider_id = form.provider_id.data
+    provider_id = form.provider_id.data
+    encounter.provider_id = provider_id if provider_id and provider_id > 0 else None
     encounter.hospital_id = form.hospital_id.data
     encounter.home_health_facility_id = form.home_health_facility_id.data
     encounter.encounter_type = form.encounter_type.data
@@ -304,8 +373,27 @@ def list_encounters():
 def new_encounter():
     form = EncounterForm()
     _populate_encounter_form(form)
-    if form.validate_on_submit():
+
+    if request.method == "POST" and request.form.get("action") == "add_provider":
+        _save_visit_draft(form)
+        return redirect(url_for("entities.edit_provider", resume_visit=1))
+
+    draft = session.get(VISIT_DRAFT_SESSION_KEY)
+    if draft and not draft.get("encounter_id") and not form.is_submitted():
+        _apply_visit_draft_to_form(form, draft)
+        _ensure_provider_in_choices(form, draft.get("provider_id"))
+
+    if form.validate_on_submit() and request.form.get("action", "save") == "save":
+        if form.provider_id.data == NEW_PROVIDER_OPTION:
+            flash(
+                "Select a provider or use Add New Provider to create one.",
+                "error",
+            )
+            return render_template(
+                "staff/encounters/form.html", form=form, title="New Visit"
+            )
         encounter = _save_encounter_from_form(form)
+        session.pop(VISIT_DRAFT_SESSION_KEY, None)
         flash("Visit created successfully.", "success")
         return redirect(url_for("encounters.view_encounter", encounter_id=encounter.id))
     return render_template("staff/encounters/form.html", form=form, title="New Visit")
@@ -480,8 +568,30 @@ def edit_encounter(encounter_id):
     encounter = Encounter.query.get_or_404(encounter_id)
     form = EncounterForm(obj=encounter)
     _populate_encounter_form(form, encounter)
-    if form.validate_on_submit():
+
+    if request.method == "POST" and request.form.get("action") == "add_provider":
+        _save_visit_draft(form, encounter_id)
+        return redirect(url_for("entities.edit_provider", resume_visit=1))
+
+    draft = session.get(VISIT_DRAFT_SESSION_KEY)
+    if draft and draft.get("encounter_id") == encounter_id and not form.is_submitted():
+        _apply_visit_draft_to_form(form, draft)
+        _ensure_provider_in_choices(form, draft.get("provider_id"))
+
+    if form.validate_on_submit() and request.form.get("action", "save") == "save":
+        if form.provider_id.data == NEW_PROVIDER_OPTION:
+            flash(
+                "Select a provider or use Add New Provider to create one.",
+                "error",
+            )
+            return render_template(
+                "staff/encounters/form.html",
+                form=form,
+                title=f"Edit Visit #{encounter.id}",
+                encounter=encounter,
+            )
         _save_encounter_from_form(form, encounter)
+        session.pop(VISIT_DRAFT_SESSION_KEY, None)
         flash("Visit updated successfully.", "success")
         return redirect(url_for("encounters.view_encounter", encounter_id=encounter.id))
     return render_template(
