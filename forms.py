@@ -178,22 +178,31 @@ class VisitNoteForm(FlaskForm):
 
 
 class NotesReportForm(FlaskForm):
-    filter_by = SelectField(
-        "Filter By",
-        choices=[
-            ("all", "All notes"),
-            ("visit", "Visit ID"),
-            ("patient", "Patient ID"),
-            ("advocate", "Advocate"),
-        ],
-        default="all",
-    )
-    entity_id = SelectField(
-        "Selection",
+    visit_id = SelectField(
+        "Visit / Encounter",
         coerce=nullable_int,
         validators=[Optional()],
         default=0,
     )
+    patient_id = SelectField(
+        "Patient",
+        coerce=nullable_int,
+        validators=[Optional()],
+        default=0,
+    )
+    advocate_id = SelectField(
+        "Advocate",
+        coerce=nullable_int,
+        validators=[Optional()],
+        default=0,
+    )
+    advocate_name = StringField(
+        "Advocate Name",
+        validators=[Optional(), Length(max=200)],
+        render_kw={"placeholder": "e.g. Georgette Darnell"},
+    )
+    date_from = DateField("Created From", validators=[Optional()])
+    date_to = DateField("Created To", validators=[Optional()])
     internal_only = SelectField(
         "Internal Only Notes",
         choices=[

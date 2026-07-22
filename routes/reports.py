@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, time
 
 from auth import employee_required
 from config import SERVICE_LABELS
@@ -27,47 +28,52 @@ def _validate_select_only(sql: str):
 
 
 def _populate_notes_report_form(form):
-    filter_by = form.filter_by.data or "all"
-    if filter_by == "visit":
-        visits = (
-            Encounter.query.join(Patient, Encounter.patient_id == Patient.id)
-            .order_by(Encounter.id.desc())
-            .all()
-        )
-        form.entity_id.choices = [(0, "All visits")] + [
-            (v.id, f"Visit #{v.id} — {v.patient.full_name}") for v in visits
-        ]
-    elif filter_by == "patient":
-        patients = Patient.query.order_by(Patient.last_name, Patient.first_name).all()
-        form.entity_id.choices = [(0, "All patients")] + [
-            (p.id, f"{p.id} — {p.full_name}") for p in patients
-        ]
-    elif filter_by == "advocate":
-        advocates = Advocate.query.order_by(Advocate.name).all()
-        form.entity_id.choices = [(0, "All advocates")] + [
-            (a.id, a.name) for a in advocates
-        ]
-    else:
-        form.entity_id.choices = [(0, "—")]
+    visits = (
+        Encounter.query.join(Patient, Encounter.patient_id == Patient.id)
+        .order_by(Encounter.id.desc())
+        .all()
+    )
+    form.visit_id.choices = [(0, "All visits")] + [
+        (v.id, f"Visit #{v.id} — {v.patient.full_name}") for v in visits
+    ]
 
-    valid_ids = {choice[0] for choice in form.entity_id.choices}
-    if form.entity_id.data not in valid_ids:
-        form.entity_id.data = 0
+    patients = Patient.query.order_by(Patient.last_name, Patient.first_name).all()
+    form.patient_id.choices = [(0, "All patients")] + [
+        (p.id, f"{p.id} — {p.full_name}") for p in patients
+    ]
+
+    advocates = Advocate.query.order_by(Advocate.name).all()
+    form.advocate_id.choices = [(0, "All advocates")] + [
+        (a.id, f"{a.id} — {a.name}") for a in advocates
+    ]
+
+    for field in (form.visit_id, form.patient_id, form.advocate_id):
+        valid_ids = {choice[0] for choice in field.choices}
+        if field.data not in valid_ids:
+            field.data = 0
 
 
 def _notes_report_rows(form):
     timestamp = func.coalesce(Note.note_datetime, Note.created_at)
-    query = Note.query
+    query = Note.query.outerjoin(Advocate, Note.advocate_id == Advocate.id)
 
-    filter_by = form.filter_by.data or "all"
-    entity_id = form.entity_id.data
-    if entity_id:
-        if filter_by == "visit":
-            query = query.filter(Note.encounter_id == entity_id)
-        elif filter_by == "patient":
-            query = query.filter(Note.patient_id == entity_id)
-        elif filter_by == "advocate":
-            query = query.filter(Note.advocate_id == entity_id)
+    if form.visit_id.data:
+        query = query.filter(Note.encounter_id == form.visit_id.data)
+    if form.patient_id.data:
+        query = query.filter(Note.patient_id == form.patient_id.data)
+    if form.advocate_id.data:
+        query = query.filter(Note.advocate_id == form.advocate_id.data)
+
+    advocate_name = (form.advocate_name.data or "").strip()
+    if advocate_name:
+        query = query.filter(Advocate.name.ilike(f"%{advocate_name}%"))
+
+    if form.date_from.data:
+        start = datetime.combine(form.date_from.data, time.min)
+        query = query.filter(timestamp >= start)
+    if form.date_to.data:
+        end = datetime.combine(form.date_to.data, time.max)
+        query = query.filter(timestamp <= end)
 
     internal_filter = form.internal_only.data or "all"
     if internal_filter == "exclude":
