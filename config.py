@@ -109,18 +109,6 @@ ORG_PHONE = os.environ.get("CONTACT_ORG_PHONE", "919-583-6484")
 
 CONTACTS = [
     {
-        "name": "Dawn Criswell",
-        "slug": "dawn-criswell",
-        "credentials": "MS, RHIA, FAHIMA",
-        "title": "Founder & Principal, StartHere Patient Advocacy LLC",
-        "email": os.environ.get(
-            "CONTACT_DAWN_EMAIL", "Dawn.Criswell@startherepatientadvocacy.com"
-        ),
-        "phone": os.environ.get("CONTACT_DAWN_PHONE", ""),
-        "image": "dawn-criswell.png",
-        "bio": DAWN_BIO,
-    },
-    {
         "name": "Georgette Darnell",
         "slug": "georgette-darnell",
         "legacy_name": "Georgette Johnson",
@@ -144,6 +132,18 @@ CONTACTS = [
         "phone": os.environ.get("CONTACT_LARRY_PHONE", ""),
         "image": "larry-horton.png",
         "bio": LARRY_BIO,
+    },
+    {
+        "name": "Dawn Criswell",
+        "slug": "dawn-criswell",
+        "credentials": "MS, RHIA, FAHIMA",
+        "title": "Patient Advocate",
+        "email": os.environ.get(
+            "CONTACT_DAWN_EMAIL", "Dawn.Criswell@startherepatientadvocacy.com"
+        ),
+        "phone": os.environ.get("CONTACT_DAWN_PHONE", ""),
+        "image": "dawn-criswell.png",
+        "bio": DAWN_BIO,
     },
 ]
 
