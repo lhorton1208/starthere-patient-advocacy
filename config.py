@@ -102,6 +102,35 @@ LARRY_BIO = [
     ),
 ]
 
+LISA_BIO = [
+    (
+        "Hi, I'm Lisa—a Southern girl at heart with a deep commitment to nursing, "
+        "patient-centered care, and serving others. While the South will always be "
+        "home, my journey has taken me across many places and communities that have "
+        "shaped both my practice and my perspective, strengthening my appreciation "
+        "for diverse cultures, resilience, and the importance of meeting patients "
+        "where they are."
+    ),
+    (
+        "I am a proud graduate of Florida Atlantic University, where I earned my "
+        "Bachelor of Science in Nursing, and Duke University, where I completed my "
+        "Master of Science in Nursing and became a Family Nurse Practitioner. My "
+        "seven years in the Duke Emergency Department were foundational in my "
+        "development as a clinician—refining my assessment skills, strengthening my "
+        "clinical judgment, and deepening my commitment to compassionate, "
+        "evidence-based care in high-acuity settings."
+    ),
+    (
+        "Today, I serve as a Family Nurse Practitioner in rural North Carolina, "
+        "caring for patients and families across Sampson, Johnston, Wayne, and "
+        "Duplin counties. At StartHere Patient Advocacy, I bring that same focus "
+        "on prevention, chronic disease management, family engagement, and health "
+        "education—building trust, listening closely, and partnering with patients "
+        "and families in their care. Words I live by: \"The best way to find yourself "
+        "is to lose yourself in the service of others.\""
+    ),
+]
+
 INFO_EMAIL = os.environ.get(
     "CONTACT_INFO_EMAIL", "info@startherepatientadvocacy.com"
 )
@@ -132,6 +161,18 @@ CONTACTS = [
         "phone": os.environ.get("CONTACT_LARRY_PHONE", ""),
         "image": "larry-horton.png",
         "bio": LARRY_BIO,
+    },
+    {
+        "name": "Lisa Lafata",
+        "slug": "lisa-lafata",
+        "credentials": "MSN, FNP",
+        "title": "Healthcare Advisor",
+        "email": os.environ.get(
+            "CONTACT_LISA_EMAIL", "lrldrn@yahoo.com"
+        ),
+        "phone": os.environ.get("CONTACT_LISA_PHONE", ""),
+        "image": "lisa-lafata.png",
+        "bio": LISA_BIO,
     },
     {
         "name": "Dawn Criswell",
