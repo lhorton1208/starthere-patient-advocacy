@@ -674,6 +674,11 @@ a:hover {
   background: var(--color-border);
 }
 
+.advocate-photo-frame-square {
+  height: auto;
+  aspect-ratio: 1;
+}
+
 .advocate-photo {
   width: 100%;
   height: 100%;
