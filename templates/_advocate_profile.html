@@ -1,13 +1,13 @@
 <article class="advocate-profile" id="{{ advocate.slug }}">
   <div class="advocate-profile-media">
     {% if advocate.image and advocate.image|static_image_exists %}
-    <div class="advocate-photo-frame{% if advocate.slug == 'larry-horton' %} advocate-photo-frame-square{% endif %}">
+    <div class="advocate-photo-frame{% if advocate.slug in ['larry-horton', 'lisa-lafata'] %} advocate-photo-frame-square{% endif %}">
       <img
         src="{{ url_for('static', filename='images/' ~ advocate.image) }}"
         alt="Portrait of {{ advocate.name }}"
         class="advocate-photo{% if advocate.slug == 'dawn-criswell' %} advocate-photo-dawn{% endif %}"
         width="280"
-        height="{% if advocate.slug == 'larry-horton' %}280{% else %}147{% endif %}"
+        height="{% if advocate.slug in ['larry-horton', 'lisa-lafata'] %}280{% else %}147{% endif %}"
       >
     </div>
     {% else %}
