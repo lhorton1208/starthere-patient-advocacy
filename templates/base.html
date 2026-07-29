@@ -36,7 +36,9 @@
             <a href="{{ url_for('discharge_support') }}">Discharge Support – Patient Advocacy</a>
             <a href="{{ url_for('after_encounter_followup') }}">After Encounter 10/20/30 Days Followup</a>
             <a href="{{ url_for('outpatient_procedure') }}">OutPatient Procedure Advocacy</a>
+            {% if current_advocate %}
             <a href="{{ url_for('pricing') }}">Pricing</a>
+            {% endif %}
           </div>
         </div>
 
@@ -174,7 +176,9 @@
         <div>
           <h4>Services</h4>
           <ul>
+            {% if current_advocate %}
             <li><a href="{{ url_for('pricing') }}">Pricing</a></li>
+            {% endif %}
             <li><a href="{{ url_for('er_admittance') }}">ER Admittance</a></li>
             <li><a href="{{ url_for('in_hospital_visits') }}">In-Hospital Visits</a></li>
             <li><a href="{{ url_for('discharge_support') }}">Discharge Support</a></li>

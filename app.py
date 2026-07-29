@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Flask, abort, flash, jsonify, redirect, render_template, send_from_directory, url_for
 from whitenoise import WhiteNoise
 
-from auth import get_current_advocate
+from auth import employee_required, get_current_advocate
 from blog_content import ARTICLES, get_article
 from config import BASE_DIR, CONTACTS, Config, INFO_EMAIL, INSTANCE_DIR, ORG_PHONE
 from fhir.jwks import get_jwks
@@ -75,6 +75,7 @@ def create_app(config_class=Config, *, run_migrate=True):
         return render_template("index.html")
 
     @app.route("/services/pricing")
+    @employee_required
     def pricing():
         return render_template("services/pricing.html")
 
