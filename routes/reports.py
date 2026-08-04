@@ -1,10 +1,10 @@
 import re
 from datetime import datetime, time
 
-from auth import employee_required
+from auth import admin_required, employee_required
 from config import SERVICE_LABELS
-from forms import AdHocQueryForm, NotesReportForm
-from models import Advocate, Client, Encounter, Note, Patient, TimeCard, db
+from forms import AdHocQueryForm, NotesReportForm, PhiAccessLogForm
+from models import Advocate, Client, Encounter, Note, Patient, PhiAccessLog, TimeCard, db
 from flask import Blueprint, flash, render_template, request
 from sqlalchemy import func, text
 
@@ -92,11 +92,14 @@ def _notes_report_rows(form):
 @reports_bp.route("/encounters")
 @employee_required
 def report_encounters():
+    from audit import log_phi_list
+
     rows = (
         Encounter.query.join(Patient)
         .order_by(Encounter.created_at.desc())
         .all()
     )
+    log_phi_list("encounters", row_count=len(rows), detail="visits report accessed")
     return render_template(
         "staff/reports/encounters.html",
         rows=rows,
@@ -108,11 +111,14 @@ def report_encounters():
 @reports_bp.route("/patients")
 @employee_required
 def report_patients():
+    from audit import log_phi_list
+
     rows = (
         Patient.query.join(Client, Patient.client_id == Client.id)
         .order_by(Patient.last_name, Patient.first_name)
         .all()
     )
+    log_phi_list("patients", row_count=len(rows), detail="patients report accessed")
     return render_template(
         "staff/reports/patients.html",
         rows=rows,
@@ -134,11 +140,14 @@ def report_advocates():
 @reports_bp.route("/time-cards")
 @employee_required
 def report_time_cards():
+    from audit import log_phi_list
+
     rows = (
         TimeCard.query.join(Advocate)
         .order_by(TimeCard.work_date.desc(), Advocate.name)
         .all()
     )
+    log_phi_list("time_cards", row_count=len(rows), detail="time cards report accessed")
     return render_template(
         "staff/reports/time_cards.html",
         rows=rows,
@@ -149,9 +158,12 @@ def report_time_cards():
 @reports_bp.route("/notes")
 @employee_required
 def report_notes():
+    from audit import log_phi_list
+
     form = NotesReportForm(formdata=request.args)
     _populate_notes_report_form(form)
     rows = _notes_report_rows(form)
+    log_phi_list("notes", row_count=len(rows), detail="notes report accessed")
     return render_template(
         "staff/reports/notes.html",
         form=form,
@@ -163,6 +175,8 @@ def report_notes():
 @reports_bp.route("/ad-hoc", methods=["GET", "POST"])
 @employee_required
 def report_ad_hoc():
+    from audit import log_phi_access
+
     form = AdHocQueryForm()
     columns = []
     results = []
@@ -174,6 +188,11 @@ def report_ad_hoc():
             result = db.session.execute(text(query))
             columns = list(result.keys())
             results = [dict(row._mapping) for row in result.fetchmany(200)]
+            log_phi_access(
+                "SELECT",
+                "ad_hoc_query",
+                detail=f"SELECT run; columns={len(columns)}; rows={len(results)}",
+            )
             if not results:
                 flash("Query ran successfully but returned no rows.", "success")
         except ValueError as exc:
@@ -190,4 +209,62 @@ def report_ad_hoc():
         results=results,
         error=error,
         title="Ad-Hoc SQL Queries",
+    )
+
+
+def _populate_phi_access_form(form: PhiAccessLogForm) -> None:
+    advocates = Advocate.query.order_by(Advocate.name).all()
+    form.advocate_id.choices = [(0, "All advocates")] + [
+        (a.id, f"{a.id} — {a.name}") for a in advocates
+    ]
+    valid_ids = {choice[0] for choice in form.advocate_id.choices}
+    if form.advocate_id.data not in valid_ids:
+        form.advocate_id.data = 0
+
+
+def _phi_access_rows(form: PhiAccessLogForm, *, limit: int = 500):
+    query = PhiAccessLog.query
+
+    if form.advocate_id.data:
+        query = query.filter(PhiAccessLog.advocate_id == form.advocate_id.data)
+    if form.action.data:
+        query = query.filter(PhiAccessLog.action == form.action.data)
+    if form.table_name.data:
+        query = query.filter(PhiAccessLog.table_name == form.table_name.data)
+
+    patient_raw = (form.patient_id.data or "").strip()
+    if patient_raw.isdigit():
+        query = query.filter(PhiAccessLog.patient_id == int(patient_raw))
+
+    record_raw = (form.record_id.data or "").strip()
+    if record_raw.isdigit():
+        query = query.filter(PhiAccessLog.record_id == int(record_raw))
+
+    if form.date_from.data:
+        start = datetime.combine(form.date_from.data, time.min)
+        query = query.filter(PhiAccessLog.created_at >= start)
+    if form.date_to.data:
+        end = datetime.combine(form.date_to.data, time.max)
+        query = query.filter(PhiAccessLog.created_at <= end)
+
+    if form.sort.data == "asc":
+        query = query.order_by(PhiAccessLog.created_at.asc(), PhiAccessLog.id.asc())
+    else:
+        query = query.order_by(PhiAccessLog.created_at.desc(), PhiAccessLog.id.desc())
+
+    return query.limit(limit).all()
+
+
+@reports_bp.route("/phi-access")
+@admin_required
+def report_phi_access():
+    """Administrator-only PHI access audit log."""
+    form = PhiAccessLogForm(formdata=request.args)
+    _populate_phi_access_form(form)
+    rows = _phi_access_rows(form)
+    return render_template(
+        "staff/reports/phi_access.html",
+        form=form,
+        rows=rows,
+        title="PHI Access Audit Log",
     )

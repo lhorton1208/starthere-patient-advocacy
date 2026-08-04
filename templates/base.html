@@ -138,7 +138,7 @@
         </div>
 
         <div class="nav-item">
-          <a href="#" class="nav-link {% if request.path.startswith('/login') or request.path.startswith('/account') or request.path.startswith('/staff/logins') %}active{% endif %}">
+          <a href="#" class="nav-link {% if request.path.startswith('/login') or request.path.startswith('/account') or request.path.startswith('/staff/logins') or request.path.startswith('/reports/phi-access') %}active{% endif %}">
             Administration <span class="chevron">&#9660;</span>
           </a>
           <div class="dropdown">
@@ -147,6 +147,7 @@
             <a href="{{ url_for('auth.change_password') }}">Change Password</a>
             {% if current_advocate.is_admin %}
             <a href="{{ url_for('auth.manage_logins') }}">Manage Advocate Logins</a>
+            <a href="{{ url_for('reports.report_phi_access') }}">PHI Access Audit Log</a>
             {% endif %}
             <a href="{{ url_for('auth.logout') }}">Logout</a>
             {% else %}
@@ -228,6 +229,7 @@
             <li><a href="{{ url_for('auth.change_password') }}">Change Password</a></li>
             {% if current_advocate.is_admin %}
             <li><a href="{{ url_for('auth.manage_logins') }}">Manage Advocate Logins</a></li>
+            <li><a href="{{ url_for('reports.report_phi_access') }}">PHI Access Audit Log</a></li>
             {% endif %}
             <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
             {% else %}

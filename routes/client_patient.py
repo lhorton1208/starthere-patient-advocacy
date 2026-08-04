@@ -212,7 +212,10 @@ def _apply_patient_from_form(record, form):
 @client_patient_bp.route("/client-info")
 @employee_required
 def list_clients():
+    from audit import log_phi_list
+
     rows = Client.query.order_by(Client.last_name, Client.first_name, Client.name).all()
+    log_phi_list("clients", row_count=len(rows))
     return render_template("client/client_list.html", rows=rows)
 
 
@@ -220,8 +223,18 @@ def list_clients():
 @client_patient_bp.route("/client-info/<int:client_id>/edit", methods=["GET", "POST"])
 @employee_required
 def edit_client(client_id=None):
+    from audit import log_phi_select
+
     company = _company()
     client = Client.query.get(client_id) if client_id else None
+    if client and request.method == "GET":
+        log_phi_select(
+            "clients",
+            record_id=client.id,
+            client_id=client.id,
+            patient_id=client.patient_id,
+            detail="edit form loaded",
+        )
     form = ClientInfoForm(obj=client)
     _populate_client_form(form, client)
 
@@ -287,19 +300,39 @@ def edit_client(client_id=None):
 @client_patient_bp.route("/client-info/<int:client_id>")
 @employee_required
 def view_client(client_id):
+    from audit import log_phi_select
+
     client = Client.query.get_or_404(client_id)
     patients = client.patients.order_by(Patient.last_name).all()
+    log_phi_select(
+        "clients",
+        record_id=client.id,
+        client_id=client.id,
+        patient_id=client.patient_id,
+        detail="client detail viewed",
+    )
+    if patients:
+        from audit import log_phi_list
+
+        log_phi_list(
+            "patients",
+            row_count=len(patients),
+            detail=f"patients listed for client_id={client.id}",
+        )
     return render_template("client/client_detail.html", client=client, patients=patients)
 
 
 @client_patient_bp.route("/patient-info")
 @employee_required
 def list_patients():
+    from audit import log_phi_list
+
     rows = (
         Patient.query.join(Client, Patient.client_id == Client.id)
         .order_by(Patient.last_name, Patient.first_name)
         .all()
     )
+    log_phi_list("patients", row_count=len(rows))
     return render_template("client/patient_list.html", rows=rows)
 
 
@@ -307,8 +340,18 @@ def list_patients():
 @client_patient_bp.route("/patient-info/<int:patient_id>/edit", methods=["GET", "POST"])
 @employee_required
 def edit_patient(patient_id=None):
+    from audit import log_phi_select
+
     company = _company()
     patient = Patient.query.get(patient_id) if patient_id else None
+    if patient and request.method == "GET":
+        log_phi_select(
+            "patients",
+            record_id=patient.id,
+            patient_id=patient.id,
+            client_id=patient.client_id,
+            detail="edit form loaded",
+        )
     if request.method == "POST":
         form = PatientRecordForm(formdata=request.form, obj=patient)
     else:
@@ -443,7 +486,16 @@ def delete_patient(patient_id):
 @client_patient_bp.route("/patient-info/<int:patient_id>")
 @employee_required
 def view_patient(patient_id):
+    from audit import log_phi_select
+
     patient = Patient.query.get_or_404(patient_id)
+    log_phi_select(
+        "patients",
+        record_id=patient.id,
+        patient_id=patient.id,
+        client_id=patient.client_id,
+        detail="patient detail viewed",
+    )
     return render_template("client/patient_detail.html", patient=patient)
 
 

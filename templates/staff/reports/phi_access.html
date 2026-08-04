@@ -1,0 +1,99 @@
+{% extends "staff/reports/base_report.html" %}
+
+{% block report_content %}
+<p class="form-note">
+  Audit trail of who accessed or changed protected health information (PHI).
+  Values of PHI fields are never stored here — only who, when, action, table, and record identifiers.
+</p>
+
+<form method="get" class="search-bar" id="phi-access-form">
+  <div class="search-grid">
+    <div class="form-group">
+      {{ form.advocate_id.label }}
+      {{ form.advocate_id(id="advocate_id") }}
+    </div>
+    <div class="form-group">
+      {{ form.action.label }}
+      {{ form.action(id="action") }}
+    </div>
+    <div class="form-group">
+      {{ form.table_name.label }}
+      {{ form.table_name(id="table_name") }}
+    </div>
+    <div class="form-group">
+      {{ form.patient_id.label }}
+      {{ form.patient_id(id="patient_id") }}
+    </div>
+    <div class="form-group">
+      {{ form.record_id.label }}
+      {{ form.record_id(id="record_id") }}
+    </div>
+    <div class="form-group">
+      {{ form.date_from.label }}
+      {{ form.date_from(id="date_from") }}
+    </div>
+    <div class="form-group">
+      {{ form.date_to.label }}
+      {{ form.date_to(id="date_to") }}
+    </div>
+    <div class="form-group">
+      {{ form.sort.label }}
+      {{ form.sort(id="sort") }}
+    </div>
+  </div>
+  <button type="submit" class="btn btn-solid">Search Audit Log</button>
+  <a href="{{ url_for('reports.report_phi_access') }}" class="btn btn-secondary">Clear</a>
+</form>
+
+<p class="report-summary">
+  Showing {{ rows|length }} event{{ 's' if rows|length != 1 else '' }}
+  (latest 500 matching filters).
+</p>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>When (UTC)</th>
+        <th>Who</th>
+        <th>Action</th>
+        <th>Table</th>
+        <th>Record ID</th>
+        <th>Patient ID</th>
+        <th>Client ID</th>
+        <th>Detail</th>
+        <th>Request</th>
+        <th>IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.created_at.strftime('%Y-%m-%d %H:%M:%S') if row.created_at else '—' }}</td>
+        <td>
+          {% if row.advocate_id %}
+          {{ row.advocate_id }} — {{ row.actor_name or row.actor_username or '—' }}
+          {% else %}
+          {{ row.actor_name or 'system/public' }}
+          {% endif %}
+        </td>
+        <td><code>{{ row.action }}</code></td>
+        <td><code>{{ row.table_name }}</code></td>
+        <td>{{ row.record_id if row.record_id is not none else '—' }}</td>
+        <td>{{ row.patient_id if row.patient_id is not none else '—' }}</td>
+        <td>{{ row.client_id if row.client_id is not none else '—' }}</td>
+        <td class="note-preview">{{ row.detail or '—' }}</td>
+        <td class="note-preview">
+          {% if row.request_method or row.request_path %}
+          {{ row.request_method or '' }} {{ row.request_path or '' }}
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ row.ip_address or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" class="empty-state">No audit events match the selected filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

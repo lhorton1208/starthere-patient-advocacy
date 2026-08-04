@@ -61,6 +61,8 @@ def _patient_notes_for_account(account):
 @billing_bp.route("/")
 @employee_required
 def list_accounts():
+    from audit import log_phi_list
+
     search_form = AccountSearchForm(formdata=request.args)
     query = Account.query.join(Client)
 
@@ -77,6 +79,7 @@ def list_accounts():
         query = query.filter(Account.status == search_form.status.data)
 
     accounts = query.order_by(Account.name).all()
+    log_phi_list("accounts", row_count=len(accounts))
     return render_template(
         "staff/billing/account_list.html",
         accounts=accounts,
@@ -109,9 +112,30 @@ def new_account():
 @billing_bp.route("/<int:account_id>")
 @employee_required
 def view_account(account_id):
+    from audit import log_phi_list, log_phi_select
+
     account = Account.query.get_or_404(account_id)
     billings = account.billings.order_by(Billing.billed_at.desc()).all()
     invoices = account.invoices.order_by(Invoice.issue_date.desc()).all()
+    log_phi_select(
+        "accounts",
+        record_id=account.id,
+        patient_id=account.patient_id,
+        client_id=account.client_id,
+        detail="account detail viewed",
+    )
+    if billings:
+        log_phi_list(
+            "billings",
+            row_count=len(billings),
+            detail=f"billings listed for account_id={account.id}",
+        )
+    if invoices:
+        log_phi_list(
+            "invoices",
+            row_count=len(invoices),
+            detail=f"invoices listed for account_id={account.id}",
+        )
     return render_template(
         "staff/billing/account_detail.html",
         account=account,
@@ -123,6 +147,8 @@ def view_account(account_id):
 @billing_bp.route("/<int:account_id>/billing/new", methods=["GET", "POST"])
 @employee_required
 def new_billing(account_id):
+    from audit import log_phi_list, log_phi_select
+
     account = Account.query.get_or_404(account_id)
     form = BillingForm()
 
@@ -133,6 +159,20 @@ def new_billing(account_id):
             "error",
         )
         return redirect(url_for("billing.view_account", account_id=account.id))
+
+    if request.method == "GET":
+        log_phi_select(
+            "accounts",
+            record_id=account.id,
+            patient_id=account.patient_id,
+            client_id=account.client_id,
+            detail="billing form loaded",
+        )
+        log_phi_list(
+            "notes",
+            row_count=len(notes),
+            detail=f"notes accessed for billing on account_id={account.id}",
+        )
 
     form.note_id.choices = [
         (
@@ -205,8 +245,22 @@ def new_invoice(account_id):
 @billing_bp.route("/invoices/<int:invoice_id>")
 @employee_required
 def view_invoice(invoice_id):
+    from audit import log_phi_select
+
     invoice = Invoice.query.get_or_404(invoice_id)
     items = invoice.items.all()
+    patient_id = None
+    client_id = None
+    if invoice.account:
+        patient_id = invoice.account.patient_id
+        client_id = invoice.account.client_id
+    log_phi_select(
+        "invoices",
+        record_id=invoice.id,
+        patient_id=patient_id,
+        client_id=client_id,
+        detail="invoice detail viewed",
+    )
     return render_template(
         "staff/billing/invoice_detail.html",
         invoice=invoice,

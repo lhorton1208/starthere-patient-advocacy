@@ -29,6 +29,10 @@ def create_app(config_class=Config, *, run_migrate=True):
 
     db.init_app(app)
 
+    from audit import register_audit_listeners
+
+    register_audit_listeners()
+
     app.register_blueprint(encounters_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(billing_bp)

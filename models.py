@@ -532,6 +532,31 @@ class TimeCard(db.Model):
     )
 
 
+class PhiAccessLog(db.Model):
+    """Immutable audit trail of PHI access and mutation (no PHI values stored)."""
+
+    __tablename__ = "phi_access_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow, index=True)
+    advocate_id = db.Column(db.Integer, db.ForeignKey("advocates.id"), index=True)
+    actor_username = db.Column(db.String(64))
+    actor_name = db.Column(db.String(200))
+    action = db.Column(db.String(20), nullable=False, index=True)  # SELECT/INSERT/UPDATE/DELETE
+    table_name = db.Column(db.String(100), nullable=False, index=True)
+    record_id = db.Column(db.Integer, index=True)
+    patient_id = db.Column(db.Integer, index=True)
+    client_id = db.Column(db.Integer, index=True)
+    detail = db.Column(db.String(500))
+    request_method = db.Column(db.String(10))
+    request_path = db.Column(db.String(500))
+    ip_address = db.Column(db.String(64))
+
+    advocate = db.relationship(
+        "Advocate", backref=db.backref("phi_access_logs", lazy="dynamic")
+    )
+
+
 def link_client_patient(client: Client, patient: Patient) -> None:
     """Keep bidirectional 0..1 links in sync."""
     patient.client_id = client.id
@@ -540,6 +565,9 @@ def link_client_patient(client: Client, patient: Patient) -> None:
 
 def delete_patient_record(patient: Patient) -> None:
     """Remove a patient and dependent encounters, notes, and links."""
+    from audit import ACTION_DELETE, log_phi_access
+
+    patient_id = patient.id
     encounter_ids = [
         row[0]
         for row in db.session.query(Encounter.id)
@@ -555,23 +583,75 @@ def delete_patient_record(patient: Patient) -> None:
         for row in db.session.query(Note.id).filter(db.or_(*note_filters)).all()
     ]
 
+    # Bulk Query.delete paths skip ORM unit-of-work events; log identifiers only.
     if note_ids:
+        log_phi_access(
+            ACTION_DELETE,
+            "billings",
+            patient_id=patient_id,
+            detail=f"cascade via notes [{','.join(str(i) for i in note_ids)}]",
+        )
         Billing.query.filter(Billing.note_id.in_(note_ids)).delete(
             synchronize_session=False
+        )
+        log_phi_access(
+            ACTION_DELETE,
+            "notes",
+            patient_id=patient_id,
+            detail=f"cascade record_ids [{','.join(str(i) for i in note_ids)}]",
         )
         Note.query.filter(Note.id.in_(note_ids)).delete(synchronize_session=False)
 
     if encounter_ids:
+        log_phi_access(
+            ACTION_DELETE,
+            "time_cards",
+            patient_id=patient_id,
+            detail=f"cascade via encounters [{','.join(str(i) for i in encounter_ids)}]",
+        )
         TimeCard.query.filter(TimeCard.encounter_id.in_(encounter_ids)).delete(
             synchronize_session=False
         )
+        log_phi_access(
+            ACTION_DELETE,
+            "encounters",
+            patient_id=patient_id,
+            detail=f"cascade record_ids [{','.join(str(i) for i in encounter_ids)}]",
+        )
     Encounter.query.filter_by(patient_id=patient.id).delete(synchronize_session=False)
+
+    rel_ids = [
+        row[0]
+        for row in db.session.query(PatientRelationship.id)
+        .filter_by(patient_id=patient.id)
+        .all()
+    ]
+    if rel_ids:
+        log_phi_access(
+            ACTION_DELETE,
+            "patient_relationships",
+            patient_id=patient_id,
+            detail=f"cascade record_ids [{','.join(str(i) for i in rel_ids)}]",
+        )
     PatientRelationship.query.filter_by(patient_id=patient.id).delete(
         synchronize_session=False
     )
 
     patient.patient_medications_id = None
     db.session.flush()
+    med_ids = [
+        row[0]
+        for row in db.session.query(PatientMedication.id)
+        .filter_by(patient_id=patient.id)
+        .all()
+    ]
+    if med_ids:
+        log_phi_access(
+            ACTION_DELETE,
+            "patient_medications",
+            patient_id=patient_id,
+            detail=f"cascade record_ids [{','.join(str(i) for i in med_ids)}]",
+        )
     PatientMedication.query.filter_by(patient_id=patient.id).delete(
         synchronize_session=False
     )
@@ -582,4 +662,5 @@ def delete_patient_record(patient: Patient) -> None:
     Client.query.filter_by(patient_id=patient.id).update(
         {Client.patient_id: None}, synchronize_session=False
     )
+    # ORM delete of the patient row is audited via the after_flush listener.
     db.session.delete(patient)

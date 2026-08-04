@@ -343,6 +343,8 @@ def _save_time_card_from_form(form, time_card=None):
 @encounters_bp.route("/")
 @employee_required
 def list_encounters():
+    from audit import log_phi_list
+
     search_form = EncounterSearchForm(formdata=request.args)
     query = Encounter.query.join(Patient)
 
@@ -360,6 +362,7 @@ def list_encounters():
         query = query.filter(Encounter.encounter_type == search_form.encounter_type.data)
 
     encounters = query.order_by(Encounter.created_at.desc()).all()
+    log_phi_list("encounters", row_count=len(encounters), detail="visit list accessed")
     return render_template(
         "staff/encounters/list.html",
         encounters=encounters,
@@ -402,7 +405,10 @@ def new_encounter():
 @encounters_bp.route("/notes", strict_slashes=False)
 @employee_required
 def list_notes():
+    from audit import log_phi_list
+
     notes = Note.query.order_by(Note.created_at.desc()).all()
+    log_phi_list("notes", row_count=len(notes))
     return render_template("staff/encounters/notes_list.html", notes=notes)
 
 
@@ -449,7 +455,16 @@ def new_visit_note():
 @encounters_bp.route("/notes/<int:note_id>/edit", methods=["GET", "POST"], strict_slashes=False)
 @employee_required
 def edit_visit_note(note_id):
+    from audit import log_phi_select
+
     note = Note.query.get_or_404(note_id)
+    if request.method == "GET":
+        log_phi_select(
+            "notes",
+            record_id=note.id,
+            patient_id=note.patient_id,
+            detail="note viewed/edit form loaded",
+        )
     form = VisitNoteForm(obj=note)
     _populate_visit_note_form(form, note)
 
@@ -476,11 +491,14 @@ def edit_visit_note(note_id):
 @encounters_bp.route("/time-cards", strict_slashes=False)
 @employee_required
 def list_time_cards():
+    from audit import log_phi_list
+
     time_cards = (
         TimeCard.query.join(Advocate)
         .order_by(TimeCard.work_date.desc(), TimeCard.id.desc())
         .all()
     )
+    log_phi_list("time_cards", row_count=len(time_cards))
     return render_template("staff/encounters/time_cards_list.html", time_cards=time_cards)
 
 
@@ -523,7 +541,20 @@ def new_time_card():
 )
 @employee_required
 def edit_time_card(time_card_id):
+    from audit import log_phi_select
+
     time_card = TimeCard.query.get_or_404(time_card_id)
+    if request.method == "GET":
+        patient_id = None
+        if time_card.encounter_id:
+            enc = Encounter.query.get(time_card.encounter_id)
+            patient_id = enc.patient_id if enc else None
+        log_phi_select(
+            "time_cards",
+            record_id=time_card.id,
+            patient_id=patient_id,
+            detail="time card viewed/edit form loaded",
+        )
     form = TimeCardForm(obj=time_card)
     _populate_time_card_form(form, time_card)
 
@@ -552,8 +583,22 @@ def edit_time_card(time_card_id):
 @encounters_bp.route("/<int:encounter_id>")
 @employee_required
 def view_encounter(encounter_id):
+    from audit import log_phi_list, log_phi_select
+
     encounter = Encounter.query.get_or_404(encounter_id)
     notes = encounter.notes.order_by(Note.created_at.desc()).all()
+    log_phi_select(
+        "encounters",
+        record_id=encounter.id,
+        patient_id=encounter.patient_id,
+        detail="visit detail viewed",
+    )
+    if notes:
+        log_phi_list(
+            "notes",
+            row_count=len(notes),
+            detail=f"notes listed for encounter_id={encounter.id}",
+        )
     return render_template(
         "staff/encounters/detail.html",
         encounter=encounter,
@@ -565,7 +610,16 @@ def view_encounter(encounter_id):
 @encounters_bp.route("/<int:encounter_id>/edit", methods=["GET", "POST"])
 @employee_required
 def edit_encounter(encounter_id):
+    from audit import log_phi_select
+
     encounter = Encounter.query.get_or_404(encounter_id)
+    if request.method == "GET":
+        log_phi_select(
+            "encounters",
+            record_id=encounter.id,
+            patient_id=encounter.patient_id,
+            detail="edit form loaded",
+        )
     form = EncounterForm(obj=encounter)
     _populate_encounter_form(form, encounter)
 

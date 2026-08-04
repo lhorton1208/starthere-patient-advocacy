@@ -243,6 +243,69 @@ class NotesReportForm(FlaskForm):
     )
 
 
+class PhiAccessLogForm(FlaskForm):
+    """Filter form for the PHI access audit admin page."""
+
+    advocate_id = SelectField(
+        "Advocate",
+        coerce=nullable_int,
+        validators=[Optional()],
+        default=0,
+    )
+    action = SelectField(
+        "Action",
+        choices=[
+            ("", "All actions"),
+            ("SELECT", "SELECT"),
+            ("INSERT", "INSERT"),
+            ("UPDATE", "UPDATE"),
+            ("DELETE", "DELETE"),
+        ],
+        default="",
+        validators=[Optional()],
+    )
+    table_name = SelectField(
+        "Table",
+        choices=[
+            ("", "All tables"),
+            ("patients", "patients"),
+            ("clients", "clients"),
+            ("encounters", "encounters"),
+            ("notes", "notes"),
+            ("accounts", "accounts"),
+            ("billings", "billings"),
+            ("invoices", "invoices"),
+            ("invoice_items", "invoice_items"),
+            ("time_cards", "time_cards"),
+            ("patient_medications", "patient_medications"),
+            ("patient_relationships", "patient_relationships"),
+            ("ad_hoc_query", "ad_hoc_query"),
+        ],
+        default="",
+        validators=[Optional()],
+    )
+    patient_id = StringField(
+        "Patient ID",
+        validators=[Optional(), Length(max=20)],
+        render_kw={"placeholder": "e.g. 12"},
+    )
+    record_id = StringField(
+        "Record ID",
+        validators=[Optional(), Length(max=20)],
+        render_kw={"placeholder": "e.g. 45"},
+    )
+    date_from = DateField("From", validators=[Optional()])
+    date_to = DateField("To", validators=[Optional()])
+    sort = SelectField(
+        "Order",
+        choices=[
+            ("desc", "Newest first"),
+            ("asc", "Oldest first"),
+        ],
+        default="desc",
+    )
+
+
 class EncounterSearchForm(FlaskForm):
     q = StringField("Search", validators=[Optional(), Length(max=200)])
     status = SelectField(
