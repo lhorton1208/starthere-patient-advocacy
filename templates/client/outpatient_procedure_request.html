@@ -7,7 +7,7 @@
 <section class="page-header">
   <div class="container">
     <h1>OutPatient Procedure Advocacy Request</h1>
-    <p>Request an advocate to support you before, during, and/or after your procedure.</p>
+    <p>Complete this form to request an advocate for your outpatient procedure.</p>
   </div>
 </section>
 <section class="content-section">
@@ -16,6 +16,7 @@
     <div class="form-card">
       <form method="post">
         {{ form.hidden_tag() }}
+
         <h2>Patient &amp; Contact Information</h2>
         {{ render_form_field(form.patient_name) }}
         {{ render_form_field(form.contact_name) }}
@@ -23,19 +24,32 @@
         {{ render_form_field(form.email) }}
 
         <h2>Procedure Details</h2>
-        {{ render_form_field(form.procedure) }}
-        {{ render_form_field(form.procedure_location) }}
-        {{ render_form_field(form.procedure_duration) }}
+        {{ render_form_field(form.procedure_name) }}
+        {{ render_form_field(form.first_time_with_provider) }}
+        {{ render_form_field(form.procedure_visit_type) }}
+
+        <h2>Provider Information</h2>
         {{ render_form_field(form.provider_name) }}
+        {{ render_form_field(form.provider_office_name) }}
+        {{ render_form_field(form.provider_specialty) }}
         {{ render_form_field(form.provider_phone) }}
-        {{ render_form_field(form.procedure_preparation) }}
-        {{ render_form_field(form.procedure_medications) }}
+        {{ render_form_field(form.provider_address) }}
+
+        <h2>HIPAA Authorization</h2>
+        {{ render_form_field(form.hipaa_release_for_provider) }}
+        <p class="form-note">
+          If you have not yet completed a provider-specific HIPAA release, you can
+          download the form from our
+          <a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a> page.
+        </p>
+
         {{ render_form_field(form.notes) }}
 
-        <button type="submit" class="btn btn-solid">Submit Request</button>
+        <button type="submit" class="btn btn-solid">Submit Procedure Request</button>
         <p class="form-note">
           Your information is handled in accordance with our
           <a href="{{ url_for('hipaa_forms') }}">HIPAA privacy practices</a>.
+          Submissions create an OutPatient Procedure Advocacy service record for the patient.
         </p>
       </form>
     </div>

@@ -449,16 +449,23 @@ def view_patient(patient_id):
 
 @client_patient_bp.route("/outpatient-procedure-request", methods=["GET", "POST"])
 def outpatient_procedure_request():
+    """Public form attached to the OutPatient Procedure Advocacy service.
+
+    Creates Patient + Encounter(encounter_type=outpatient-procedure) and stores
+    the procedure/provider answers as a note on both.
+    """
     form = OutpatientProcedureForm()
     if form.validate_on_submit():
         intake_notes = format_outpatient_procedure_notes(
-            procedure=form.procedure.data,
-            procedure_location=form.procedure_location.data,
-            procedure_duration=form.procedure_duration.data,
+            procedure_name=form.procedure_name.data,
+            first_time_with_provider=form.first_time_with_provider.data,
+            procedure_visit_type=form.procedure_visit_type.data,
             provider_name=form.provider_name.data,
+            provider_office_name=form.provider_office_name.data,
+            provider_specialty=form.provider_specialty.data,
             provider_phone=form.provider_phone.data,
-            procedure_preparation=form.procedure_preparation.data,
-            procedure_medications=form.procedure_medications.data,
+            provider_address=form.provider_address.data,
+            hipaa_release_for_provider=form.hipaa_release_for_provider.data,
             notes=form.notes.data,
         )
         try:
@@ -468,7 +475,7 @@ def outpatient_procedure_request():
                 phone=form.phone.data.strip(),
                 email=form.email.data.strip().lower(),
                 service="outpatient-procedure",
-                hospital_name=(form.procedure_location.data or "").strip() or None,
+                hospital_name=(form.provider_office_name.data or "").strip() or None,
                 notes=intake_notes,
             )
             if patient and encounter:
@@ -493,6 +500,14 @@ def outpatient_procedure_request():
 def service_request():
     form = PatientInfoForm()
     if form.validate_on_submit():
+        # Outpatient procedure requests use the dedicated attached form.
+        if (form.service.data or "").strip() == "outpatient-procedure":
+            flash(
+                "Please complete the OutPatient Procedure Advocacy form, which "
+                "collects procedure and provider details for this service.",
+                "info",
+            )
+            return redirect(url_for("client_patient.outpatient_procedure_request"))
         try:
             _client, patient, encounter = create_intake_request(
                 patient_name=(form.patient_name.data or "").strip() or None,

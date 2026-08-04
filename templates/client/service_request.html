@@ -21,6 +21,13 @@
         {{ render_form_field(form.phone) }}
         {{ render_form_field(form.email) }}
         {{ render_form_field(form.service) }}
+        <p id="outpatient-form-hint" class="form-note" hidden>
+          OutPatient Procedure Advocacy has a dedicated request form with procedure
+          and provider details.
+          <a href="{{ url_for('client_patient.outpatient_procedure_request') }}">
+            Go to the OutPatient Procedure form &rarr;
+          </a>
+        </p>
         {{ render_form_field(form.hospital) }}
         {{ render_form_field(form.notes) }}
         <button type="submit" class="btn btn-solid">Submit Request</button>
@@ -32,4 +39,22 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var serviceField = document.getElementById("service");
+  var hint = document.getElementById("outpatient-form-hint");
+  if (!serviceField || !hint) return;
+
+  function updateHint() {
+    var isOutpatient = serviceField.value === "outpatient-procedure";
+    hint.hidden = !isOutpatient;
+  }
+
+  serviceField.addEventListener("change", updateHint);
+  updateHint();
+})();
+</script>
 {% endblock %}

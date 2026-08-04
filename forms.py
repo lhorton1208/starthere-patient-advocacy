@@ -21,8 +21,18 @@ from config import (
 )
 
 
+YES_NO_CHOICES = [("", "Select..."), ("yes", "Yes"), ("no", "No")]
+
+PROCEDURE_VISIT_TYPE_CHOICES = [
+    ("", "Select..."),
+    ("initial", "Initial procedure"),
+    ("follow-up", "Follow-up procedure"),
+]
+
+
 class OutpatientProcedureForm(FlaskForm):
-    """Intake form for outpatient procedure advocacy requests."""
+    """Attached intake form for OutPatient Procedure Advocacy service requests."""
+
     patient_name = StringField(
         "Patient Name and/or Patient ID",
         validators=[DataRequired(), Length(max=200)],
@@ -39,38 +49,49 @@ class OutpatientProcedureForm(FlaskForm):
         "Email Address",
         validators=[DataRequired(), Email(), Length(max=200)],
     )
-    procedure = StringField(
-        "What is the procedure?",
+    procedure_name = StringField(
+        "What is the name of the procedure?",
         validators=[DataRequired(), Length(max=300)],
     )
-    procedure_location = StringField(
-        "Where is the procedure?",
-        validators=[DataRequired(), Length(max=300)],
+    first_time_with_provider = SelectField(
+        "Is this the first time seeing this provider?",
+        choices=YES_NO_CHOICES,
+        validators=[DataRequired()],
     )
-    procedure_duration = StringField(
-        "Duration of the procedure",
-        validators=[Optional(), Length(max=100)],
+    procedure_visit_type = SelectField(
+        "Is this the initial procedure or a follow-up procedure?",
+        choices=PROCEDURE_VISIT_TYPE_CHOICES,
+        validators=[DataRequired()],
     )
     provider_name = StringField(
-        "Healthcare Provider Name",
-        validators=[Optional(), Length(max=200)],
+        "Provider's Name",
+        validators=[DataRequired(), Length(max=200)],
+    )
+    provider_office_name = StringField(
+        "Office Name",
+        validators=[DataRequired(), Length(max=200)],
+    )
+    provider_specialty = StringField(
+        "Specialty",
+        validators=[DataRequired(), Length(max=200)],
     )
     provider_phone = StringField(
-        "Healthcare Provider Phone Number",
-        validators=[Optional(), Length(max=50)],
+        "Phone Number",
+        validators=[DataRequired(), Length(max=50)],
     )
-    procedure_preparation = TextAreaField(
-        "Procedure Preparation",
-        validators=[Optional(), Length(max=5000)],
-        render_kw={"rows": 4},
+    provider_address = TextAreaField(
+        "Address",
+        validators=[DataRequired(), Length(max=500)],
+        render_kw={"rows": 3},
     )
-    procedure_medications = TextAreaField(
-        "Procedure Medications",
-        validators=[Optional(), Length(max=5000)],
-        render_kw={"rows": 4},
+    hipaa_release_for_provider = SelectField(
+        "Have you filled out a HIPAA release form specifically for this provider "
+        "to share information with StartHere regarding your visit?",
+        choices=YES_NO_CHOICES,
+        validators=[DataRequired()],
     )
     notes = TextAreaField(
-        "Notes",
+        "Additional Notes (optional)",
         validators=[Optional(), Length(max=5000)],
         render_kw={"rows": 4},
     )

@@ -139,37 +139,70 @@ def create_patient_for_client(
     return patient
 
 
+def _yes_no_label(value: Optional[str]) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized == "yes":
+        return "Yes"
+    if normalized == "no":
+        return "No"
+    return (value or "").strip() or "Not specified"
+
+
+def _procedure_visit_type_label(value: Optional[str]) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized == "initial":
+        return "Initial procedure"
+    if normalized in {"follow-up", "followup"}:
+        return "Follow-up procedure"
+    return (value or "").strip() or "Not specified"
+
+
 def format_outpatient_procedure_notes(
     *,
-    procedure: str,
-    procedure_location: str,
-    procedure_duration: Optional[str] = None,
-    provider_name: Optional[str] = None,
-    provider_phone: Optional[str] = None,
-    procedure_preparation: Optional[str] = None,
-    procedure_medications: Optional[str] = None,
+    procedure_name: str,
+    first_time_with_provider: str,
+    procedure_visit_type: str,
+    provider_name: str,
+    provider_office_name: str,
+    provider_specialty: str,
+    provider_phone: str,
+    provider_address: str,
+    hipaa_release_for_provider: str,
     notes: Optional[str] = None,
 ) -> str:
+    """Serialize OutPatient Procedure Advocacy form answers into a note body.
+
+    The note is stored on the outpatient-procedure Encounter and Patient so the
+    service-specific answers stay attached to both records.
+    """
     sections = [
         "OutPatient Procedure Advocacy Intake",
-        f"Procedure: {procedure.strip()}",
-        f"Procedure Location: {procedure_location.strip()}",
+        f"Procedure Name: {procedure_name.strip()}",
+        (
+            "First time seeing this provider: "
+            f"{_yes_no_label(first_time_with_provider)}"
+        ),
+        (
+            "Procedure type: "
+            f"{_procedure_visit_type_label(procedure_visit_type)}"
+        ),
+        "\n".join(
+            [
+                "Provider Details:",
+                f"  Name: {provider_name.strip()}",
+                f"  Office Name: {provider_office_name.strip()}",
+                f"  Specialty: {provider_specialty.strip()}",
+                f"  Phone Number: {provider_phone.strip()}",
+                f"  Address: {provider_address.strip()}",
+            ]
+        ),
+        (
+            "HIPAA release completed for this provider to share information "
+            f"with StartHere: {_yes_no_label(hipaa_release_for_provider)}"
+        ),
     ]
-    if procedure_duration and procedure_duration.strip():
-        sections.append(f"Procedure Duration: {procedure_duration.strip()}")
-    if provider_name and provider_name.strip():
-        provider_line = f"Healthcare Provider: {provider_name.strip()}"
-        if provider_phone and provider_phone.strip():
-            provider_line += f" ({provider_phone.strip()})"
-        sections.append(provider_line)
-    elif provider_phone and provider_phone.strip():
-        sections.append(f"Healthcare Provider Phone: {provider_phone.strip()}")
-    if procedure_preparation and procedure_preparation.strip():
-        sections.append(f"Procedure Preparation:\n{procedure_preparation.strip()}")
-    if procedure_medications and procedure_medications.strip():
-        sections.append(f"Procedure Medications:\n{procedure_medications.strip()}")
     if notes and notes.strip():
-        sections.append(f"Notes:\n{notes.strip()}")
+        sections.append(f"Additional Notes:\n{notes.strip()}")
     return "\n\n".join(sections)
 
 
