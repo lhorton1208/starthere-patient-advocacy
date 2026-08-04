@@ -8,7 +8,7 @@
   <div class="container page-header-row">
     <div>
       <h1>{{ patient.full_name }}</h1>
-      <p>Patient record and linked client.</p>
+      <p>Patient record, linked client, and service intake details.</p>
     </div>
     <a href="{{ url_for('client_patient.edit_patient', patient_id=patient.id) }}" class="btn btn-solid">Edit Patient</a>
   </div>
@@ -42,7 +42,7 @@
           </dd>
           {% if patient.mood %}<dt>Mood</dt><dd>{{ patient.mood }}</dd>{% endif %}
           {% if patient.mental_state %}<dt>Mental State</dt><dd>{{ patient.mental_state }}</dd>{% endif %}
-          <dt>Visits</dt><dd>{{ patient.encounters.count() }}</dd>
+          <dt>Visits</dt><dd>{{ encounters|length }}</dd>
         </dl>
       </div>
       {% if patient.intake_notes %}
@@ -51,6 +51,80 @@
         <p class="intake-notes">{{ patient.intake_notes }}</p>
       </div>
       {% endif %}
+
+      <div class="detail-card detail-card-wide">
+        <h2>Service Requests &amp; Intake</h2>
+        <p class="form-note" style="margin-top:0;">
+          Details captured when the patient or client requested a service
+          (for example, OutPatient Procedure Advocacy intake fields).
+        </p>
+
+        {% if encounters %}
+          {% for encounter in encounters %}
+          <div class="service-intake-item">
+            <div class="service-intake-header">
+              <h3>
+                {{ service_labels.get(encounter.encounter_type, encounter.encounter_type) }}
+                <span class="badge badge-{{ encounter.status }}">{{ encounter.status }}</span>
+              </h3>
+              <a href="{{ url_for('encounters.view_encounter', encounter_id=encounter.id) }}" class="card-link">
+                View visit #{{ encounter.id }} &rarr;
+              </a>
+            </div>
+            <dl class="service-intake-meta">
+              <dt>Visit ID</dt><dd>#{{ encounter.id }}</dd>
+              <dt>Requested</dt>
+              <dd>{{ encounter.created_at.strftime('%Y-%m-%d %H:%M') if encounter.created_at else '—' }}</dd>
+              <dt>Facility / Office</dt>
+              <dd>{{ encounter.hospital.name if encounter.hospital else '—' }}</dd>
+              <dt>Advocate</dt>
+              <dd>{{ encounter.advocate.name if encounter.advocate else '—' }}</dd>
+              <dt>Provider</dt>
+              <dd>{{ encounter.provider.display_name if encounter.provider else '—' }}</dd>
+            </dl>
+
+            {% if encounter.intake_notes_list %}
+              {% for note in encounter.intake_notes_list %}
+              <div class="note-item">
+                <div class="note-meta">
+                  {% if loop.first and 'Intake' in (note.body or '') %}
+                    Service intake details
+                  {% else %}
+                    Note #{{ note.id }}
+                  {% endif %}
+                  {% if note.author %} · {{ note.author }}{% endif %}
+                  · {{ (note.note_datetime or note.created_at).strftime('%Y-%m-%d %H:%M') if (note.note_datetime or note.created_at) else '—' }}
+                  · <a href="{{ url_for('encounters.edit_visit_note', note_id=note.id) }}">Open note</a>
+                </div>
+                <p class="intake-notes">{{ note.body }}</p>
+              </div>
+              {% endfor %}
+            {% else %}
+              <p class="empty-state">No intake details were captured with this service request.</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-state">No service requests on file for this patient yet.</p>
+        {% endif %}
+
+        {% if orphan_notes %}
+          <div class="service-intake-item">
+            <h3>Other patient notes</h3>
+            {% for note in orphan_notes %}
+            <div class="note-item">
+              <div class="note-meta">
+                Note #{{ note.id }}
+                {% if note.author %} · {{ note.author }}{% endif %}
+                · {{ (note.note_datetime or note.created_at).strftime('%Y-%m-%d %H:%M') if (note.note_datetime or note.created_at) else '—' }}
+                · <a href="{{ url_for('encounters.edit_visit_note', note_id=note.id) }}">Open note</a>
+              </div>
+              <p class="intake-notes">{{ note.body }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
     </div>
     <a href="{{ url_for('client_patient.list_patients') }}" class="back-link">&larr; Back to Patient Info</a>
   </div>

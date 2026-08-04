@@ -486,7 +486,9 @@ def delete_patient(patient_id):
 @client_patient_bp.route("/patient-info/<int:patient_id>")
 @employee_required
 def view_patient(patient_id):
-    from audit import log_phi_select
+    from audit import log_phi_list, log_phi_select
+    from config import SERVICE_LABELS
+    from models import Encounter, Note
 
     patient = Patient.query.get_or_404(patient_id)
     log_phi_select(
@@ -496,7 +498,49 @@ def view_patient(patient_id):
         client_id=patient.client_id,
         detail="patient detail viewed",
     )
-    return render_template("client/patient_detail.html", patient=patient)
+
+    encounters = (
+        Encounter.query.filter_by(patient_id=patient.id)
+        .order_by(Encounter.created_at.desc())
+        .all()
+    )
+    note_count = 0
+    for encounter in encounters:
+        # Intake stores service form answers as notes on the encounter.
+        notes = encounter.notes.order_by(Note.created_at.asc()).all()
+        encounter.intake_notes_list = notes
+        note_count += len(notes)
+
+    # Patient-level notes not tied to a visit (rare, but include under intake summary).
+    orphan_notes = (
+        Note.query.filter(
+            Note.patient_id == patient.id,
+            Note.encounter_id.is_(None),
+        )
+        .order_by(Note.created_at.asc())
+        .all()
+    )
+    note_count += len(orphan_notes)
+    if note_count:
+        log_phi_list(
+            "notes",
+            row_count=note_count,
+            detail=f"service intake notes viewed on patient_id={patient.id}",
+        )
+    if encounters:
+        log_phi_list(
+            "encounters",
+            row_count=len(encounters),
+            detail=f"service requests viewed on patient_id={patient.id}",
+        )
+
+    return render_template(
+        "client/patient_detail.html",
+        patient=patient,
+        encounters=encounters,
+        orphan_notes=orphan_notes,
+        service_labels=SERVICE_LABELS,
+    )
 
 
 @client_patient_bp.route("/outpatient-procedure-request", methods=["GET", "POST"])

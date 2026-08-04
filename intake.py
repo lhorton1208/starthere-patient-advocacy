@@ -272,7 +272,7 @@ def create_intake_request(
                         patient_id=patient.id,
                         content=notes.strip(),
                         note_text=notes.strip(),
-                        description=notes.strip()[:255],
+                        description="Service intake",
                         author=contact_name.strip(),
                         note_datetime=_utcnow(),
                     )
