@@ -31,8 +31,8 @@
             Services <span class="chevron">&#9660;</span>
           </a>
           <div class="dropdown">
-            <a href="{{ url_for('er_admittance') }}">ER Admittance – Patient Advocate</a>
-            <a href="{{ url_for('in_hospital_visits') }}">In-Hospital Patient Visits</a>
+            <a href="{{ url_for('er_admittance') }}">ER Visit</a>
+            <a href="{{ url_for('in_hospital_visits') }}">Inpatient Stay</a>
             <a href="{{ url_for('discharge_support') }}">Discharge Support – Patient Advocacy</a>
             <a href="{{ url_for('after_encounter_followup') }}">After Encounter 10/20/30 Days Followup</a>
             <a href="{{ url_for('outpatient_procedure') }}">OutPatient Procedure Advocacy</a>
@@ -180,8 +180,8 @@
             {% if current_advocate %}
             <li><a href="{{ url_for('pricing') }}">Pricing</a></li>
             {% endif %}
-            <li><a href="{{ url_for('er_admittance') }}">ER Admittance</a></li>
-            <li><a href="{{ url_for('in_hospital_visits') }}">In-Hospital Visits</a></li>
+            <li><a href="{{ url_for('er_admittance') }}">ER Visit</a></li>
+            <li><a href="{{ url_for('in_hospital_visits') }}">Inpatient Stay</a></li>
             <li><a href="{{ url_for('discharge_support') }}">Discharge Support</a></li>
             <li><a href="{{ url_for('after_encounter_followup') }}">After Encounter Followup</a></li>
             <li><a href="{{ url_for('outpatient_procedure') }}">OutPatient Procedure Advocacy</a></li>

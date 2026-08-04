@@ -189,8 +189,8 @@ CONTACTS = [
 ]
 
 SERVICE_CHOICES = [
-    ("er-admittance", "ER Admittance – Patient Advocate"),
-    ("in-hospital", "In-Hospital Patient Visits"),
+    ("er-admittance", "ER Visit"),
+    ("in-hospital", "Inpatient Stay"),
     ("discharge", "Discharge Support – Patient Advocacy"),
     ("followup", "After Encounter 10/20/30 Days Followup"),
     ("outpatient-procedure", "OutPatient Procedure Advocacy"),

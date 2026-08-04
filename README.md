@@ -37,7 +37,7 @@ The database follows the StartHere ER diagram with these tables:
 | `providers` | External medical providers involved in care |
 | `hospitals` | Hospital facilities |
 | `home_health_facilities` | Home health agencies |
-| `encounters` | Service events (ER admittance, visits, discharge, follow-up) |
+| `encounters` | Service events (ER Visit, Inpatient Stay, discharge, follow-up) |
 | `notes` | Documentation attached to encounters |
 | `lookup_lists` | Reference lists (e.g. account types) |
 | `accounts` | Client/patient financial accounts |
@@ -52,7 +52,7 @@ The Patient Info form creates a **Client**, **Patient**, **Encounter**, optional
 ## Site structure
 
 - **Home** – Overview and service cards
-- **Services** – ER Admittance, In-Hospital Visits, Discharge Support, After Encounter Followup
+- **Services** – ER Visit, Inpatient Stay, Discharge Support, After Encounter Followup
 - **Client Information** – Patient Info form (saved to database), HIPAA Forms
 - **About StartHere** – Advocate bios (Dawn Criswell, Georgette Darnell, Larry Horton) and team contacts
 
