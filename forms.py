@@ -23,12 +23,6 @@ from config import (
 
 YES_NO_CHOICES = [("", "Select..."), ("yes", "Yes"), ("no", "No")]
 
-YES_NO_NONE_CHOICES = [
-    ("", "Select..."),
-    ("yes", "Yes"),
-    ("no", "No / None"),
-]
-
 PROCEDURE_VISIT_TYPE_CHOICES = [
     ("", "Select..."),
     ("initial", "Initial procedure"),
@@ -148,52 +142,23 @@ class ErVisitForm(FlaskForm):
         "Hospital State",
         validators=[DataRequired(), Length(max=50)],
     )
-    has_next_of_kin = SelectField(
-        "Next of Kin",
-        choices=YES_NO_NONE_CHOICES,
-        validators=[DataRequired()],
-        description="Select No / None if there is no next of kin to list.",
-    )
     nok_name = StringField(
         "Next of Kin Name",
-        validators=[Optional(), Length(max=200)],
+        validators=[DataRequired(), Length(max=200)],
     )
     nok_phone = StringField(
         "Next of Kin Phone Number",
-        validators=[Optional(), Length(max=50)],
+        validators=[DataRequired(), Length(max=50)],
     )
-    nok_address = StringField(
-        "Next of Kin Address (optional)",
-        validators=[Optional(), Length(max=300)],
-    )
-    nok_city = StringField(
-        "Next of Kin City (optional)",
-        validators=[Optional(), Length(max=100)],
-    )
-    nok_state = StringField(
-        "Next of Kin State (optional)",
-        validators=[Optional(), Length(max=50)],
+    nok_email = EmailField(
+        "Next of Kin Email Address (optional)",
+        validators=[Optional(), Email(), Length(max=200)],
     )
     additional_comments = TextAreaField(
         "Additional Comments",
         validators=[Optional(), Length(max=5000)],
         render_kw={"rows": 4},
     )
-
-    def validate(self, extra_validators=None):
-        is_valid = super().validate(extra_validators=extra_validators)
-        if (self.has_next_of_kin.data or "").strip().lower() == "yes":
-            if not (self.nok_name.data or "").strip():
-                self.nok_name.errors.append(
-                    "Name is required when next of kin is provided."
-                )
-                is_valid = False
-            if not (self.nok_phone.data or "").strip():
-                self.nok_phone.errors.append(
-                    "Phone number is required when next of kin is provided."
-                )
-                is_valid = False
-        return is_valid
 
 
 class PatientInfoForm(FlaskForm):

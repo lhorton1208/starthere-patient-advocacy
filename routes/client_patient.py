@@ -610,12 +610,9 @@ def er_visit_request():
             hospital_address=form.hospital_address.data,
             hospital_city=form.hospital_city.data,
             hospital_state=form.hospital_state.data,
-            has_next_of_kin=form.has_next_of_kin.data,
             nok_name=form.nok_name.data,
             nok_phone=form.nok_phone.data,
-            nok_address=form.nok_address.data,
-            nok_city=form.nok_city.data,
-            nok_state=form.nok_state.data,
+            nok_email=form.nok_email.data,
             additional_comments=form.additional_comments.data,
         )
         try:

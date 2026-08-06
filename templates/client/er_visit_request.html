@@ -34,14 +34,9 @@
         {{ render_form_field(form.hospital_state) }}
 
         <h2>Next of Kin</h2>
-        {{ render_form_field(form.has_next_of_kin) }}
-        <div id="next-of-kin-fields">
-          {{ render_form_field(form.nok_name) }}
-          {{ render_form_field(form.nok_phone) }}
-          {{ render_form_field(form.nok_address) }}
-          {{ render_form_field(form.nok_city) }}
-          {{ render_form_field(form.nok_state) }}
-        </div>
+        {{ render_form_field(form.nok_name) }}
+        {{ render_form_field(form.nok_phone) }}
+        {{ render_form_field(form.nok_email) }}
 
         <h2>Additional Comments</h2>
         {{ render_form_field(form.additional_comments) }}
@@ -56,27 +51,4 @@
     </div>
   </div>
 </section>
-{% endblock %}
-
-{% block scripts %}
-<script>
-(function () {
-  var select = document.getElementById("has_next_of_kin");
-  var fields = document.getElementById("next-of-kin-fields");
-  if (!select || !fields) return;
-
-  function updateNokVisibility() {
-    var show = select.value === "yes";
-    fields.hidden = !show;
-    fields.querySelectorAll("input, textarea, select").forEach(function (el) {
-      if (!show && el.name && el.name.indexOf("nok_") === 0) {
-        /* Keep values only when actively collecting next of kin. */
-      }
-    });
-  }
-
-  select.addEventListener("change", updateNokVisibility);
-  updateNokVisibility();
-})();
-</script>
 {% endblock %}

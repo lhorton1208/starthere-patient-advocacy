@@ -227,12 +227,9 @@ def format_er_visit_notes(
     hospital_address: str,
     hospital_city: str,
     hospital_state: str,
-    has_next_of_kin: str,
-    nok_name: Optional[str] = None,
-    nok_phone: Optional[str] = None,
-    nok_address: Optional[str] = None,
-    nok_city: Optional[str] = None,
-    nok_state: Optional[str] = None,
+    nok_name: str,
+    nok_phone: str,
+    nok_email: Optional[str] = None,
     additional_comments: Optional[str] = None,
 ) -> str:
     """Serialize ER Visit intake answers into a note body on the encounter/patient."""
@@ -252,23 +249,19 @@ def format_er_visit_notes(
                 f"  State: {hospital_state.strip()}",
             ]
         ),
+        "\n".join(
+            [
+                "Next of Kin:",
+                f"  Name: {nok_name.strip()}",
+                f"  Phone Number: {nok_phone.strip()}",
+                (
+                    f"  Email Address: {nok_email.strip()}"
+                    if nok_email and nok_email.strip()
+                    else "  Email Address: —"
+                ),
+            ]
+        ),
     ]
-
-    if (has_next_of_kin or "").strip().lower() == "yes":
-        nok_lines = ["Next of Kin:"]
-        if nok_name and nok_name.strip():
-            nok_lines.append(f"  Name: {nok_name.strip()}")
-        if nok_phone and nok_phone.strip():
-            nok_lines.append(f"  Phone Number: {nok_phone.strip()}")
-        if nok_address and nok_address.strip():
-            nok_lines.append(f"  Address: {nok_address.strip()}")
-        if nok_city and nok_city.strip():
-            nok_lines.append(f"  City: {nok_city.strip()}")
-        if nok_state and nok_state.strip():
-            nok_lines.append(f"  State: {nok_state.strip()}")
-        sections.append("\n".join(nok_lines))
-    else:
-        sections.append("Next of Kin: None")
 
     if additional_comments and additional_comments.strip():
         sections.append(f"Additional Comments:\n{additional_comments.strip()}")
