@@ -1,5 +1,6 @@
 from typing import Optional, Tuple
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from models import (
@@ -68,6 +69,75 @@ def get_patient_by_email(email: str) -> Optional[Patient]:
     if not normalized:
         return None
     return Patient.query.filter_by(email=normalized).first()
+
+
+def find_patient_by_name_or_id(query: Optional[str]) -> Optional[Patient]:
+    """Resolve a patient by numeric ID or full/partial name (case-insensitive)."""
+    raw = (query or "").strip()
+    if not raw:
+        return None
+
+    if raw.isdigit():
+        return Patient.query.get(int(raw))
+
+    # Support optional "ID: 12" / "#12" style values.
+    stripped = raw.lstrip("#").strip()
+    if stripped.lower().startswith("id:"):
+        stripped = stripped[3:].strip()
+    if stripped.isdigit():
+        return Patient.query.get(int(stripped))
+
+    normalized = " ".join(raw.split())
+    first_name, last_name = split_name(normalized)
+
+    if first_name and last_name:
+        match = (
+            Patient.query.filter(
+                func.lower(Patient.first_name) == first_name.lower(),
+                func.lower(Patient.last_name) == last_name.lower(),
+            )
+            .order_by(Patient.id.asc())
+            .first()
+        )
+        if match:
+            return match
+
+        # Also allow "First Middle Last" where first token is first name.
+        parts = normalized.split()
+        if len(parts) >= 2:
+            match = (
+                Patient.query.filter(
+                    func.lower(Patient.first_name) == parts[0].lower(),
+                    func.lower(Patient.last_name) == parts[-1].lower(),
+                )
+                .order_by(Patient.id.asc())
+                .first()
+            )
+            if match:
+                return match
+
+    # Single-token fallback: exact first or last name match only if unique.
+    token = first_name.lower() if first_name else normalized.lower()
+    candidates = (
+        Patient.query.filter(
+            db.or_(
+                func.lower(Patient.first_name) == token,
+                func.lower(Patient.last_name) == token,
+            )
+        )
+        .order_by(Patient.id.asc())
+        .limit(2)
+        .all()
+    )
+    if len(candidates) == 1:
+        return candidates[0]
+    return None
+
+
+PATIENT_MUST_EXIST_MESSAGE = (
+    "Patient not found. Please insert patient details first before attempting "
+    "to request this service."
+)
 
 
 def get_or_create_client(
@@ -280,6 +350,7 @@ def create_intake_request(
     hospital_city: Optional[str] = None,
     hospital_state: Optional[str] = None,
     notes: Optional[str] = None,
+    patient_must_exist: bool = False,
 ) -> Tuple[Client, Optional[Patient], Optional[Encounter]]:
     company = Company.query.filter_by(name=COMPANY_NAME).first()
     if not company:
@@ -301,16 +372,12 @@ def create_intake_request(
         raise ValueError("Please select a service when submitting patient information.")
 
     if patient_name:
-        patient_email = normalize_email(email)
-        if patient_email and patient_email == client.email:
-            patient = create_patient_for_client(
-                company,
-                client,
-                patient_name=patient_name,
-                phone=phone,
-                email=patient_email,
-            )
+        if patient_must_exist:
+            patient = find_patient_by_name_or_id(patient_name)
+            if not patient:
+                raise ValueError(PATIENT_MUST_EXIST_MESSAGE)
         else:
+            patient_email = normalize_email(email)
             patient = create_patient_for_client(
                 company,
                 client,

@@ -14,11 +14,17 @@
   <div class="container">
     {{ flash_messages() }}
     <div class="form-card">
-      <form method="post">
+      <form method="post"
+            data-require-existing-patient="1"
+            data-patient-lookup-url="{{ url_for('client_patient.patient_lookup') }}">
         {{ form.hidden_tag() }}
 
         <h2>Patient &amp; Contact Information</h2>
         {{ render_form_field(form.patient_name) }}
+        <p class="form-note">
+          Enter an existing patient name or patient ID. The patient record must
+          already exist before requesting this service.
+        </p>
         {{ render_form_field(form.contact_name) }}
         {{ render_form_field(form.phone) }}
         {{ render_form_field(form.email) }}
@@ -55,4 +61,8 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/patient-lookup.js') }}"></script>
 {% endblock %}

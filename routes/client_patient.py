@@ -9,7 +9,9 @@ from forms import (
     empty_select,
 )
 from intake import (
+    PATIENT_MUST_EXIST_MESSAGE,
     create_intake_request,
+    find_patient_by_name_or_id,
     format_er_visit_notes,
     format_outpatient_procedure_notes,
     normalize_email,
@@ -26,7 +28,7 @@ from models import (
 )
 from datetime import date
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from seed import COMPANY_NAME
 from sqlalchemy.exc import IntegrityError
 
@@ -545,6 +547,40 @@ def view_patient(patient_id):
     )
 
 
+@client_patient_bp.route("/api/patient-lookup")
+def patient_lookup():
+    """Return whether a patient exists for the given name or patient ID.
+
+    Used by ER Visit and OutPatient Procedure request forms on field blur.
+    Does not return PHI beyond existence (and matched display name when found).
+    """
+    from audit import log_phi_select
+
+    query = (request.args.get("q") or "").strip()
+    if not query:
+        return jsonify({"found": False, "message": PATIENT_MUST_EXIST_MESSAGE})
+
+    patient = find_patient_by_name_or_id(query)
+    if not patient:
+        return jsonify({"found": False, "message": PATIENT_MUST_EXIST_MESSAGE})
+
+    log_phi_select(
+        "patients",
+        record_id=patient.id,
+        patient_id=patient.id,
+        client_id=patient.client_id,
+        detail="service intake patient lookup",
+    )
+    return jsonify(
+        {
+            "found": True,
+            "patient_id": patient.id,
+            "display_name": patient.full_name,
+            "message": f"Patient found: {patient.full_name} (ID {patient.id})",
+        }
+    )
+
+
 @client_patient_bp.route("/outpatient-procedure-request", methods=["GET", "POST"])
 def outpatient_procedure_request():
     """Public form attached to the OutPatient Procedure Advocacy service.
@@ -575,6 +611,7 @@ def outpatient_procedure_request():
                 service="outpatient-procedure",
                 hospital_name=(form.provider_office_name.data or "").strip() or None,
                 notes=intake_notes,
+                patient_must_exist=True,
             )
             if patient and encounter:
                 msg = (
@@ -627,6 +664,7 @@ def er_visit_request():
                 hospital_city=(form.hospital_city.data or "").strip() or None,
                 hospital_state=(form.hospital_state.data or "").strip() or None,
                 notes=intake_notes,
+                patient_must_exist=True,
             )
             if patient and encounter:
                 msg = (
