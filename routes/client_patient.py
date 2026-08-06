@@ -2,6 +2,7 @@ from auth import employee_required
 from forms import (
     ClientInfoForm,
     DeletePatientForm,
+    ErVisitForm,
     OutpatientProcedureForm,
     PatientInfoForm,
     PatientRecordForm,
@@ -9,6 +10,7 @@ from forms import (
 )
 from intake import (
     create_intake_request,
+    format_er_visit_notes,
     format_outpatient_procedure_notes,
     normalize_email,
 )
@@ -592,18 +594,75 @@ def outpatient_procedure_request():
     return render_template("client/outpatient_procedure_request.html", form=form)
 
 
+@client_patient_bp.route("/er-visit-request", methods=["GET", "POST"])
+def er_visit_request():
+    """Public form attached to the ER Visit service.
+
+    Creates Patient + Encounter(encounter_type=er-admittance) and stores ER-specific
+    intake answers as a Service intake note linked to the patient and visit.
+    """
+    form = ErVisitForm()
+    if form.validate_on_submit():
+        intake_notes = format_er_visit_notes(
+            chief_complaint=form.chief_complaint.data,
+            first_hospital_encounter=form.first_hospital_encounter.data,
+            hospital_name=form.hospital_name.data,
+            hospital_address=form.hospital_address.data,
+            hospital_city=form.hospital_city.data,
+            hospital_state=form.hospital_state.data,
+            has_next_of_kin=form.has_next_of_kin.data,
+            nok_name=form.nok_name.data,
+            nok_phone=form.nok_phone.data,
+            nok_address=form.nok_address.data,
+            nok_city=form.nok_city.data,
+            nok_state=form.nok_state.data,
+            additional_comments=form.additional_comments.data,
+        )
+        try:
+            _client, patient, encounter = create_intake_request(
+                patient_name=form.patient_name.data.strip(),
+                contact_name=form.contact_name.data.strip(),
+                phone=form.phone.data.strip(),
+                email=form.email.data.strip().lower(),
+                service="er-admittance",
+                hospital_name=(form.hospital_name.data or "").strip() or None,
+                hospital_address=(form.hospital_address.data or "").strip() or None,
+                hospital_city=(form.hospital_city.data or "").strip() or None,
+                hospital_state=(form.hospital_state.data or "").strip() or None,
+                notes=intake_notes,
+            )
+            if patient and encounter:
+                msg = (
+                    "Thank you! Your ER Visit advocacy request has been submitted. "
+                    "Our team will contact you soon."
+                )
+            else:
+                msg = "Thank you! Your request has been submitted. Our team will contact you soon."
+            flash(msg, "success")
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return render_template("client/er_visit_request.html", form=form)
+        return redirect(url_for("client_patient.er_visit_request"))
+    return render_template("client/er_visit_request.html", form=form)
+
+
 @client_patient_bp.route("/service-request", methods=["GET", "POST"])
 def service_request():
+    from config import SERVICE_INTAKE_ENDPOINTS, SERVICE_LABELS
+
     form = PatientInfoForm()
     if form.validate_on_submit():
-        # Outpatient procedure requests use the dedicated attached form.
-        if (form.service.data or "").strip() == "outpatient-procedure":
+        # Services with dedicated intake forms capture service-specific metadata.
+        service = (form.service.data or "").strip()
+        intake_endpoint = SERVICE_INTAKE_ENDPOINTS.get(service)
+        if intake_endpoint:
+            label = SERVICE_LABELS.get(service, "this service")
             flash(
-                "Please complete the OutPatient Procedure Advocacy form, which "
-                "collects procedure and provider details for this service.",
+                f"Please complete the {label} form, which collects the details "
+                "needed for this service.",
                 "info",
             )
-            return redirect(url_for("client_patient.outpatient_procedure_request"))
+            return redirect(url_for(intake_endpoint))
         try:
             _client, patient, encounter = create_intake_request(
                 patient_name=(form.patient_name.data or "").strip() or None,

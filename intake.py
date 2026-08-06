@@ -31,15 +31,28 @@ def normalize_email(email: Optional[str]) -> Optional[str]:
     return email.strip().lower()
 
 
-def get_or_create_hospital(name: Optional[str]) -> Optional[Hospital]:
+def get_or_create_hospital(
+    name: Optional[str],
+    *,
+    address: Optional[str] = None,
+    city: Optional[str] = None,
+    state: Optional[str] = None,
+) -> Optional[Hospital]:
     if not name:
         return None
+    name = name.strip()
     hospital = Hospital.query.filter_by(name=name).first()
-    if hospital:
-        return hospital
-    hospital = Hospital(name=name)
-    db.session.add(hospital)
-    db.session.flush()
+    if not hospital:
+        hospital = Hospital(name=name)
+        db.session.add(hospital)
+        db.session.flush()
+    # Fill missing location fields when provided (do not overwrite existing values).
+    if address and address.strip() and not hospital.address:
+        hospital.address = address.strip()
+    if city and city.strip() and not hospital.city:
+        hospital.city = city.strip()
+    if state and state.strip() and not hospital.state:
+        hospital.state = state.strip()
     return hospital
 
 
@@ -206,6 +219,62 @@ def format_outpatient_procedure_notes(
     return "\n\n".join(sections)
 
 
+def format_er_visit_notes(
+    *,
+    chief_complaint: str,
+    first_hospital_encounter: str,
+    hospital_name: str,
+    hospital_address: str,
+    hospital_city: str,
+    hospital_state: str,
+    has_next_of_kin: str,
+    nok_name: Optional[str] = None,
+    nok_phone: Optional[str] = None,
+    nok_address: Optional[str] = None,
+    nok_city: Optional[str] = None,
+    nok_state: Optional[str] = None,
+    additional_comments: Optional[str] = None,
+) -> str:
+    """Serialize ER Visit intake answers into a note body on the encounter/patient."""
+    sections = [
+        "ER Visit Intake",
+        f"Chief Complaint:\n{chief_complaint.strip()}",
+        (
+            "First hospital encounter for this complaint: "
+            f"{_yes_no_label(first_hospital_encounter)}"
+        ),
+        "\n".join(
+            [
+                "Hospital:",
+                f"  Name: {hospital_name.strip()}",
+                f"  Address: {hospital_address.strip()}",
+                f"  City: {hospital_city.strip()}",
+                f"  State: {hospital_state.strip()}",
+            ]
+        ),
+    ]
+
+    if (has_next_of_kin or "").strip().lower() == "yes":
+        nok_lines = ["Next of Kin:"]
+        if nok_name and nok_name.strip():
+            nok_lines.append(f"  Name: {nok_name.strip()}")
+        if nok_phone and nok_phone.strip():
+            nok_lines.append(f"  Phone Number: {nok_phone.strip()}")
+        if nok_address and nok_address.strip():
+            nok_lines.append(f"  Address: {nok_address.strip()}")
+        if nok_city and nok_city.strip():
+            nok_lines.append(f"  City: {nok_city.strip()}")
+        if nok_state and nok_state.strip():
+            nok_lines.append(f"  State: {nok_state.strip()}")
+        sections.append("\n".join(nok_lines))
+    else:
+        sections.append("Next of Kin: None")
+
+    if additional_comments and additional_comments.strip():
+        sections.append(f"Additional Comments:\n{additional_comments.strip()}")
+    return "\n\n".join(sections)
+
+
 def create_intake_request(
     *,
     patient_name: Optional[str],
@@ -214,6 +283,9 @@ def create_intake_request(
     email: str,
     service: Optional[str] = None,
     hospital_name: Optional[str] = None,
+    hospital_address: Optional[str] = None,
+    hospital_city: Optional[str] = None,
+    hospital_state: Optional[str] = None,
     notes: Optional[str] = None,
 ) -> Tuple[Client, Optional[Patient], Optional[Encounter]]:
     company = Company.query.filter_by(name=COMPANY_NAME).first()
@@ -255,7 +327,12 @@ def create_intake_request(
             )
 
         if service:
-            hospital = get_or_create_hospital(hospital_name)
+            hospital = get_or_create_hospital(
+                hospital_name,
+                address=hospital_address,
+                city=hospital_city,
+                state=hospital_state,
+            )
             encounter = Encounter(
                 patient_id=patient.id,
                 hospital_id=hospital.id if hospital else None,

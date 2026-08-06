@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}ER Visit Request | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>ER Visit Advocacy Request</h1>
+    <p>Complete this form to request an advocate for an emergency room visit.</p>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {{ flash_messages() }}
+    <div class="form-card">
+      <form method="post" id="er-visit-form">
+        {{ form.hidden_tag() }}
+
+        <h2>Patient &amp; Contact Information</h2>
+        {{ render_form_field(form.patient_name) }}
+        {{ render_form_field(form.contact_name) }}
+        {{ render_form_field(form.phone) }}
+        {{ render_form_field(form.email) }}
+
+        <h2>ER Visit Details</h2>
+        {{ render_form_field(form.chief_complaint) }}
+        {{ render_form_field(form.first_hospital_encounter) }}
+
+        <h2>Hospital</h2>
+        {{ render_form_field(form.hospital_name) }}
+        {{ render_form_field(form.hospital_address) }}
+        {{ render_form_field(form.hospital_city) }}
+        {{ render_form_field(form.hospital_state) }}
+
+        <h2>Next of Kin</h2>
+        {{ render_form_field(form.has_next_of_kin) }}
+        <div id="next-of-kin-fields">
+          {{ render_form_field(form.nok_name) }}
+          {{ render_form_field(form.nok_phone) }}
+          {{ render_form_field(form.nok_address) }}
+          {{ render_form_field(form.nok_city) }}
+          {{ render_form_field(form.nok_state) }}
+        </div>
+
+        <h2>Additional Comments</h2>
+        {{ render_form_field(form.additional_comments) }}
+
+        <button type="submit" class="btn btn-solid">Submit ER Visit Request</button>
+        <p class="form-note">
+          Your information is handled in accordance with our
+          <a href="{{ url_for('hipaa_forms') }}">HIPAA privacy practices</a>.
+          Submissions create an ER Visit service record for the patient and visit.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var select = document.getElementById("has_next_of_kin");
+  var fields = document.getElementById("next-of-kin-fields");
+  if (!select || !fields) return;
+
+  function updateNokVisibility() {
+    var show = select.value === "yes";
+    fields.hidden = !show;
+    fields.querySelectorAll("input, textarea, select").forEach(function (el) {
+      if (!show && el.name && el.name.indexOf("nok_") === 0) {
+        /* Keep values only when actively collecting next of kin. */
+      }
+    });
+  }
+
+  select.addEventListener("change", updateNokVisibility);
+  updateNokVisibility();
+})();
+</script>
+{% endblock %}

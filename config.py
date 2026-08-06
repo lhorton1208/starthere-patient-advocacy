@@ -198,6 +198,13 @@ SERVICE_CHOICES = [
 
 SERVICE_LABELS = dict(SERVICE_CHOICES)
 
+# Services with dedicated public intake forms (endpoint name for url_for).
+# Generic Service Request redirects to these so service-specific metadata is captured.
+SERVICE_INTAKE_ENDPOINTS = {
+    "er-admittance": "client_patient.er_visit_request",
+    "outpatient-procedure": "client_patient.outpatient_procedure_request",
+}
+
 ENCOUNTER_STATUS_CHOICES = [
     ("requested", "Requested"),
     ("scheduled", "Scheduled"),
