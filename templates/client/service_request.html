@@ -26,6 +26,11 @@
           <span id="service-intake-hint-text"></span>
           <a id="service-intake-hint-link" href="#">Open the service form &rarr;</a>
         </p>
+        <p class="form-note">
+          For ER Visit or OutPatient Procedure: submit this form first so the patient
+          record is created/updated; you will be taken to the service form with the
+          patient already attached.
+        </p>
 
         {{ render_form_field(form.hospital) }}
         {{ render_form_field(form.notes) }}
@@ -69,8 +74,10 @@
       return;
     }
     hintText.textContent =
+      "Submit this form to save the patient, then complete the " +
       info.label +
-      " has a dedicated request form that captures visit-specific details. ";
+      " details form (patient ID will transfer automatically). ";
+    // Keep the base form URL; POST handoff attaches patient_id.
     hintLink.href = info.url;
     hint.hidden = false;
   }

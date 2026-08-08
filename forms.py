@@ -6,6 +6,7 @@ from wtforms import (
     DateField,
     DecimalField,
     EmailField,
+    HiddenField,
     PasswordField,
     SelectField,
     StringField,
@@ -33,9 +34,14 @@ PROCEDURE_VISIT_TYPE_CHOICES = [
 class OutpatientProcedureForm(FlaskForm):
     """Attached intake form for OutPatient Procedure Advocacy service requests."""
 
+    patient_id = HiddenField("Resolved Patient ID")
     patient_name = StringField(
-        "Patient Name and/or Patient ID",
+        "Patient ID (preferred) or Exact Full Name",
         validators=[DataRequired(), Length(max=200)],
+        render_kw={
+            "placeholder": "e.g. 12 or Jane Doe",
+            "autocomplete": "off",
+        },
     )
     contact_name = StringField(
         "Primary Contact Name",
@@ -100,9 +106,14 @@ class OutpatientProcedureForm(FlaskForm):
 class ErVisitForm(FlaskForm):
     """Attached intake form for ER Visit service requests."""
 
+    patient_id = HiddenField("Resolved Patient ID")
     patient_name = StringField(
-        "Patient Name and/or Patient ID",
+        "Patient ID (preferred) or Exact Full Name",
         validators=[DataRequired(), Length(max=200)],
+        render_kw={
+            "placeholder": "e.g. 12 or Jane Doe",
+            "autocomplete": "off",
+        },
     )
     contact_name = StringField(
         "Primary Contact Name",

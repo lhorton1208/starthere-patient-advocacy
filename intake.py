@@ -71,73 +71,189 @@ def get_patient_by_email(email: str) -> Optional[Patient]:
     return Patient.query.filter_by(email=normalized).first()
 
 
-def find_patient_by_name_or_id(query: Optional[str]) -> Optional[Patient]:
-    """Resolve a patient by numeric ID or full/partial name (case-insensitive)."""
-    raw = (query or "").strip()
-    if not raw:
-        return None
-
-    if raw.isdigit():
-        return Patient.query.get(int(raw))
-
-    # Support optional "ID: 12" / "#12" style values.
-    stripped = raw.lstrip("#").strip()
-    if stripped.lower().startswith("id:"):
-        stripped = stripped[3:].strip()
-    if stripped.isdigit():
-        return Patient.query.get(int(stripped))
-
-    normalized = " ".join(raw.split())
-    first_name, last_name = split_name(normalized)
-
-    if first_name and last_name:
-        match = (
-            Patient.query.filter(
-                func.lower(Patient.first_name) == first_name.lower(),
-                func.lower(Patient.last_name) == last_name.lower(),
-            )
-            .order_by(Patient.id.asc())
-            .first()
-        )
-        if match:
-            return match
-
-        # Also allow "First Middle Last" where first token is first name.
-        parts = normalized.split()
-        if len(parts) >= 2:
-            match = (
-                Patient.query.filter(
-                    func.lower(Patient.first_name) == parts[0].lower(),
-                    func.lower(Patient.last_name) == parts[-1].lower(),
-                )
-                .order_by(Patient.id.asc())
-                .first()
-            )
-            if match:
-                return match
-
-    # Single-token fallback: exact first or last name match only if unique.
-    token = first_name.lower() if first_name else normalized.lower()
-    candidates = (
-        Patient.query.filter(
-            db.or_(
-                func.lower(Patient.first_name) == token,
-                func.lower(Patient.last_name) == token,
-            )
-        )
-        .order_by(Patient.id.asc())
-        .limit(2)
-        .all()
-    )
-    if len(candidates) == 1:
-        return candidates[0]
-    return None
-
+# Statuses returned by resolve_patient_lookup (HIPAA-safe: no wrong-patient picks).
+LOOKUP_FOUND = "found"
+LOOKUP_NOT_FOUND = "not_found"
+LOOKUP_AMBIGUOUS = "ambiguous"
+LOOKUP_INVALID = "invalid"
 
 PATIENT_MUST_EXIST_MESSAGE = (
     "Patient not found. Please insert patient details first before attempting "
     "to request this service."
 )
+
+PATIENT_AMBIGUOUS_MESSAGE = (
+    "Multiple patients match that name. Enter the Patient ID (from Patient Info) "
+    "to request this service — matching by name alone is not allowed when ambiguous."
+)
+
+PATIENT_ID_REQUIRED_MESSAGE = (
+    "Enter a Patient ID or the patient's exact full name (first and last). "
+    "Partial names are not accepted."
+)
+
+
+def _parse_patient_id_token(raw: str) -> Optional[int]:
+    """Extract a numeric patient id from values like '12', '#12', or 'ID: 12'."""
+    text = (raw or "").strip()
+    if not text:
+        return None
+    if text.isdigit():
+        return int(text)
+    stripped = text.lstrip("#").strip()
+    if stripped.lower().startswith("id:"):
+        stripped = stripped[3:].strip()
+    # "Jane Doe (ID 12)" prefill format
+    if "ID " in stripped.upper():
+        # Find trailing digits after ID
+        upper = stripped.upper()
+        idx = upper.rfind("ID ")
+        if idx >= 0:
+            tail = stripped[idx + 3 :].strip().rstrip(")").strip()
+            if tail.isdigit():
+                return int(tail)
+    if stripped.isdigit():
+        return int(stripped)
+    return None
+
+
+def resolve_patient_lookup(query: Optional[str]) -> dict:
+    """Strict patient resolution for service intake.
+
+    Returns a dict with:
+      status: found | not_found | ambiguous | invalid
+      patient: Patient | None
+      message: str
+
+    Rules (HIPAA-safe):
+    - Patient ID always preferred and unambiguous.
+    - Full first + last name only when exactly one active match exists.
+    - Never return a "best guess" among multiple name matches.
+    - No single-token / partial-name matching.
+    """
+    raw = (query or "").strip()
+    if not raw:
+        return {
+            "status": LOOKUP_INVALID,
+            "patient": None,
+            "message": PATIENT_ID_REQUIRED_MESSAGE,
+        }
+
+    patient_id = _parse_patient_id_token(raw)
+    if patient_id is not None:
+        patient = Patient.query.get(patient_id)
+        if patient:
+            return {
+                "status": LOOKUP_FOUND,
+                "patient": patient,
+                "message": f"Patient verified: {patient.full_name} (ID {patient.id})",
+            }
+        return {
+            "status": LOOKUP_NOT_FOUND,
+            "patient": None,
+            "message": PATIENT_MUST_EXIST_MESSAGE,
+        }
+
+    normalized = " ".join(raw.split())
+    parts = normalized.split()
+    if len(parts) < 2:
+        return {
+            "status": LOOKUP_INVALID,
+            "patient": None,
+            "message": PATIENT_ID_REQUIRED_MESSAGE,
+        }
+
+    first_name = parts[0]
+    last_name = parts[-1]
+    matches = (
+        Patient.query.filter(
+            func.lower(Patient.first_name) == first_name.lower(),
+            func.lower(Patient.last_name) == last_name.lower(),
+        )
+        .order_by(Patient.id.asc())
+        .limit(3)
+        .all()
+    )
+    if len(matches) == 1:
+        patient = matches[0]
+        return {
+            "status": LOOKUP_FOUND,
+            "patient": patient,
+            "message": f"Patient verified: {patient.full_name} (ID {patient.id})",
+        }
+    if len(matches) > 1:
+        return {
+            "status": LOOKUP_AMBIGUOUS,
+            "patient": None,
+            "message": PATIENT_AMBIGUOUS_MESSAGE,
+        }
+    return {
+        "status": LOOKUP_NOT_FOUND,
+        "patient": None,
+        "message": PATIENT_MUST_EXIST_MESSAGE,
+    }
+
+
+def find_patient_by_name_or_id(query: Optional[str]) -> Optional[Patient]:
+    """Return a patient only when the lookup is unambiguous; otherwise None."""
+    result = resolve_patient_lookup(query)
+    return result["patient"] if result["status"] == LOOKUP_FOUND else None
+
+
+def get_patient_by_id(patient_id: Optional[int]) -> Optional[Patient]:
+    if not patient_id:
+        return None
+    try:
+        pid = int(patient_id)
+    except (TypeError, ValueError):
+        return None
+    return Patient.query.get(pid)
+
+
+def ensure_client_and_patient(
+    *,
+    contact_name: str,
+    phone: str,
+    email: str,
+    patient_name: str,
+) -> Tuple[Client, Patient]:
+    """Create or reuse client + patient records without creating a service encounter.
+
+    Used when Service Request hands off to a dedicated service intake form so a
+    new patient is saved before ER / Outpatient metadata is collected.
+    """
+    company = Company.query.filter_by(name=COMPANY_NAME).first()
+    if not company:
+        raise RuntimeError("StartHere company record is missing. Run seed_database().")
+
+    patient_name = (patient_name or "").strip()
+    if not patient_name:
+        raise ValueError(
+            "Patient name is required before requesting this service. "
+            "Enter the patient's full name so their record can be created."
+        )
+
+    client = get_or_create_client(
+        company,
+        contact_name=contact_name,
+        phone=phone,
+        email=email,
+    )
+    patient = create_patient_for_client(
+        company,
+        client,
+        patient_name=patient_name,
+        phone=phone,
+        email=normalize_email(email),
+    )
+    try:
+        db.session.commit()
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise ValueError(
+            "Could not save patient. Check that client and patient emails are unique."
+        ) from exc
+    return client, patient
 
 
 def get_or_create_client(
@@ -351,6 +467,7 @@ def create_intake_request(
     hospital_state: Optional[str] = None,
     notes: Optional[str] = None,
     patient_must_exist: bool = False,
+    patient_id: Optional[int] = None,
 ) -> Tuple[Client, Optional[Patient], Optional[Encounter]]:
     company = Company.query.filter_by(name=COMPANY_NAME).first()
     if not company:
@@ -368,52 +485,59 @@ def create_intake_request(
     patient_name = (patient_name or "").strip()
     service = (service or "").strip() or None
 
-    if patient_name and not service:
+    if patient_name and not service and not patient_must_exist:
         raise ValueError("Please select a service when submitting patient information.")
 
-    if patient_name:
-        if patient_must_exist:
-            patient = find_patient_by_name_or_id(patient_name)
-            if not patient:
-                raise ValueError(PATIENT_MUST_EXIST_MESSAGE)
-        else:
-            patient_email = normalize_email(email)
-            patient = create_patient_for_client(
-                company,
-                client,
-                patient_name=patient_name,
-                phone=phone,
-                email=patient_email,
-            )
+    if patient_must_exist:
+        # Prefer verified patient_id (set after unambiguous lookup / service-request handoff).
+        if patient_id:
+            patient = get_patient_by_id(patient_id)
+        if not patient and patient_name:
+            result = resolve_patient_lookup(patient_name)
+            if result["status"] == LOOKUP_AMBIGUOUS:
+                raise ValueError(result["message"])
+            if result["status"] == LOOKUP_FOUND:
+                patient = result["patient"]
+        if not patient:
+            raise ValueError(PATIENT_MUST_EXIST_MESSAGE)
+    elif patient_name:
+        patient_email = normalize_email(email)
+        patient = create_patient_for_client(
+            company,
+            client,
+            patient_name=patient_name,
+            phone=phone,
+            email=patient_email,
+        )
 
-        if service:
-            hospital = get_or_create_hospital(
-                hospital_name,
-                address=hospital_address,
-                city=hospital_city,
-                state=hospital_state,
-            )
-            encounter = Encounter(
-                patient_id=patient.id,
-                hospital_id=hospital.id if hospital else None,
-                encounter_type=service,
-                status="requested",
-            )
-            db.session.add(encounter)
-            db.session.flush()
+    if patient and service:
+        hospital = get_or_create_hospital(
+            hospital_name,
+            address=hospital_address,
+            city=hospital_city,
+            state=hospital_state,
+        )
+        encounter = Encounter(
+            patient_id=patient.id,
+            hospital_id=hospital.id if hospital else None,
+            encounter_type=service,
+            status="requested",
+        )
+        db.session.add(encounter)
+        db.session.flush()
 
-            if notes and notes.strip():
-                db.session.add(
-                    Note(
-                        encounter_id=encounter.id,
-                        patient_id=patient.id,
-                        content=notes.strip(),
-                        note_text=notes.strip(),
-                        description="Service intake",
-                        author=contact_name.strip(),
-                        note_datetime=_utcnow(),
-                    )
+        if notes and notes.strip():
+            db.session.add(
+                Note(
+                    encounter_id=encounter.id,
+                    patient_id=patient.id,
+                    content=notes.strip(),
+                    note_text=notes.strip(),
+                    description="Service intake",
+                    author=contact_name.strip(),
+                    note_datetime=_utcnow(),
                 )
+            )
 
     try:
         db.session.commit()

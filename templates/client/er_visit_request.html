@@ -20,10 +20,14 @@
         {{ form.hidden_tag() }}
 
         <h2>Patient &amp; Contact Information</h2>
+        {{ form.patient_id() }}
         {{ render_form_field(form.patient_name) }}
         <p class="form-note">
-          Enter an existing patient name or patient ID. The patient record must
-          already exist before requesting this service.
+          Prefer the Patient ID from Patient Info. Full name is only accepted when
+          it uniquely matches one patient (never a best-guess match).
+          If this is a new patient, use
+          <a href="{{ url_for('client_patient.service_request') }}">Service Request</a>
+          or Patient Info first so the patient is saved before this form.
         </p>
         {{ render_form_field(form.contact_name) }}
         {{ render_form_field(form.phone) }}

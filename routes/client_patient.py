@@ -9,12 +9,13 @@ from forms import (
     empty_select,
 )
 from intake import (
-    PATIENT_MUST_EXIST_MESSAGE,
+    LOOKUP_FOUND,
     create_intake_request,
-    find_patient_by_name_or_id,
+    ensure_client_and_patient,
     format_er_visit_notes,
     format_outpatient_procedure_notes,
-    normalize_email,
+    get_patient_by_id,
+    resolve_patient_lookup,
 )
 from models import (
     Client,
@@ -27,6 +28,7 @@ from models import (
     link_client_patient,
 )
 from datetime import date
+from typing import Optional
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from seed import COMPANY_NAME
@@ -37,6 +39,39 @@ client_patient_bp = Blueprint("client_patient", __name__, url_prefix="/client")
 PATIENT_DRAFT_SESSION_KEY = "patient_form_draft"
 NEW_CLIENT_OPTION = -1
 NEW_PROVIDER_OPTION = -1
+
+
+def _parse_hidden_patient_id(form) -> Optional[int]:
+    raw = (getattr(form, "patient_id", None) and form.patient_id.data) or ""
+    raw = str(raw).strip()
+    if raw.isdigit():
+        return int(raw)
+    return None
+
+
+def _prefill_service_intake_form(form) -> None:
+    """Prefill dedicated service forms from Service Request handoff query params."""
+    if request.method != "GET":
+        return
+
+    patient = None
+    pid = request.args.get("patient_id", type=int)
+    if pid:
+        patient = get_patient_by_id(pid)
+
+    if patient:
+        form.patient_id.data = str(patient.id)
+        form.patient_name.data = f"{patient.full_name} (ID {patient.id})"
+    else:
+        patient_name = (request.args.get("patient_name") or "").strip()
+        if patient_name and not form.patient_name.data:
+            form.patient_name.data = patient_name
+
+    for field_name in ("contact_name", "phone", "email"):
+        value = (request.args.get(field_name) or "").strip()
+        field = getattr(form, field_name, None)
+        if field is not None and value and not field.data:
+            field.data = value
 
 
 def _company():
@@ -549,20 +584,25 @@ def view_patient(patient_id):
 
 @client_patient_bp.route("/api/patient-lookup")
 def patient_lookup():
-    """Return whether a patient exists for the given name or patient ID.
+    """Strict patient existence check for service intake forms.
 
-    Used by ER Visit and OutPatient Procedure request forms on field blur.
-    Does not return PHI beyond existence (and matched display name when found).
+    Returns a patient only on unambiguous match (Patient ID, or unique exact
+    first+last name). Never returns a "best guess" among multiple people.
     """
     from audit import log_phi_select
 
     query = (request.args.get("q") or "").strip()
-    if not query:
-        return jsonify({"found": False, "message": PATIENT_MUST_EXIST_MESSAGE})
+    result = resolve_patient_lookup(query)
+    patient = result["patient"]
 
-    patient = find_patient_by_name_or_id(query)
-    if not patient:
-        return jsonify({"found": False, "message": PATIENT_MUST_EXIST_MESSAGE})
+    if result["status"] != LOOKUP_FOUND or patient is None:
+        return jsonify(
+            {
+                "found": False,
+                "status": result["status"],
+                "message": result["message"],
+            }
+        )
 
     log_phi_select(
         "patients",
@@ -574,9 +614,10 @@ def patient_lookup():
     return jsonify(
         {
             "found": True,
+            "status": LOOKUP_FOUND,
             "patient_id": patient.id,
             "display_name": patient.full_name,
-            "message": f"Patient found: {patient.full_name} (ID {patient.id})",
+            "message": result["message"],
         }
     )
 
@@ -585,10 +626,11 @@ def patient_lookup():
 def outpatient_procedure_request():
     """Public form attached to the OutPatient Procedure Advocacy service.
 
-    Creates Patient + Encounter(encounter_type=outpatient-procedure) and stores
-    the procedure/provider answers as a note on both.
+    Requires an existing patient record (patient_id). Links service metadata
+    to that patient + a new outpatient-procedure encounter.
     """
     form = OutpatientProcedureForm()
+    _prefill_service_intake_form(form)
     if form.validate_on_submit():
         intake_notes = format_outpatient_procedure_notes(
             procedure_name=form.procedure_name.data,
@@ -604,7 +646,7 @@ def outpatient_procedure_request():
         )
         try:
             _client, patient, encounter = create_intake_request(
-                patient_name=form.patient_name.data.strip(),
+                patient_name=(form.patient_name.data or "").strip() or None,
                 contact_name=form.contact_name.data.strip(),
                 phone=form.phone.data.strip(),
                 email=form.email.data.strip().lower(),
@@ -612,6 +654,7 @@ def outpatient_procedure_request():
                 hospital_name=(form.provider_office_name.data or "").strip() or None,
                 notes=intake_notes,
                 patient_must_exist=True,
+                patient_id=_parse_hidden_patient_id(form),
             )
             if patient and encounter:
                 msg = (
@@ -635,10 +678,11 @@ def outpatient_procedure_request():
 def er_visit_request():
     """Public form attached to the ER Visit service.
 
-    Creates Patient + Encounter(encounter_type=er-admittance) and stores ER-specific
-    intake answers as a Service intake note linked to the patient and visit.
+    Requires an existing patient record (patient_id). Links ER intake answers
+    to that patient + a new er-admittance encounter.
     """
     form = ErVisitForm()
+    _prefill_service_intake_form(form)
     if form.validate_on_submit():
         intake_notes = format_er_visit_notes(
             chief_complaint=form.chief_complaint.data,
@@ -654,7 +698,7 @@ def er_visit_request():
         )
         try:
             _client, patient, encounter = create_intake_request(
-                patient_name=form.patient_name.data.strip(),
+                patient_name=(form.patient_name.data or "").strip() or None,
                 contact_name=form.contact_name.data.strip(),
                 phone=form.phone.data.strip(),
                 email=form.email.data.strip().lower(),
@@ -665,6 +709,7 @@ def er_visit_request():
                 hospital_state=(form.hospital_state.data or "").strip() or None,
                 notes=intake_notes,
                 patient_must_exist=True,
+                patient_id=_parse_hidden_patient_id(form),
             )
             if patient and encounter:
                 msg = (
@@ -687,17 +732,40 @@ def service_request():
 
     form = PatientInfoForm()
     if form.validate_on_submit():
-        # Services with dedicated intake forms capture service-specific metadata.
+        # Services with dedicated intake forms: save patient first, then hand off.
         service = (form.service.data or "").strip()
         intake_endpoint = SERVICE_INTAKE_ENDPOINTS.get(service)
         if intake_endpoint:
             label = SERVICE_LABELS.get(service, "this service")
+            patient_name = (form.patient_name.data or "").strip() or (
+                form.contact_name.data or ""
+            ).strip()
+            try:
+                _client, patient = ensure_client_and_patient(
+                    contact_name=form.contact_name.data.strip(),
+                    phone=form.phone.data.strip(),
+                    email=form.email.data.strip().lower(),
+                    patient_name=patient_name,
+                )
+            except ValueError as exc:
+                flash(str(exc), "error")
+                return render_template("client/service_request.html", form=form)
+
             flash(
-                f"Please complete the {label} form, which collects the details "
-                "needed for this service.",
-                "info",
+                f"Patient record saved (ID {patient.id}). Complete the {label} "
+                "form for visit-specific details.",
+                "success",
             )
-            return redirect(url_for(intake_endpoint))
+            return redirect(
+                url_for(
+                    intake_endpoint,
+                    patient_id=patient.id,
+                    patient_name=patient.full_name,
+                    contact_name=form.contact_name.data.strip(),
+                    phone=form.phone.data.strip(),
+                    email=form.email.data.strip().lower(),
+                )
+            )
         try:
             _client, patient, encounter = create_intake_request(
                 patient_name=(form.patient_name.data or "").strip() or None,
