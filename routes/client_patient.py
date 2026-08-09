@@ -171,10 +171,13 @@ def _apply_patient_draft_to_form(form, draft):
             form.date_of_birth.data = date.fromisoformat(dob)
         except ValueError:
             form.date_of_birth.data = None
+    else:
+        form.date_of_birth.data = None
     form.last4_ssn.data = draft.get("last4_ssn") or None
     form.phone_mobile.data = draft.get("phone_mobile") or None
     form.phone_landline.data = draft.get("phone_landline") or None
-    form.email.data = draft.get("email") or None
+    # Keep empty string (not None) so EmailField validation stays clean if re-checked.
+    form.email.data = draft.get("email") or ""
     form.address.data = draft.get("address") or None
     form.city.data = draft.get("city") or None
     form.state.data = draft.get("state") or None
@@ -185,11 +188,13 @@ def _apply_patient_draft_to_form(form, draft):
     client_id = draft.get("client_id")
     if client_id and client_id > 0:
         form.client_id.data = client_id
+    # primary_provider_id uses nullable_int (0/"0" → None). Store None, not 0,
+    # so WTForms choice matching (coerce(choice) == data) selects "None" correctly.
     provider_id = draft.get("primary_provider_id")
-    if provider_id and provider_id > 0:
-        form.primary_provider_id.data = provider_id
-    elif provider_id == 0 or provider_id is None:
-        form.primary_provider_id.data = 0
+    if provider_id and int(provider_id) > 0:
+        form.primary_provider_id.data = int(provider_id)
+    else:
+        form.primary_provider_id.data = None
 
 
 def _save_patient_draft(form, patient_id=None):
@@ -410,9 +415,16 @@ def edit_patient(patient_id=None):
         _save_patient_draft(form, patient_id)
         return redirect(url_for("entities.edit_provider", resume_patient=1))
 
-    draft = session.get(PATIENT_DRAFT_SESSION_KEY)
-    if draft and (draft.get("patient_id") == patient_id or (not patient_id and not draft.get("patient_id"))):
-        _apply_patient_draft_to_form(form, draft)
+    # Restore draft only on GET. Applying it on POST would overwrite the user's
+    # submitted fields (after Add Client/Provider) and break validation —
+    # especially Primary Care Provider (nullable_int vs choice 0).
+    if request.method == "GET":
+        draft = session.get(PATIENT_DRAFT_SESSION_KEY)
+        if draft and (
+            draft.get("patient_id") == patient_id
+            or (not patient_id and not draft.get("patient_id"))
+        ):
+            _apply_patient_draft_to_form(form, draft)
 
     preselect_client = request.args.get("client_id", type=int)
     if preselect_client and preselect_client > 0:
