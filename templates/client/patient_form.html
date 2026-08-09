@@ -4,7 +4,9 @@
 {% block title %}{{ title }} | StartHere{% endblock %}
 
 {% block content %}
-<section class="page-header"><div class="container"><h1>{{ title }}</h1></div></section>
+<section class="page-header"><div class="container"><h1>{{ title }}</h1>
+      {% if patient %}<p class="form-note" style="margin:0.35rem 0 0;">Patient ID <code class="mono-id">{{ patient.id }}</code> — use for exact lookup on service requests.</p>{% endif %}
+    </div></section>
 <section class="content-section">
   <div class="container">
     {% include "staff/_banner.html" %}

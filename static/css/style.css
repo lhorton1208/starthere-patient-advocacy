@@ -1001,6 +1001,17 @@ a:hover {
   padding: 0.6rem 0.75rem;
 }
 
+code.mono-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-primary-dark);
+  background: #f1f5f9;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+}
+
 .badge {
   display: inline-block;
   padding: 0.2rem 0.55rem;

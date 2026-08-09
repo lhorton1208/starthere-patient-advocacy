@@ -8,7 +8,10 @@
   <div class="container page-header-row">
     <div>
       <h1>{{ patient.full_name }}</h1>
-      <p>Patient record, linked client, and service intake details.</p>
+      <p>
+        Patient ID <code class="mono-id">{{ patient.id }}</code>
+        — use this ID for exact patient lookup when requesting services.
+      </p>
     </div>
     <a href="{{ url_for('client_patient.edit_patient', patient_id=patient.id) }}" class="btn btn-solid">Edit Patient</a>
   </div>
@@ -21,6 +24,8 @@
       <div class="detail-card">
         <h2>Patient Details</h2>
         <dl>
+          <dt>Patient ID</dt>
+          <dd><code class="mono-id">{{ patient.id }}</code></dd>
           <dt>Linked Client</dt>
           <dd><a href="{{ url_for('client_patient.view_client', client_id=patient.client_id) }}">{{ patient.client.display_name }}</a></dd>
           <dt>Primary Care Provider</dt>

@@ -16,7 +16,7 @@
     <tbody>
       {% for row in rows %}
       <tr>
-        <td>{{ row.id }}</td>
+        <td><code class="mono-id">{{ row.id }}</code></td>
         <td><a href="{{ url_for('client_patient.view_patient', patient_id=row.id) }}">{{ row.full_name }}</a></td>
         <td><a href="{{ url_for('client_patient.view_client', client_id=row.client_id) }}">{{ row.client.name }}</a></td>
         <td>{{ row.phone or '—' }}</td>
