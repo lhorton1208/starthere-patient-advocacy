@@ -15,6 +15,7 @@ from intake import (
     format_er_visit_notes,
     format_outpatient_procedure_notes,
     get_patient_by_id,
+    normalize_email,
     resolve_patient_lookup,
 )
 from models import (
@@ -312,7 +313,10 @@ def edit_client(client_id=None):
             )
         flash("Client saved.", "success")
         draft = session.get(PATIENT_DRAFT_SESSION_KEY)
-        if request.args.get("resume_patient") and draft is not None:
+        resume_patient = request.args.get("resume_patient") or request.form.get(
+            "resume_patient"
+        )
+        if resume_patient and draft is not None:
             draft["client_id"] = record.id
             session[PATIENT_DRAFT_SESSION_KEY] = draft
             session.modified = True

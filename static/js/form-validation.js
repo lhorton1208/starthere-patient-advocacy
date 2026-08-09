@@ -78,6 +78,17 @@
   document.querySelectorAll('form[method="post"]').forEach(function (form) {
     form.setAttribute("novalidate", "novalidate");
     form.addEventListener("submit", function (event) {
+      // Intermediate actions (e.g. Add New Client from the patient form) should not
+      // require all patient fields to be completed first.
+      var submitter = event.submitter;
+      var action =
+        (submitter && submitter.name === "action" && submitter.value) ||
+        (form.querySelector('input[name="action"]') &&
+          form.querySelector('input[name="action"]').value) ||
+        "";
+      if (action === "add_client" || action === "add_provider") {
+        return;
+      }
       if (!validateForm(form)) event.preventDefault();
     });
   });

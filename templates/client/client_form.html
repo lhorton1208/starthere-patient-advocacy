@@ -14,8 +14,11 @@
     {% endif %}
     <p class="form-note">Link this client to a patient record, or add patients from <a href="{{ url_for('client_patient.list_patients') }}">Patient Info</a>.</p>
     <div class="form-card">
-      <form method="post">
+      <form method="post"{% if resume_patient %} action="{{ url_for('client_patient.edit_client', resume_patient=1) }}"{% endif %}>
         {{ form.hidden_tag() }}
+        {% if resume_patient %}
+        <input type="hidden" name="resume_patient" value="1">
+        {% endif %}
         <h3 class="form-section-title">Name</h3>
         {{ render_form_field(form.prefix) }}
         {{ render_form_field(form.first_name) }}

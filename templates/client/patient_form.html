@@ -15,7 +15,11 @@
         {{ form.hidden_tag() }}
         <h3 class="form-section-title">Client</h3>
         {{ render_form_field(form.client_id) }}
-        <p class="form-note">Choose <strong>+ Add new client...</strong> in the dropdown, then click <strong>Add New Client</strong> to create a client and return here with your patient draft restored.</p>
+        <p class="form-note">
+          Each patient needs a linked client.
+          Select an existing client, or click <strong>Add New Client</strong> below
+          (you do not need to finish the patient fields first — your draft is restored after the client is saved).
+        </p>
 
         <h3 class="form-section-title">Name</h3>
         {{ render_form_field(form.prefix) }}
@@ -39,7 +43,10 @@
 
         <h3 class="form-section-title">Care Team</h3>
         {{ render_form_field(form.primary_provider_id) }}
-        <p class="form-note">Choose <strong>+ Add new provider...</strong> in the dropdown, then click <strong>Add New Provider</strong> to create a provider and return here with your patient draft restored. Manage providers in <a href="{{ url_for('entities.list_providers') }}">Providers</a>.</p>
+        <p class="form-note">
+          Optional. Choose <strong>+ Add new provider...</strong>, then
+          <strong>Add New Provider</strong>, if you need to create a provider.
+        </p>
 
         <h3 class="form-section-title">Interview</h3>
         {{ render_form_field(form.mood) }}
@@ -47,8 +54,12 @@
         {{ render_form_field(form.intake_notes) }}
 
         <button type="submit" name="action" value="save" class="btn btn-solid">Save Patient</button>
-        <button type="submit" name="action" value="add_client" class="btn btn-secondary">Add New Client</button>
-        <button type="submit" name="action" value="add_provider" class="btn btn-secondary">Add New Provider</button>
+        <button type="submit" name="action" value="add_client" class="btn btn-secondary" formnovalidate>
+          Add New Client
+        </button>
+        <button type="submit" name="action" value="add_provider" class="btn btn-secondary" formnovalidate>
+          Add New Provider
+        </button>
         {% if patient %}
         <a href="{{ url_for('client_patient.view_patient', patient_id=patient.id) }}" class="btn btn-secondary">Cancel</a>
         {% else %}
@@ -69,4 +80,31 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var clientSelect = document.getElementById("client_id");
+  if (!clientSelect) return;
+  clientSelect.addEventListener("change", function () {
+    // Selecting "+ Add new client..." immediately starts the client flow.
+    if (clientSelect.value === "-1") {
+      var form = clientSelect.form;
+      if (!form) return;
+      var btn = form.querySelector('button[name="action"][value="add_client"]');
+      if (btn) {
+        btn.click();
+      } else {
+        var hidden = document.createElement("input");
+        hidden.type = "hidden";
+        hidden.name = "action";
+        hidden.value = "add_client";
+        form.appendChild(hidden);
+        form.submit();
+      }
+    }
+  });
+})();
+</script>
 {% endblock %}
