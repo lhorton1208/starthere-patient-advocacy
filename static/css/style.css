@@ -1412,3 +1412,71 @@ code.mono-id {
   min-width: 5rem;
 }
 
+
+/* Testimonials */
+.section-heading {
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+  color: var(--color-primary-dark, #0f4a4a);
+}
+
+.testimonials-list {
+  margin-bottom: 2.5rem;
+}
+
+.testimonial-card {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius, 8px);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.testimonial-rating {
+  margin: 0 0 0.5rem;
+  color: #c9842a;
+  letter-spacing: 0.08em;
+  font-size: 1rem;
+}
+
+.testimonial-body {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.testimonial-meta {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.testimonial-form-card {
+  max-width: 40rem;
+}
+
+.testimonial-form-card .section-heading {
+  margin-bottom: 0.35rem;
+}
+
+.muted-text {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.table-actions form {
+  display: inline;
+  margin: 0;
+}
+
+.btn-compact {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.85rem;
+}

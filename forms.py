@@ -12,7 +12,7 @@ from wtforms import (
     StringField,
     TextAreaField,
 )
-from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional
+from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, ValidationError
 
 from config import (
     ACCOUNT_STATUS_CHOICES,
@@ -695,3 +695,68 @@ class AdvocateLoginForm(FlaskForm):
         validators=[Optional(), Length(min=8, max=128)],
     )
     is_admin = BooleanField("Administrator (can manage advocate logins)")
+
+
+TESTIMONIAL_RELATIONSHIP_CHOICES = [
+    ("", "Select..."),
+    ("self", "I was the patient"),
+    ("family", "Family member"),
+    ("friend", "Friend"),
+    ("caregiver", "Caregiver"),
+    ("other", "Other"),
+]
+
+TESTIMONIAL_RATING_CHOICES = [
+    ("", "Optional — select a rating"),
+    ("5", "5 — Excellent"),
+    ("4", "4 — Very good"),
+    ("3", "3 — Good"),
+    ("2", "2 — Fair"),
+    ("1", "1 — Poor"),
+]
+
+
+def _require_consent(form, field):
+    if not field.data:
+        raise ValidationError("Please confirm you allow StartHere to publish your review.")
+
+
+class TestimonialForm(FlaskForm):
+    """Public form for capturing client reviews and testimonials."""
+
+    display_name = StringField(
+        "Your name (as it may appear publicly)",
+        validators=[DataRequired(), Length(max=120)],
+        render_kw={"placeholder": "e.g. Maria S."},
+    )
+    email = EmailField(
+        "Email (optional — for follow-up only, not published)",
+        validators=[Optional(), Email(), Length(max=200)],
+    )
+    relationship = SelectField(
+        "Your relationship to the person we supported",
+        choices=TESTIMONIAL_RELATIONSHIP_CHOICES,
+        validators=[Optional()],
+    )
+    service = SelectField(
+        "Service you used (if applicable)",
+        choices=[("", "Select a service...")] + SERVICE_CHOICES,
+        validators=[Optional()],
+    )
+    rating = SelectField(
+        "Overall rating",
+        choices=TESTIMONIAL_RATING_CHOICES,
+        validators=[Optional()],
+    )
+    body = TextAreaField(
+        "Your review or testimonial",
+        validators=[DataRequired(), Length(min=20, max=3000)],
+        render_kw={
+            "rows": 6,
+            "placeholder": "Tell us about your experience with StartHere Patient Advocacy…",
+        },
+    )
+    consent_to_publish = BooleanField(
+        "I give StartHere Patient Advocacy permission to publish my name and review on the website and in marketing materials.",
+        validators=[_require_consent],
+    )

@@ -532,6 +532,29 @@ class TimeCard(db.Model):
     )
 
 
+class Testimonial(db.Model):
+    """Public review / testimonial submission (not published until approved)."""
+
+    __tablename__ = "testimonials"
+
+    id = db.Column(db.Integer, primary_key=True)
+    display_name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(200))
+    relationship = db.Column(db.String(80))
+    service = db.Column(db.String(80))
+    rating = db.Column(db.Integer)
+    body = db.Column(db.Text, nullable=False)
+    consent_to_publish = db.Column(db.Boolean, nullable=False, default=False)
+    approved = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+    approved_at = db.Column(db.DateTime)
+    approved_by_id = db.Column(db.Integer, db.ForeignKey("advocates.id"))
+
+    approved_by = db.relationship(
+        "Advocate", backref=db.backref("approved_testimonials", lazy="dynamic")
+    )
+
+
 class PhiAccessLog(db.Model):
     """Immutable audit trail of PHI access and mutation (no PHI values stored)."""
 

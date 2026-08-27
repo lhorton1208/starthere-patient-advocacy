@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Manage Testimonials | StartHere{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container page-header-row">
+    <div>
+      <h1>Testimonials</h1>
+      <p>Review submissions and publish approved reviews to the public page.</p>
+    </div>
+    <a href="{{ url_for('client_patient.testimonials') }}" class="btn btn-secondary">View public page</a>
+  </div>
+</section>
+<section class="content-section">
+  <div class="container">
+    {% include "staff/_banner.html" %}
+    {{ flash_messages() }}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Submitted</th>
+            <th>Name</th>
+            <th>Rating</th>
+            <th>Service</th>
+            <th>Review</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ row.created_at.strftime('%Y-%m-%d') if row.created_at else '—' }}</td>
+            <td>
+              {{ row.display_name }}
+              {% if row.email %}<br><span class="muted-text">{{ row.email }}</span>{% endif %}
+              {% set rel = relationship_label(row.relationship) %}
+              {% if rel %}<br><span class="muted-text">{{ rel }}</span>{% endif %}
+            </td>
+            <td>{% if row.rating %}{{ row.rating }}/5{% else %}—{% endif %}</td>
+            <td>{{ service_labels.get(row.service, '—') if row.service else '—' }}</td>
+            <td class="note-preview">{{ row.body }}</td>
+            <td>{{ 'Published' if row.approved else 'Pending' }}</td>
+            <td class="table-actions">
+              {% if not row.approved %}
+              <form method="post" action="{{ url_for('client_patient.approve_testimonial', item_id=row.id) }}">
+                {{ csrf_form.hidden_tag() }}
+                <button type="submit" class="btn btn-solid btn-compact">Publish</button>
+              </form>
+              {% else %}
+              <form method="post" action="{{ url_for('client_patient.unpublish_testimonial', item_id=row.id) }}">
+                {{ csrf_form.hidden_tag() }}
+                <button type="submit" class="btn btn-secondary btn-compact">Unpublish</button>
+              </form>
+              {% endif %}
+              <form method="post" action="{{ url_for('client_patient.delete_testimonial', item_id=row.id) }}"
+                    onsubmit="return confirm('Delete this review permanently?');">
+                {{ csrf_form.hidden_tag() }}
+                <button type="submit" class="btn btn-secondary btn-compact">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty-state">No testimonials submitted yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

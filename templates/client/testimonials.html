@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages, render_form_field %}
+
+{% block title %}Reviews &amp; Testimonials | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Reviews &amp; Testimonials</h1>
+    <p>Hear from families we’ve supported — and share your own experience.</p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container">
+    {{ flash_messages() }}
+
+    {% if testimonials %}
+    <div class="testimonials-list">
+      <h2 class="section-heading">What families say</h2>
+      {% for item in testimonials %}
+      <article class="testimonial-card">
+        {% if item.rating %}
+        <p class="testimonial-rating" aria-label="{{ item.rating }} out of 5 stars">
+          {{ "★" * item.rating }}{{ "☆" * (5 - item.rating) }}
+        </p>
+        {% endif %}
+        <blockquote class="testimonial-body">{{ item.body }}</blockquote>
+        <footer class="testimonial-meta">
+          <strong>{{ item.display_name }}</strong>
+          {% set rel = relationship_label(item.relationship) %}
+          {% if rel %}<span> · {{ rel }}</span>{% endif %}
+          {% if item.service and service_labels.get(item.service) %}
+          <span> · {{ service_labels[item.service] }}</span>
+          {% endif %}
+        </footer>
+      </article>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="form-card testimonial-form-card">
+      <h2 class="section-heading">Share your experience</h2>
+      <p class="form-note">
+        Submissions are reviewed by our team before they appear on this page.
+        Your email is never published.
+      </p>
+      <form method="post">
+        {{ form.hidden_tag() }}
+        {{ render_form_field(form.display_name) }}
+        {{ render_form_field(form.email) }}
+        {{ render_form_field(form.relationship) }}
+        {{ render_form_field(form.service) }}
+        {{ render_form_field(form.rating) }}
+        {{ render_form_field(form.body) }}
+        <div class="form-group checkbox-field{% if form.consent_to_publish.errors %} is-invalid{% endif %}">
+          <label class="checkbox-label">
+            {{ form.consent_to_publish() }}
+            <span>{{ form.consent_to_publish.label.text }}</span>
+          </label>
+          {% for error in form.consent_to_publish.errors %}
+          <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-solid">Submit review</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

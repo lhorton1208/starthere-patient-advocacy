@@ -64,7 +64,11 @@
             <a href="{{ url_for('client_patient.list_patients') }}">Patient Info</a>
             {% endif %}
             <a href="{{ url_for('client_patient.service_request') }}">Service Request</a>
+            <a href="{{ url_for('client_patient.testimonials') }}">Share a Review</a>
             <a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a>
+            {% if current_advocate %}
+            <a href="{{ url_for('client_patient.manage_testimonials') }}">Manage Testimonials</a>
+            {% endif %}
           </div>
         </div>
 
@@ -214,6 +218,7 @@
           <h4>About StartHere</h4>
           <ul>
             <li><a href="{{ url_for('about') }}">About StartHere</a></li>
+            <li><a href="{{ url_for('client_patient.testimonials') }}">Reviews &amp; Testimonials</a></li>
           </ul>
         </div>
         <div>

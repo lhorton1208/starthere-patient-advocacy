@@ -6,6 +6,8 @@ from forms import (
     OutpatientProcedureForm,
     PatientInfoForm,
     PatientRecordForm,
+    TESTIMONIAL_RELATIONSHIP_CHOICES,
+    TestimonialForm,
     empty_select,
 )
 from intake import (
@@ -24,16 +26,19 @@ from models import (
     Patient,
     Provider,
     RelationshipToPatient,
+    Testimonial,
     db,
     delete_patient_record,
     link_client_patient,
 )
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from seed import COMPANY_NAME
 from sqlalchemy.exc import IntegrityError
+
+from config import SERVICE_LABELS
 
 client_patient_bp = Blueprint("client_patient", __name__, url_prefix="/client")
 
@@ -804,3 +809,100 @@ def service_request():
             return render_template("client/service_request.html", form=form)
         return redirect(url_for("client_patient.service_request"))
     return render_template("client/service_request.html", form=form)
+
+
+def _relationship_label(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    return dict(TESTIMONIAL_RELATIONSHIP_CHOICES).get(value, value)
+
+
+@client_patient_bp.route("/testimonials", methods=["GET", "POST"])
+def testimonials():
+    """Public page to capture and display approved reviews."""
+    form = TestimonialForm()
+    if form.validate_on_submit():
+        rating_raw = (form.rating.data or "").strip()
+        rating = int(rating_raw) if rating_raw.isdigit() else None
+        email = (form.email.data or "").strip().lower() or None
+        row = Testimonial(
+            display_name=form.display_name.data.strip(),
+            email=email,
+            relationship=(form.relationship.data or "").strip() or None,
+            service=(form.service.data or "").strip() or None,
+            rating=rating,
+            body=form.body.data.strip(),
+            consent_to_publish=bool(form.consent_to_publish.data),
+            approved=False,
+        )
+        db.session.add(row)
+        db.session.commit()
+        flash(
+            "Thank you for sharing your experience. Our team will review your "
+            "submission before it appears on the site.",
+            "success",
+        )
+        return redirect(url_for("client_patient.testimonials"))
+
+    approved = (
+        Testimonial.query.filter_by(approved=True)
+        .order_by(Testimonial.approved_at.desc(), Testimonial.created_at.desc())
+        .all()
+    )
+    return render_template(
+        "client/testimonials.html",
+        form=form,
+        testimonials=approved,
+        service_labels=SERVICE_LABELS,
+        relationship_label=_relationship_label,
+    )
+
+
+@client_patient_bp.route("/testimonials/manage")
+@employee_required
+def manage_testimonials():
+    """Staff list of submitted testimonials with approve / unpublish actions."""
+    rows = Testimonial.query.order_by(Testimonial.created_at.desc()).all()
+    return render_template(
+        "client/testimonials_manage.html",
+        rows=rows,
+        service_labels=SERVICE_LABELS,
+        relationship_label=_relationship_label,
+        csrf_form=DeletePatientForm(),
+    )
+
+
+@client_patient_bp.route("/testimonials/<int:item_id>/approve", methods=["POST"])
+@employee_required
+def approve_testimonial(item_id):
+    row = Testimonial.query.get_or_404(item_id)
+    row.approved = True
+    row.approved_at = datetime.now(timezone.utc)
+    row.approved_by_id = session.get("advocate_id")
+    db.session.commit()
+    flash(f"Published review from {row.display_name}.", "success")
+    return redirect(url_for("client_patient.manage_testimonials"))
+
+
+@client_patient_bp.route("/testimonials/<int:item_id>/unpublish", methods=["POST"])
+@employee_required
+def unpublish_testimonial(item_id):
+    row = Testimonial.query.get_or_404(item_id)
+    row.approved = False
+    row.approved_at = None
+    row.approved_by_id = None
+    db.session.commit()
+    flash(f"Unpublished review from {row.display_name}.", "success")
+    return redirect(url_for("client_patient.manage_testimonials"))
+
+
+@client_patient_bp.route("/testimonials/<int:item_id>/delete", methods=["POST"])
+@employee_required
+def delete_testimonial(item_id):
+    row = Testimonial.query.get_or_404(item_id)
+    name = row.display_name
+    db.session.delete(row)
+    db.session.commit()
+    flash(f"Deleted review from {name}.", "success")
+    return redirect(url_for("client_patient.manage_testimonials"))
+
