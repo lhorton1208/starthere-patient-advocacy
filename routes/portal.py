@@ -1,8 +1,11 @@
-"""Patient/Advocate Portal — FHIR-backed dashboard scaffolding.
+"""Patient/Advocate Portal — FHIR-backed dashboard.
 
 Currently public so stakeholders can review the dashboard layout. When
 patient/advocate credentials and vendor OAuth are ready, gate these routes
 with a portal-specific auth decorator (separate from staff @employee_required).
+
+Live Epic testing: set FHIR_* + PORTAL_JWT_* env vars, then open
+/portal/dashboard?patient_id=<Epic sandbox patient id>.
 """
 
 from flask import Blueprint, render_template, request
@@ -18,8 +21,8 @@ portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
 def dashboard():
     """Display FHIR-sourced clinical and administrative information.
 
-    Optional query param `patient_id` is reserved for future Patient/{id}
-    scoping once the portal is authenticated and linked to a vendor.
+    Query param `patient_id` scopes live Patient/{id} searches (falls back to
+    FHIR_PATIENT_ID when set).
     """
     client = get_fhir_client()
     patient_id = request.args.get("patient_id") or None

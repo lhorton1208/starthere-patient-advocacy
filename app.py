@@ -65,9 +65,20 @@ def create_app(config_class=Config, *, run_migrate=True):
 
     @app.route("/.well-known/jwks.json")
     def portal_jwks():
-        """Public JWKS URI for FHIR vendor registration (jwks_uri)."""
+        """Production JWK Set URL for FHIR vendor registration."""
         try:
-            payload = get_jwks()
+            payload = get_jwks(environment="production")
+        except (ValueError, json.JSONDecodeError) as exc:
+            abort(500, description=f"JWKS configuration error: {exc}")
+        response = jsonify(payload)
+        response.headers["Cache-Control"] = "public, max-age=300"
+        return response
+
+    @app.route("/.well-known/jwks-nonprod.json")
+    def portal_jwks_nonprod():
+        """Non-production JWK Set URL (Epic sandbox). Distinct path from production."""
+        try:
+            payload = get_jwks(environment="nonprod")
         except (ValueError, json.JSONDecodeError) as exc:
             abort(500, description=f"JWKS configuration error: {exc}")
         response = jsonify(payload)

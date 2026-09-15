@@ -1,8 +1,8 @@
-"""FHIR client interface and demo implementation.
+"""FHIR client interface, demo data, and live Epic-compatible backend client.
 
-Live backend-services auth uses OAuth2 client_credentials with a client secret.
-Register PORTAL_JWKS_URI (/.well-known/jwks.json) with the vendor as requested.
-Keep mapping logic in `_map_*` helpers so the dashboard contract stays unchanged.
+Live backend-services auth prefers private_key_jwt (Epic Backend OAuth 2.0),
+with client_secret_basic as a fallback. Register PORTAL_JWKS_URI
+(/.well-known/jwks.json) as the app's JWK Set URL on fhir.epic.com.
 """
 
 from __future__ import annotations
@@ -10,7 +10,22 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 
-from fhir.jwks import jwks_is_configured, public_jwks_uri
+from fhir.http import build_search_url, fhir_request
+from fhir.jwks import (
+    active_jwt_environment,
+    jwks_is_configured,
+    load_private_pem,
+    public_jwks_uri,
+    signing_algorithm,
+    signing_kid,
+)
+from fhir.mapping import (
+    map_coverage,
+    map_encounters,
+    map_observations,
+    map_procedures,
+    patient_display_name,
+)
 from fhir.models import (
     ConnectionStatus,
     EncounterItem,
@@ -19,7 +34,10 @@ from fhir.models import (
     ProcedureItem,
     TestResult,
 )
-from fhir.oauth import request_client_credentials_token
+from fhir.oauth import (
+    request_client_credentials_token,
+    request_private_key_jwt_token,
+)
 
 
 class FHIRClient(ABC):
@@ -62,13 +80,14 @@ class DemoFHIRClient(FHIRClient):
             label="Demo mode",
             detail=(
                 "Showing sample FHIR-shaped data. Configure FHIR_BASE_URL, "
-                "FHIR_TOKEN_URL, FHIR_CLIENT_ID, and FHIR_CLIENT_SECRET for "
-                "backend services (client_credentials)."
+                "FHIR_TOKEN_URL, FHIR_CLIENT_ID, and PORTAL_JWT_PRIVATE_KEY for "
+                "Epic Backend OAuth (private_key_jwt), or FHIR_CLIENT_SECRET for "
+                "client_secret_basic."
                 + jwks_note
             ),
             base_url=None,
             jwks_uri=jwks_uri,
-            auth_method="client_secret",
+            auth_method="private_key_jwt",
             grant_type="client_credentials",
         )
 
@@ -176,11 +195,7 @@ class DemoFHIRClient(FHIRClient):
 
 
 class LiveFHIRClient(FHIRClient):
-    """FHIR R4 client using SMART Backend Services (client_credentials + secret).
-
-    Token exchange is implemented. Resource GETs still fall back to demo data
-    until Bundle mapping is completed for the vendor's FHIR API.
-    """
+    """FHIR R4 client using SMART Backend Services against Epic (or similar)."""
 
     def __init__(
         self,
@@ -191,6 +206,7 @@ class LiveFHIRClient(FHIRClient):
         client_secret: str | None = None,
         scope: str | None = None,
         access_token: str | None = None,
+        default_patient_id: str | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.token_url = (token_url or "").rstrip("/") or None
@@ -199,38 +215,76 @@ class LiveFHIRClient(FHIRClient):
         self.scope = scope or None
         self._static_access_token = access_token
         self._cached_access_token: str | None = None
+        self._auth_method: str | None = None
+        self._last_auth_error: str | None = None
+        self._last_fetch_notes: list[str] = []
+        self.default_patient_id = default_patient_id or None
+
+    def _jwt_ready(self) -> bool:
+        env = active_jwt_environment()
+        return bool(self.token_url and self.client_id and load_private_pem(environment=env))
+
+    def _secret_ready(self) -> bool:
+        return bool(self.token_url and self.client_id and self.client_secret)
 
     def _obtain_access_token(self) -> str | None:
+        self._last_auth_error = None
         if self._static_access_token:
+            self._auth_method = "static_token"
             return self._static_access_token
         if self._cached_access_token:
             return self._cached_access_token
-        if not (self.token_url and self.client_id and self.client_secret):
-            return None
-        token = request_client_credentials_token(
-            token_url=self.token_url,
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            scope=self.scope,
-        )
-        self._cached_access_token = token.access_token
-        return self._cached_access_token
+
+        jwt_env = active_jwt_environment()
+        if self._jwt_ready():
+            pem = load_private_pem(environment=jwt_env)
+            assert pem is not None and self.token_url and self.client_id
+            token = request_private_key_jwt_token(
+                token_url=self.token_url,
+                client_id=self.client_id,
+                private_key_pem=pem,
+                scope=self.scope,
+                algorithm=signing_algorithm(environment=jwt_env),
+                kid=signing_kid(environment=jwt_env),
+                jku=public_jwks_uri(environment=jwt_env),
+            )
+            self._cached_access_token = token.access_token
+            self._auth_method = "private_key_jwt"
+            return self._cached_access_token
+
+        if self._secret_ready():
+            assert self.token_url and self.client_id and self.client_secret
+            token = request_client_credentials_token(
+                token_url=self.token_url,
+                client_id=self.client_id,
+                client_secret=self.client_secret,
+                scope=self.scope,
+            )
+            self._cached_access_token = token.access_token
+            self._auth_method = "client_secret"
+            return self._cached_access_token
+
+        return None
 
     def get_connection_status(self) -> ConnectionStatus:
-        jwks_uri = public_jwks_uri()
-        has_creds = bool(self.token_url and self.client_id and self.client_secret)
+        jwt_env = active_jwt_environment()
+        jwks_uri = public_jwks_uri(environment=jwt_env)
         has_static = bool(self._static_access_token)
-        jwks_ready = jwks_is_configured()
+        jwt_ready = self._jwt_ready()
+        secret_ready = self._secret_ready()
+        jwks_ready = jwks_is_configured(environment=jwt_env)
 
-        if not (has_creds or has_static):
+        if not (has_static or jwt_ready or secret_ready):
             detail = (
-                "Set FHIR_TOKEN_URL, FHIR_CLIENT_ID, and FHIR_CLIENT_SECRET for "
-                "client_credentials, or FHIR_ACCESS_TOKEN for a pre-issued token."
+                "Set FHIR_TOKEN_URL, FHIR_CLIENT_ID, and PORTAL_JWT_PRIVATE_KEY "
+                "for Epic private_key_jwt (preferred), or FHIR_CLIENT_SECRET for "
+                "client_secret_basic. Optionally set FHIR_ACCESS_TOKEN to skip "
+                "token exchange."
             )
             if not jwks_ready:
                 detail += (
                     " Also publish PORTAL_JWKS_JSON (or PORTAL_JWT_PRIVATE_KEY) so "
-                    "/.well-known/jwks.json can be registered as jwks_uri."
+                    "/.well-known/jwks.json can be registered as the JWK Set URL."
                 )
             return ConnectionStatus(
                 mode="unconfigured",
@@ -238,45 +292,142 @@ class LiveFHIRClient(FHIRClient):
                 detail=detail,
                 base_url=self.base_url,
                 jwks_uri=jwks_uri,
-                auth_method="client_secret",
+                auth_method="private_key_jwt" if not secret_ready else "client_secret",
                 grant_type="client_credentials",
             )
 
-        detail = (
-            f"FHIR base {self.base_url} with client_credentials / client_secret. "
-            "Dashboard resource queries still use sample data until live Bundle "
-            "mapping is enabled."
+        auth_label = self._auth_method or (
+            "private_key_jwt"
+            if jwt_ready
+            else ("static_token" if has_static else "client_secret")
         )
-        if not jwks_ready:
+        detail = (
+            f"FHIR base {self.base_url} with client_credentials / {auth_label}."
+        )
+        if self._last_auth_error:
+            detail = f"Auth error: {self._last_auth_error}"
+        elif self._last_fetch_notes:
+            detail += " " + " ".join(self._last_fetch_notes)
+        if not jwks_ready and auth_label == "private_key_jwt":
             detail += (
                 " JWKS is not published yet — generate keys and register "
-                "/.well-known/jwks.json with the vendor."
+                "/.well-known/jwks.json with Epic as the JWK Set URL."
             )
         elif jwks_uri:
             detail += f" JWKS URI: {jwks_uri}."
 
+        mode = "unconfigured" if self._last_auth_error else "live"
+        label = (
+            "Auth failed"
+            if self._last_auth_error
+            else "Connected (backend services)"
+        )
         return ConnectionStatus(
-            mode="live",
-            label="Connected (backend services)",
+            mode=mode,
+            label=label,
             detail=detail,
             base_url=self.base_url,
             jwks_uri=jwks_uri,
-            auth_method="client_secret",
+            auth_method=auth_label,
             grant_type="client_credentials",
         )
 
-    def fetch_dashboard(self, patient_id: str | None = None) -> PortalDashboard:
-        # Attempt token acquisition so misconfiguration surfaces early in logs/status.
+    def _safe_get(self, path_or_url: str, access_token: str) -> dict | None:
+        url = (
+            path_or_url
+            if path_or_url.startswith("http")
+            else f"{self.base_url}/{path_or_url.lstrip('/')}"
+        )
         try:
-            self._obtain_access_token()
-        except RuntimeError:
-            # Keep demo dashboard usable; connection status reflects config state.
-            pass
+            return fhir_request("GET", url, access_token=access_token)
+        except RuntimeError as exc:
+            self._last_fetch_notes.append(str(exc))
+            return None
 
-        demo = DemoFHIRClient().fetch_dashboard(patient_id)
-        demo.connection = self.get_connection_status()
-        demo.patient_display_name = patient_id or "Connected Patient"
-        return demo
+    def fetch_dashboard(self, patient_id: str | None = None) -> PortalDashboard:
+        self._last_fetch_notes = []
+        resolved_patient_id = (
+            (patient_id or "").strip()
+            or (self.default_patient_id or "").strip()
+            or None
+        )
+
+        try:
+            access_token = self._obtain_access_token()
+        except RuntimeError as exc:
+            self._last_auth_error = str(exc)
+            access_token = None
+
+        connection = self.get_connection_status()
+        if not access_token:
+            return PortalDashboard(
+                connection=connection,
+                patient_display_name=resolved_patient_id or "No patient selected",
+            )
+
+        if not resolved_patient_id:
+            self._last_fetch_notes.append(
+                "Pass ?patient_id=… or set FHIR_PATIENT_ID to pull live chart data "
+                "(Epic sandbox example: erXuFYUfucBZaryVksYEcMg3)."
+            )
+            return PortalDashboard(
+                connection=self.get_connection_status(),
+                patient_display_name="No patient selected",
+            )
+
+        patient = self._safe_get(f"Patient/{resolved_patient_id}", access_token)
+        observations = self._safe_get(
+            build_search_url(
+                self.base_url,
+                "Observation",
+                {"patient": resolved_patient_id, "category": "laboratory"},
+            ),
+            access_token,
+        )
+        encounters = self._safe_get(
+            build_search_url(
+                self.base_url,
+                "Encounter",
+                {"patient": resolved_patient_id},
+            ),
+            access_token,
+        )
+        coverage = self._safe_get(
+            build_search_url(
+                self.base_url,
+                "Coverage",
+                {"patient": resolved_patient_id},
+            ),
+            access_token,
+        )
+        procedures = self._safe_get(
+            build_search_url(
+                self.base_url,
+                "Procedure",
+                {"patient": resolved_patient_id},
+            ),
+            access_token,
+        )
+
+        if patient:
+            self._last_fetch_notes.insert(
+                0, f"Live Patient/{resolved_patient_id} loaded."
+            )
+        else:
+            self._last_fetch_notes.insert(
+                0, f"Could not load Patient/{resolved_patient_id}."
+            )
+
+        return PortalDashboard(
+            connection=self.get_connection_status(),
+            patient_display_name=patient_display_name(patient)
+            if patient
+            else resolved_patient_id,
+            test_results=map_observations(observations),
+            insurance_approvals=map_coverage(coverage),
+            procedures=map_procedures(procedures),
+            encounters=map_encounters(encounters),
+        )
 
 
 def get_fhir_client() -> FHIRClient:
@@ -290,5 +441,6 @@ def get_fhir_client() -> FHIRClient:
             client_secret=os.environ.get("FHIR_CLIENT_SECRET", "").strip() or None,
             scope=os.environ.get("FHIR_SCOPE", "").strip() or None,
             access_token=os.environ.get("FHIR_ACCESS_TOKEN", "").strip() or None,
+            default_patient_id=os.environ.get("FHIR_PATIENT_ID", "").strip() or None,
         )
     return DemoFHIRClient()

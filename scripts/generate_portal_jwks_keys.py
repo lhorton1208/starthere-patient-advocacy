@@ -5,8 +5,10 @@ Usage:
   python scripts/generate_portal_jwks_keys.py
 
 Prints env values to paste into .env / Render secrets. Keep the private key
-secret; register PORTAL_JWKS_URI (https://<host>/.well-known/jwks.json) with
-the FHIR vendor.
+secret; register PORTAL_JWKS_URI (https://<host>/.well-known/jwks.json) as the
+JWK Set URL on fhir.epic.com for Backend OAuth.
+
+Epic prefers RS384 for Backend OAuth client_assertion JWTs.
 """
 
 from __future__ import annotations
@@ -64,6 +66,14 @@ def main() -> int:
     print("# Public JWKS (also served at /.well-known/jwks.json once configured):")
     print(json.dumps(jwks, indent=2))
     print()
+    print(
+        "# If Epic asks for a base64-encoded X.509 certificate instead of a JKU:",
+        file=sys.stderr,
+    )
+    print(
+        "#   openssl req -new -x509 -key private.pem -out publickey509.pem -subj '/CN=StartHere_Portal'",
+        file=sys.stderr,
+    )
     print(
         f"# thumbprint hint: {hashlib.sha256(f'{n}.{e}'.encode()).hexdigest()[:16]}",
         file=sys.stderr,
