@@ -15,6 +15,12 @@
 
 <section class="content-section portal-dashboard">
   <div class="container">
+    <aside class="portal-sandbox-notice" role="status">
+      The patient information shown here is from a test sandbox connection to an
+      EHR system. Real patient data will <strong>not</strong> be publicly
+      accessible when this page goes live.
+    </aside>
+
     <div class="portal-connection portal-connection--{{ dashboard.connection.mode }}">
       <div class="portal-connection-label">{{ dashboard.connection.label }}</div>
       <p>{{ dashboard.connection.detail }}</p>

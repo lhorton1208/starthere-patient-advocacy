@@ -23,7 +23,14 @@ def _b64url_uint(value: int) -> str:
 def _pem_from_env(value_key: str, path_key: str) -> bytes | None:
     pem = os.environ.get(value_key, "").strip()
     if pem:
-        return pem.replace("\\n", "\n").encode("utf-8")
+        normalized = pem.replace("\\n", "\n").encode("utf-8")
+        # Common misconfig: pasting a JWKS URL into the private-key field.
+        text = normalized.decode("utf-8", errors="replace").lstrip()
+        if text.startswith(("http://", "https://")) or ".well-known/jwks" in text:
+            return None
+        if "BEGIN" not in text or "PRIVATE KEY" not in text:
+            return None
+        return normalized
     path = os.environ.get(path_key, "").strip()
     if path and os.path.isfile(path):
         with open(path, "rb") as handle:

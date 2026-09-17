@@ -1230,6 +1230,18 @@ code.mono-id {
 }
 
 /* Patient/Advocate Portal dashboard */
+.portal-dashboard .portal-sandbox-notice {
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid #b45309;
+  border-left: 4px solid #b45309;
+  background: #fffbeb;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
 .portal-dashboard .portal-connection {
   border-radius: var(--radius);
   padding: 1rem 1.25rem;

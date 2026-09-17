@@ -239,15 +239,23 @@ class LiveFHIRClient(FHIRClient):
         if self._jwt_ready():
             pem = load_private_pem(environment=jwt_env)
             assert pem is not None and self.token_url and self.client_id
-            token = request_private_key_jwt_token(
-                token_url=self.token_url,
-                client_id=self.client_id,
-                private_key_pem=pem,
-                scope=self.scope,
-                algorithm=signing_algorithm(environment=jwt_env),
-                kid=signing_kid(environment=jwt_env),
-                jku=public_jwks_uri(environment=jwt_env),
-            )
+            try:
+                token = request_private_key_jwt_token(
+                    token_url=self.token_url,
+                    client_id=self.client_id,
+                    private_key_pem=pem,
+                    scope=self.scope,
+                    algorithm=signing_algorithm(environment=jwt_env),
+                    kid=signing_kid(environment=jwt_env),
+                    jku=public_jwks_uri(environment=jwt_env),
+                )
+            except (RuntimeError, ValueError, TypeError) as exc:
+                self._last_auth_error = (
+                    f"JWT private key/assertion failed: {exc}. "
+                    "PORTAL_JWT_PRIVATE_KEY must be an RSA PEM private key "
+                    "(-----BEGIN PRIVATE KEY-----...), not a JWKS URL."
+                )
+                return None
             self._cached_access_token = token.access_token
             self._auth_method = "private_key_jwt"
             return self._cached_access_token
@@ -354,7 +362,7 @@ class LiveFHIRClient(FHIRClient):
 
         try:
             access_token = self._obtain_access_token()
-        except RuntimeError as exc:
+        except (RuntimeError, ValueError, TypeError) as exc:
             self._last_auth_error = str(exc)
             access_token = None
 
