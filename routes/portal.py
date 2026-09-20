@@ -1,15 +1,15 @@
 """Patient/Advocate Portal — FHIR-backed dashboard.
 
-Currently public so stakeholders can review the dashboard layout. When
-patient/advocate credentials and vendor OAuth are ready, gate these routes
-with a portal-specific auth decorator (separate from staff @employee_required).
+Requires an authenticated advocate login (@employee_required). JWKS endpoints
+used for FHIR vendor registration remain public on the main app.
 
-Live Epic testing: set FHIR_* + PORTAL_JWT_* env vars, then open
-/portal/dashboard?patient_id=<Epic sandbox patient id>.
+Live Epic testing: log in as an advocate, set FHIR_* + PORTAL_JWT_* env vars,
+then open /portal/dashboard?patient_id=<Epic sandbox patient id>.
 """
 
 from flask import Blueprint, render_template, request
 
+from auth import employee_required
 from fhir import get_fhir_client
 from fhir.jwks import public_jwks_uri
 
@@ -18,6 +18,7 @@ portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
 
 @portal_bp.route("/")
 @portal_bp.route("/dashboard")
+@employee_required
 def dashboard():
     """Display FHIR-sourced clinical and administrative information.
 
