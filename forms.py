@@ -154,15 +154,15 @@ class ErVisitForm(FlaskForm):
         validators=[DataRequired(), Length(max=50)],
     )
     nok_name = StringField(
-        "Next of Kin Name",
+        "Contact Name",
         validators=[DataRequired(), Length(max=200)],
     )
     nok_phone = StringField(
-        "Next of Kin Phone Number",
+        "Contact Phone Number",
         validators=[DataRequired(), Length(max=50)],
     )
     nok_email = EmailField(
-        "Next of Kin Email Address (optional)",
+        "Contact Email Address (optional)",
         validators=[Optional(), Email(), Length(max=200)],
     )
     additional_comments = TextAreaField(

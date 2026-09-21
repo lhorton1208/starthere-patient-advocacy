@@ -437,7 +437,7 @@ def format_er_visit_notes(
         ),
         "\n".join(
             [
-                "Next of Kin:",
+                "Contact:",
                 f"  Name: {nok_name.strip()}",
                 f"  Phone Number: {nok_phone.strip()}",
                 (
