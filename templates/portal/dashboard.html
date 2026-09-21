@@ -7,8 +7,9 @@
   <div class="container">
     <h1>Patient/Advocate Portal</h1>
     <p>
-      View test results, insurance approvals, procedures, and encounters
-      retrieved from connected healthcare systems via FHIR.
+      View problems, diagnoses, medications, allergies, provider notes, test results,
+      insurance approvals, procedures, and encounters retrieved from connected
+      healthcare systems via FHIR.
     </p>
   </div>
 </section>
@@ -47,11 +48,183 @@
         <h2 class="portal-patient-name">{{ dashboard.patient_display_name }}</h2>
       </div>
       <div class="portal-summary-pills" aria-label="Dashboard summary">
+        <span class="portal-pill">{{ dashboard.summary_counts.problems }} problems</span>
+        <span class="portal-pill">{{ dashboard.summary_counts.diagnoses }} diagnoses</span>
+        <span class="portal-pill">{{ dashboard.summary_counts.medications }} medications</span>
+        <span class="portal-pill">{{ dashboard.summary_counts.allergies }} allergies</span>
+        <span class="portal-pill">{{ dashboard.summary_counts.provider_notes }} notes</span>
         <span class="portal-pill">{{ dashboard.summary_counts.test_results }} test results</span>
         <span class="portal-pill">{{ dashboard.summary_counts.insurance_approvals }} approvals</span>
         <span class="portal-pill">{{ dashboard.summary_counts.procedures }} procedures</span>
         <span class="portal-pill">{{ dashboard.summary_counts.encounters }} encounters</span>
       </div>
+    </div>
+
+    <div class="portal-section" id="problems">
+      <h2>Problems</h2>
+      <p class="portal-section-desc">Active problem list from Condition resources (category problem-list-item).</p>
+      {% if dashboard.problems %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Problem</th>
+              <th>Clinical status</th>
+              <th>Verification</th>
+              <th>Onset</th>
+              <th>Recorded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dashboard.problems %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.clinical_status or "—" }}</td>
+              <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+              <td>{{ item.onset or "—" }}</td>
+              <td>{{ item.recorded_date or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No problems returned from the connected endpoint.</p>
+      {% endif %}
+    </div>
+
+    <div class="portal-section" id="diagnoses">
+      <h2>Diagnoses</h2>
+      <p class="portal-section-desc">Encounter diagnoses from Condition resources (category encounter-diagnosis).</p>
+      {% if dashboard.diagnoses %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Diagnosis</th>
+              <th>Clinical status</th>
+              <th>Verification</th>
+              <th>Onset</th>
+              <th>Recorded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dashboard.diagnoses %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.clinical_status or "—" }}</td>
+              <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+              <td>{{ item.onset or "—" }}</td>
+              <td>{{ item.recorded_date or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No diagnoses returned from the connected endpoint.</p>
+      {% endif %}
+    </div>
+
+    <div class="portal-section" id="medications">
+      <h2>Medications</h2>
+      <p class="portal-section-desc">Active and historical medication orders from MedicationRequest resources.</p>
+      {% if dashboard.medications %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Medication</th>
+              <th>Status</th>
+              <th>Dosage</th>
+              <th>Authored</th>
+              <th>Prescriber</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dashboard.medications %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+              <td>{{ item.dosage or "—" }}</td>
+              <td>{{ item.authored_on or "—" }}</td>
+              <td>{{ item.prescriber or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No medications returned from the connected endpoint.</p>
+      {% endif %}
+    </div>
+
+    <div class="portal-section" id="allergies">
+      <h2>Allergies</h2>
+      <p class="portal-section-desc">Allergy and intolerance records from AllergyIntolerance resources.</p>
+      {% if dashboard.allergies %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Substance</th>
+              <th>Status</th>
+              <th>Criticality</th>
+              <th>Reaction</th>
+              <th>Recorded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dashboard.allergies %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+              <td>{{ item.criticality or "—" }}</td>
+              <td>{{ item.reaction or "—" }}</td>
+              <td>{{ item.recorded_date or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No allergies returned from the connected endpoint.</p>
+      {% endif %}
+    </div>
+
+    <div class="portal-section" id="provider-notes">
+      <h2>Provider Notes</h2>
+      <p class="portal-section-desc">Clinical note metadata from DocumentReference resources (full note text may require Binary access).</p>
+      {% if dashboard.provider_notes %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Author</th>
+              <th>Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dashboard.provider_notes %}
+            <tr>
+              <td>{{ item.title }}</td>
+              <td>{{ item.note_type or "—" }}</td>
+              <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+              <td>{{ item.authored_on or "—" }}</td>
+              <td>{{ item.author or "—" }}</td>
+              <td>{{ item.summary or "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No provider notes returned from the connected endpoint.</p>
+      {% endif %}
     </div>
 
     <div class="portal-section" id="test-results">

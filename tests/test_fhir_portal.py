@@ -14,7 +14,16 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from fhir.client import LiveFHIRClient
 from fhir.jwt_assert import create_client_assertion
 from fhir.jwks import clear_jwks_cache
-from fhir.mapping import map_encounters, map_observations, patient_display_name
+from fhir.mapping import (
+    map_allergies,
+    map_diagnoses,
+    map_encounters,
+    map_medications,
+    map_observations,
+    map_problems,
+    map_provider_notes,
+    patient_display_name,
+)
 from fhir.oauth import request_private_key_jwt_token
 
 
@@ -101,6 +110,125 @@ class MappingTests(unittest.TestCase):
         items = map_encounters(bundle)
         self.assertEqual(items[0].encounter_type, "Office visit")
         self.assertEqual(items[0].when, "2020-01-02T10:00:00Z")
+
+    def test_map_problems_and_diagnoses(self):
+        bundle = {
+            "resourceType": "Bundle",
+            "entry": [
+                {
+                    "resource": {
+                        "resourceType": "Condition",
+                        "id": "c1",
+                        "code": {"text": "Hypertension"},
+                        "category": [
+                            {
+                                "coding": [
+                                    {
+                                        "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                                        "code": "problem-list-item",
+                                    }
+                                ]
+                            }
+                        ],
+                        "clinicalStatus": {"text": "active"},
+                        "verificationStatus": {"text": "confirmed"},
+                        "onsetDateTime": "2015-01-01",
+                    }
+                },
+                {
+                    "resource": {
+                        "resourceType": "Condition",
+                        "id": "c2",
+                        "code": {"text": "Acute bronchitis"},
+                        "category": [
+                            {
+                                "coding": [
+                                    {
+                                        "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                                        "code": "encounter-diagnosis",
+                                    }
+                                ]
+                            }
+                        ],
+                        "clinicalStatus": {"text": "active"},
+                        "verificationStatus": {"text": "confirmed"},
+                    }
+                },
+            ],
+        }
+        problems = map_problems(bundle)
+        diagnoses = map_diagnoses(bundle)
+        self.assertEqual(len(problems), 1)
+        self.assertEqual(problems[0].name, "Hypertension")
+        self.assertEqual(len(diagnoses), 1)
+        self.assertEqual(diagnoses[0].name, "Acute bronchitis")
+
+    def test_map_medications(self):
+        bundle = {
+            "resourceType": "Bundle",
+            "entry": [
+                {
+                    "resource": {
+                        "resourceType": "MedicationRequest",
+                        "id": "m1",
+                        "status": "active",
+                        "intent": "order",
+                        "medicationCodeableConcept": {"text": "Metformin"},
+                        "authoredOn": "2026-01-01",
+                        "requester": {"display": "Dr. Rivera"},
+                        "dosageInstruction": [{"text": "1 tablet twice daily"}],
+                    }
+                }
+            ],
+        }
+        items = map_medications(bundle)
+        self.assertEqual(items[0].name, "Metformin")
+        self.assertEqual(items[0].dosage, "1 tablet twice daily")
+
+    def test_map_allergies(self):
+        bundle = {
+            "resourceType": "Bundle",
+            "entry": [
+                {
+                    "resource": {
+                        "resourceType": "AllergyIntolerance",
+                        "id": "a1",
+                        "code": {"text": "Penicillin"},
+                        "clinicalStatus": {"text": "active"},
+                        "criticality": "high",
+                        "category": ["medication"],
+                        "reaction": [
+                            {"manifestation": [{"text": "Hives"}], "severity": "severe"}
+                        ],
+                    }
+                }
+            ],
+        }
+        items = map_allergies(bundle)
+        self.assertEqual(items[0].name, "Penicillin")
+        self.assertIn("Hives", items[0].reaction)
+
+    def test_map_provider_notes(self):
+        bundle = {
+            "resourceType": "Bundle",
+            "entry": [
+                {
+                    "resource": {
+                        "resourceType": "DocumentReference",
+                        "id": "d1",
+                        "status": "current",
+                        "type": {"text": "Progress note"},
+                        "description": "Office visit progress note",
+                        "date": "2026-06-10",
+                        "author": [{"display": "Dr. Rivera"}],
+                    }
+                }
+            ],
+        }
+        items = map_provider_notes(bundle)
+        self.assertEqual(items[0].title, "Office visit progress note")
+        self.assertEqual(items[0].note_type, "Progress note")
+        self.assertEqual(items[0].author, "Dr. Rivera")
 
 
 class PrivateKeyJwtTokenTests(unittest.TestCase):
@@ -195,6 +323,72 @@ class LiveClientTests(unittest.TestCase):
             "Encounter": {"resourceType": "Bundle", "entry": []},
             "Coverage": {"resourceType": "Bundle", "entry": []},
             "Procedure": {"resourceType": "Bundle", "entry": []},
+            "Condition": {
+                "resourceType": "Bundle",
+                "entry": [
+                    {
+                        "resource": {
+                            "resourceType": "Condition",
+                            "id": "c1",
+                            "code": {"text": "Hypertension"},
+                            "category": [
+                                {
+                                    "coding": [
+                                        {
+                                            "code": "problem-list-item",
+                                            "display": "Problem List Item",
+                                        }
+                                    ]
+                                }
+                            ],
+                            "clinicalStatus": {"text": "active"},
+                            "verificationStatus": {"text": "confirmed"},
+                        }
+                    }
+                ],
+            },
+            "MedicationRequest": {
+                "resourceType": "Bundle",
+                "entry": [
+                    {
+                        "resource": {
+                            "resourceType": "MedicationRequest",
+                            "id": "m1",
+                            "status": "active",
+                            "intent": "order",
+                            "medicationCodeableConcept": {"text": "Lisinopril"},
+                        }
+                    }
+                ],
+            },
+            "AllergyIntolerance": {
+                "resourceType": "Bundle",
+                "entry": [
+                    {
+                        "resource": {
+                            "resourceType": "AllergyIntolerance",
+                            "id": "a1",
+                            "code": {"text": "Latex"},
+                            "clinicalStatus": {"text": "active"},
+                        }
+                    }
+                ],
+            },
+            "DocumentReference": {
+                "resourceType": "Bundle",
+                "entry": [
+                    {
+                        "resource": {
+                            "resourceType": "DocumentReference",
+                            "id": "d1",
+                            "status": "current",
+                            "type": {"text": "Progress note"},
+                            "description": "Follow-up note",
+                            "date": "2026-06-10",
+                        }
+                    }
+                ],
+            },
         }
 
         def fake_get(path_or_url, access_token):
@@ -212,6 +406,14 @@ class LiveClientTests(unittest.TestCase):
         self.assertEqual(dashboard.patient_display_name, "Camila Lopez")
         self.assertEqual(len(dashboard.test_results), 1)
         self.assertEqual(dashboard.test_results[0].name, "HbA1c")
+        self.assertEqual(len(dashboard.problems), 1)
+        self.assertEqual(dashboard.problems[0].name, "Hypertension")
+        self.assertEqual(len(dashboard.medications), 1)
+        self.assertEqual(dashboard.medications[0].name, "Lisinopril")
+        self.assertEqual(len(dashboard.allergies), 1)
+        self.assertEqual(dashboard.allergies[0].name, "Latex")
+        self.assertEqual(len(dashboard.provider_notes), 1)
+        self.assertEqual(dashboard.provider_notes[0].title, "Follow-up note")
 
 
 if __name__ == "__main__":

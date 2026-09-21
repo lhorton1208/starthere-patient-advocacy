@@ -20,18 +20,28 @@ from fhir.jwks import (
     signing_kid,
 )
 from fhir.mapping import (
+    map_allergies,
     map_coverage,
+    map_diagnoses,
     map_encounters,
+    map_medications,
     map_observations,
+    map_problems,
     map_procedures,
+    map_provider_notes,
     patient_display_name,
 )
 from fhir.models import (
+    AllergyItem,
     ConnectionStatus,
+    DiagnosisItem,
     EncounterItem,
     InsuranceApproval,
+    MedicationItem,
     PortalDashboard,
+    ProblemItem,
     ProcedureItem,
+    ProviderNoteItem,
     TestResult,
 )
 from fhir.oauth import (
@@ -56,6 +66,10 @@ class FHIRClient(ABC):
           - ClaimResponse / Coverage        → insurance approvals
           - ServiceRequest / Procedure      → procedures ordered/completed
           - Encounter                       → encounters scheduled/completed
+          - Condition                       → problems / diagnoses
+          - MedicationRequest               → medications
+          - AllergyIntolerance              → allergies
+          - DocumentReference               → provider notes
         """
         raise NotImplementedError
 
@@ -189,6 +203,97 @@ class DemoFHIRClient(FHIRClient):
                     location="WakeMed Raleigh",
                     reason="Acute back pain",
                     provider="ED Team",
+                ),
+            ],
+            problems=[
+                ProblemItem(
+                    id="cond-601",
+                    name="Type 2 diabetes mellitus",
+                    status="confirmed",
+                    clinical_status="active",
+                    onset="2018-03-12",
+                    recorded_date="2018-03-12",
+                    category="Problem List Item",
+                ),
+                ProblemItem(
+                    id="cond-602",
+                    name="Essential hypertension",
+                    status="confirmed",
+                    clinical_status="active",
+                    onset="2015-11-01",
+                    recorded_date="2015-11-01",
+                    category="Problem List Item",
+                ),
+            ],
+            diagnoses=[
+                DiagnosisItem(
+                    id="cond-701",
+                    name="Acute low back pain",
+                    status="confirmed",
+                    clinical_status="active",
+                    onset="2026-04-03",
+                    recorded_date="2026-04-03",
+                    category="Encounter Diagnosis",
+                ),
+            ],
+            medications=[
+                MedicationItem(
+                    id="med-801",
+                    name="Metformin 500 MG Oral Tablet",
+                    status="active",
+                    dosage="Take 1 tablet by mouth twice daily",
+                    authored_on="2026-01-15",
+                    prescriber="Dr. Rivera",
+                    intent="order",
+                ),
+                MedicationItem(
+                    id="med-802",
+                    name="Lisinopril 10 MG Oral Tablet",
+                    status="active",
+                    dosage="Take 1 tablet by mouth daily",
+                    authored_on="2025-11-02",
+                    prescriber="Dr. Rivera",
+                    intent="order",
+                ),
+            ],
+            allergies=[
+                AllergyItem(
+                    id="alg-901",
+                    name="Penicillin",
+                    status="active",
+                    criticality="high",
+                    reaction="Hives; severe",
+                    recorded_date="2012-08-20",
+                    category="medication",
+                ),
+                AllergyItem(
+                    id="alg-902",
+                    name="Peanuts",
+                    status="active",
+                    criticality="high",
+                    reaction="Anaphylaxis",
+                    recorded_date="2005-04-11",
+                    category="food",
+                ),
+            ],
+            provider_notes=[
+                ProviderNoteItem(
+                    id="doc-1001",
+                    title="Office visit progress note",
+                    status="current",
+                    note_type="Progress note",
+                    authored_on="2026-06-10",
+                    author="Dr. Rivera",
+                    summary="Medication review and diabetes follow-up.",
+                ),
+                ProviderNoteItem(
+                    id="doc-1002",
+                    title="ED physician note",
+                    status="current",
+                    note_type="ED note",
+                    authored_on="2026-04-03",
+                    author="ED Team",
+                    summary="Acute back pain evaluation; imaging negative.",
                 ),
             ],
         )
@@ -416,6 +521,54 @@ class LiveFHIRClient(FHIRClient):
             ),
             access_token,
         )
+        conditions = self._safe_get(
+            build_search_url(
+                self.base_url,
+                "Condition",
+                {"patient": resolved_patient_id},
+            ),
+            access_token,
+        )
+        medications = self._safe_get(
+            build_search_url(
+                self.base_url,
+                "MedicationRequest",
+                {"patient": resolved_patient_id},
+            ),
+            access_token,
+        )
+        allergies = self._safe_get(
+            build_search_url(
+                self.base_url,
+                "AllergyIntolerance",
+                {"patient": resolved_patient_id},
+            ),
+            access_token,
+        )
+        provider_notes = self._safe_get(
+            build_search_url(
+                self.base_url,
+                "DocumentReference",
+                {"patient": resolved_patient_id, "category": "clinical-note"},
+            ),
+            access_token,
+        )
+        note_entries = []
+        if provider_notes:
+            if provider_notes.get("resourceType") == "Bundle":
+                note_entries = provider_notes.get("entry") or []
+            else:
+                note_entries = [provider_notes]
+        if not note_entries:
+            # Some vendors omit category=clinical-note; fall back to all notes.
+            provider_notes = self._safe_get(
+                build_search_url(
+                    self.base_url,
+                    "DocumentReference",
+                    {"patient": resolved_patient_id},
+                ),
+                access_token,
+            )
 
         if patient:
             self._last_fetch_notes.insert(
@@ -435,6 +588,11 @@ class LiveFHIRClient(FHIRClient):
             insurance_approvals=map_coverage(coverage),
             procedures=map_procedures(procedures),
             encounters=map_encounters(encounters),
+            problems=map_problems(conditions),
+            diagnoses=map_diagnoses(conditions),
+            medications=map_medications(medications),
+            allergies=map_allergies(allergies),
+            provider_notes=map_provider_notes(provider_notes),
         )
 
 
