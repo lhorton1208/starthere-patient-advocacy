@@ -9,6 +9,10 @@ def _database_uri() -> str:
     uri = os.environ.get("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
     if uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
+    # SQLAlchemy 2.1+ maps bare postgresql:// to psycopg (v3). We depend on
+    # psycopg2-binary, so force that driver explicitly.
+    if uri.startswith("postgresql://"):
+        uri = "postgresql+psycopg2://" + uri[len("postgresql://") :]
     return uri
 
 
