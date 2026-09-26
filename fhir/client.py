@@ -58,7 +58,14 @@ class FHIRClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def fetch_dashboard(self, patient_id: str | None = None) -> PortalDashboard:
+    def fetch_dashboard(
+        self,
+        patient_id: str | None = None,
+        *,
+        access_token: str | None = None,
+        auth_method: str | None = None,
+        grant_type: str | None = None,
+    ) -> PortalDashboard:
         """Query FHIR endpoints and return normalized dashboard data.
 
         Expected resource families (R4):
@@ -70,6 +77,9 @@ class FHIRClient(ABC):
           - MedicationRequest               → medications
           - AllergyIntolerance              → allergies
           - DocumentReference               → provider notes
+
+        Optional `access_token` supplies a patient authorization_code token
+        (SMART App Launch) instead of obtaining a backend-services token.
         """
         raise NotImplementedError
 
@@ -105,8 +115,15 @@ class DemoFHIRClient(FHIRClient):
             grant_type="client_credentials",
         )
 
-    def fetch_dashboard(self, patient_id: str | None = None) -> PortalDashboard:
-        _ = patient_id  # Reserved for Patient/{id} queries once auth is wired
+    def fetch_dashboard(
+        self,
+        patient_id: str | None = None,
+        *,
+        access_token: str | None = None,
+        auth_method: str | None = None,
+        grant_type: str | None = None,
+    ) -> PortalDashboard:
+        _ = (patient_id, access_token, auth_method, grant_type)
         return PortalDashboard(
             connection=self.get_connection_status(),
             patient_display_name="Sample Patient",
@@ -457,7 +474,14 @@ class LiveFHIRClient(FHIRClient):
             self._last_fetch_notes.append(str(exc))
             return None
 
-    def fetch_dashboard(self, patient_id: str | None = None) -> PortalDashboard:
+    def fetch_dashboard(
+        self,
+        patient_id: str | None = None,
+        *,
+        access_token: str | None = None,
+        auth_method: str | None = None,
+        grant_type: str | None = None,
+    ) -> PortalDashboard:
         self._last_fetch_notes = []
         resolved_patient_id = (
             (patient_id or "").strip()
@@ -465,26 +489,44 @@ class LiveFHIRClient(FHIRClient):
             or None
         )
 
-        try:
-            access_token = self._obtain_access_token()
-        except (RuntimeError, ValueError, TypeError) as exc:
-            self._last_auth_error = str(exc)
-            access_token = None
+        override_token = (access_token or "").strip() or None
+        if override_token:
+            self._auth_method = auth_method or "patient_authorization_code"
+            obtained_token: str | None = override_token
+        else:
+            try:
+                obtained_token = self._obtain_access_token()
+            except (RuntimeError, ValueError, TypeError) as exc:
+                self._last_auth_error = str(exc)
+                obtained_token = None
 
         connection = self.get_connection_status()
-        if not access_token:
+        if override_token:
+            connection.auth_method = auth_method or "patient_authorization_code"
+            connection.grant_type = grant_type or "authorization_code"
+            connection.label = "Connected (patient Epic login)"
+            connection.mode = "live"
+            connection.detail = (
+                f"FHIR base {self.base_url} with patient authorization_code token."
+            )
+        if not obtained_token:
             return PortalDashboard(
                 connection=connection,
                 patient_display_name=resolved_patient_id or "No patient selected",
             )
 
+        access_token = obtained_token
+
         if not resolved_patient_id:
             self._last_fetch_notes.append(
                 "Pass ?patient_id=… or set FHIR_PATIENT_ID to pull live chart data "
-                "(Epic sandbox example: erXuFYUfucBZaryVksYEcMg3)."
+                "(Epic sandbox example: erXuFYUfucBZaryVksYEcMg3). "
+                "Patient Epic login supplies the patient id from the token response."
             )
             return PortalDashboard(
-                connection=self.get_connection_status(),
+                connection=connection
+                if override_token
+                else self.get_connection_status(),
                 patient_display_name="No patient selected",
             )
 
@@ -579,8 +621,17 @@ class LiveFHIRClient(FHIRClient):
                 0, f"Could not load Patient/{resolved_patient_id}."
             )
 
+        if override_token:
+            connection.detail = (
+                f"FHIR base {self.base_url} with patient authorization_code token. "
+                + " ".join(self._last_fetch_notes)
+            ).strip()
+            final_connection = connection
+        else:
+            final_connection = self.get_connection_status()
+
         return PortalDashboard(
-            connection=self.get_connection_status(),
+            connection=final_connection,
             patient_display_name=patient_display_name(patient)
             if patient
             else resolved_patient_id,

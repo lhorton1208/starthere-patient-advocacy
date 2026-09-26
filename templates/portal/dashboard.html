@@ -363,8 +363,14 @@
     </div>
 
     <p class="portal-footnote">
-      This portal is scaffolding for FHIR vendor connections. Live data will appear
-      after patient or advocate credentials are linked to a healthcare endpoint.
+      {% if epic_patient %}
+      Signed in with Epic.
+      <a href="{{ url_for('portal.epic_logout') }}">Sign out of Epic</a>.
+      {% else %}
+      This portal can use advocate Backend Services credentials or a patient
+      Epic / MyChart sign-in.
+      <a href="{{ url_for('portal.login') }}">Patient Epic login</a>.
+      {% endif %}
       Educational and advocacy use only — not a substitute for your care team’s
       official records.
     </p>

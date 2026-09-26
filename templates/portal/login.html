@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "staff/_macros.html" import flash_messages %}
+
+{% block title %}Patient Portal Login | StartHere Patient Advocacy{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Patient Portal</h1>
+    <p>
+      Sign in with your Epic / MyChart account to view problems, medications,
+      allergies, notes, and other chart information shared with StartHere.
+    </p>
+  </div>
+</section>
+
+<section class="content-section">
+  <div class="container auth-panel-wrap">
+    <div class="form-card auth-panel portal-login-panel">
+      {{ flash_messages() }}
+
+      <p class="form-help">
+        You will be redirected to Epic to enter your credentials. StartHere never
+        asks for your MyChart username or password on this site.
+      </p>
+
+      {% if oauth_configured %}
+      <div class="form-actions">
+        <a
+          href="{{ url_for('portal.epic_login', next=request.args.get('next')) }}"
+          class="btn btn-primary"
+        >
+          Sign in with Epic
+        </a>
+      </div>
+      <p class="portal-login-meta">
+        Secure sign-in hosted by
+        <code>{{ authorize_host }}</code>
+      </p>
+      {% else %}
+      <aside class="portal-sandbox-notice" role="status">
+        Epic patient login is not configured yet. An administrator must register a
+        Patient-audience app on fhir.epic.com and set
+        <code>FHIR_AUTHORIZE_URL</code>, <code>FHIR_TOKEN_URL</code>, and
+        <code>FHIR_PATIENT_CLIENT_ID</code> (plus redirect URI /
+        <code>PUBLIC_BASE_URL</code>).
+      </aside>
+      {% endif %}
+
+      <p class="portal-login-advocate">
+        Advocate?
+        <a href="{{ url_for('auth.login', next=url_for('portal.dashboard')) }}">
+          Sign in with your StartHere account
+        </a>
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

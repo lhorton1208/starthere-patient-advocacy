@@ -24,6 +24,14 @@ class Config:
     FHIR_SCOPE = os.environ.get("FHIR_SCOPE", "").strip()
     FHIR_ACCESS_TOKEN = os.environ.get("FHIR_ACCESS_TOKEN", "").strip()
     FHIR_PATIENT_ID = os.environ.get("FHIR_PATIENT_ID", "").strip()
+    # Patient SMART App Launch (authorization_code + PKCE)
+    FHIR_AUTHORIZE_URL = os.environ.get("FHIR_AUTHORIZE_URL", "").strip()
+    FHIR_PATIENT_CLIENT_ID = os.environ.get("FHIR_PATIENT_CLIENT_ID", "").strip()
+    FHIR_PATIENT_CLIENT_SECRET = os.environ.get(
+        "FHIR_PATIENT_CLIENT_SECRET", ""
+    ).strip()
+    FHIR_PATIENT_SCOPE = os.environ.get("FHIR_PATIENT_SCOPE", "").strip()
+    FHIR_REDIRECT_URI = os.environ.get("FHIR_REDIRECT_URI", "").strip()
     # Public origin for building jwks_uri (or set PORTAL_JWKS_URI directly)
     PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip()
     PORTAL_JWKS_URI = os.environ.get("PORTAL_JWKS_URI", "").strip()

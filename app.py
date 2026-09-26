@@ -9,6 +9,7 @@ from auth import employee_required, get_current_advocate
 from blog_content import ARTICLES, get_article
 from config import BASE_DIR, CONTACTS, Config, INFO_EMAIL, INSTANCE_DIR, ORG_PHONE
 from fhir.jwks import get_jwks
+from fhir.patient_auth import get_epic_patient_session
 from models import db
 from routes.auth_routes import auth_bp
 from routes.billing import billing_bp
@@ -61,6 +62,7 @@ def create_app(config_class=Config, *, run_migrate=True):
             "org_phone": ORG_PHONE,
             "blog_articles": ARTICLES,
             "current_advocate": get_current_advocate(),
+            "epic_patient": get_epic_patient_session(),
         }
 
     @app.route("/.well-known/jwks.json")
