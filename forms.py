@@ -10,6 +10,7 @@ from wtforms import (
     PasswordField,
     SelectField,
     StringField,
+    SubmitField,
     TextAreaField,
 )
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, ValidationError
@@ -659,6 +660,31 @@ class LoginForm(FlaskForm):
         "Password",
         validators=[DataRequired(), Length(max=128)],
     )
+
+
+class AdvocatePortalLookupForm(FlaskForm):
+    """Advocate-only form to select EHR environment and FHIR patient id."""
+
+    environment = SelectField(
+        "EHR environment",
+        choices=[
+            ("sandbox", "Test sandbox"),
+            ("production", "Production"),
+        ],
+        validators=[DataRequired()],
+        default="sandbox",
+    )
+    patient_id = StringField(
+        "Epic FHIR Patient ID",
+        validators=[DataRequired(), Length(min=1, max=128)],
+        render_kw={
+            "placeholder": "e.g. erXuFYUfucBZaryVksYEcMg3",
+            "autocomplete": "off",
+            "spellcheck": "false",
+        },
+    )
+    submit = SubmitField("View patient chart")
+    load_sandbox_test = SubmitField("Load sandbox test patient")
 
 
 class ChangePasswordForm(FlaskForm):

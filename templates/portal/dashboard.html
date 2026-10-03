@@ -16,11 +16,64 @@
 
 <section class="content-section portal-dashboard">
   <div class="container">
+    {% if portal_environment == "sandbox" %}
     <aside class="portal-sandbox-notice" role="status">
-      The patient information shown here is from a test sandbox connection to an
-      EHR system. Real patient data will <strong>not</strong> be publicly
-      accessible when this page goes live.
+      Connected to the <strong>test sandbox</strong>. Chart data is from Epic’s
+      open sandbox (or demo mode), not a live production patient record.
     </aside>
+    {% else %}
+    <aside class="portal-production-notice" role="status">
+      Connected to <strong>production</strong>. Treat all chart data as PHI and
+      follow StartHere access policies.
+    </aside>
+    {% endif %}
+
+    {% if is_advocate and lookup_form and not epic_patient %}
+    <div class="portal-lookup form-card">
+      <h2 class="portal-lookup-title">Load patient chart</h2>
+      <p class="portal-lookup-help">
+        Choose the EHR environment, then enter the patient’s Epic FHIR Patient ID.
+        StartHere never collects MyChart usernames or passwords — Backend Services
+        access uses the FHIR id your organization is authorized to query.
+      </p>
+      <form method="post" action="{{ url_for('portal.dashboard') }}" class="portal-lookup-form">
+        {{ lookup_form.hidden_tag() }}
+        <div class="portal-lookup-grid">
+          <div class="form-group is-required{% if lookup_form.environment.errors %} is-invalid{% endif %}">
+            <label class="field-label" for="{{ lookup_form.environment.id }}">
+              {{ lookup_form.environment.label.text }}
+              <span class="required-marker" aria-hidden="true">*</span>
+            </label>
+            {{ lookup_form.environment(required=true) }}
+            {% for error in lookup_form.environment.errors %}
+            <span class="field-error">{{ error }}</span>
+            {% endfor %}
+          </div>
+          <div class="form-group is-required{% if lookup_form.patient_id.errors %} is-invalid{% endif %}">
+            <label class="field-label" for="{{ lookup_form.patient_id.id }}">
+              {{ lookup_form.patient_id.label.text }}
+              <span class="required-marker" aria-hidden="true">*</span>
+            </label>
+            {{ lookup_form.patient_id(required=true, data_required="true") }}
+            {% for error in lookup_form.patient_id.errors %}
+            <span class="field-error">{{ error }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="form-actions portal-lookup-actions">
+          {{ lookup_form.submit(class_="btn btn-primary") }}
+          {{ lookup_form.load_sandbox_test(class_="btn btn-secondary") }}
+        </div>
+        <p class="portal-lookup-meta">
+          Sandbox test patient id:
+          <code>{{ sandbox_test_patient_id }}</code>
+          {% if selected_patient_id %}
+          · Currently viewing: <code>{{ selected_patient_id }}</code>
+          {% endif %}
+        </p>
+      </form>
+    </div>
+    {% endif %}
 
     <div class="portal-connection portal-connection--{{ dashboard.connection.mode }}">
       <div class="portal-connection-label">{{ dashboard.connection.label }}</div>
@@ -30,6 +83,7 @@
         {% if dashboard.connection.auth_method %}Auth: <code>{{ dashboard.connection.auth_method }}</code>{% endif %}
         {% if dashboard.connection.auth_method and dashboard.connection.grant_type %} · {% endif %}
         {% if dashboard.connection.grant_type %}Grant: <code>{{ dashboard.connection.grant_type }}</code>{% endif %}
+        · Environment: <code>{{ portal_environment }}</code>
       </p>
       {% endif %}
       {% if dashboard.connection.base_url %}
@@ -46,6 +100,9 @@
       <div>
         <span class="portal-eyebrow">Patient</span>
         <h2 class="portal-patient-name">{{ dashboard.patient_display_name }}</h2>
+        {% if selected_patient_id %}
+        <p class="portal-patient-id">FHIR id: <code>{{ selected_patient_id }}</code></p>
+        {% endif %}
       </div>
       <div class="portal-summary-pills" aria-label="Dashboard summary">
         <span class="portal-pill">{{ dashboard.summary_counts.problems }} problems</span>
@@ -366,10 +423,9 @@
       {% if epic_patient %}
       Signed in with Epic.
       <a href="{{ url_for('portal.epic_logout') }}">Sign out of Epic</a>.
-      {% else %}
-      This portal can use advocate Backend Services credentials or a patient
-      Epic / MyChart sign-in.
-      <a href="{{ url_for('portal.login') }}">Patient Epic login</a>.
+      {% elif is_advocate %}
+      Advocate Backend Services access — use the lookup form above to switch
+      patients or EHR environments.
       {% endif %}
       Educational and advocacy use only — not a substitute for your care team’s
       official records.

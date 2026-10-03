@@ -1249,7 +1249,8 @@ code.mono-id {
   color: var(--color-text-muted);
 }
 
-.portal-dashboard .portal-sandbox-notice {
+.portal-dashboard .portal-sandbox-notice,
+.portal-dashboard .portal-production-notice {
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
   margin-bottom: 1.25rem;
@@ -1259,6 +1260,62 @@ code.mono-id {
   color: var(--color-text);
   font-size: 1rem;
   line-height: 1.5;
+}
+
+.portal-dashboard .portal-production-notice {
+  border-color: #991b1b;
+  border-left-color: #991b1b;
+  background: #fef2f2;
+}
+
+.portal-lookup {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.portal-lookup-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  color: var(--color-primary-dark);
+}
+
+.portal-lookup-help {
+  margin: 0 0 1.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.portal-lookup-grid {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  gap: 1rem 1.25rem;
+}
+
+@media (max-width: 720px) {
+  .portal-lookup-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.portal-lookup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.portal-lookup-meta {
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+.portal-patient-id {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 
 .portal-dashboard .portal-connection {

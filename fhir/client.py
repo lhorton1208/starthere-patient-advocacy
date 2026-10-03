@@ -49,6 +49,100 @@ from fhir.oauth import (
     request_private_key_jwt_token,
 )
 
+# Well-known Epic open-sandbox FHIR patient used for Backend Services demos.
+EPIC_SANDBOX_TEST_PATIENT_ID = "erXuFYUfucBZaryVksYEcMg3"
+
+
+def normalize_portal_environment(value: str | None) -> str:
+    """Return ``sandbox`` or ``production`` for portal EHR targeting."""
+    raw = (value or "").strip().lower()
+    if raw in {"production", "prod"}:
+        return "production"
+    if raw in {"nonprod", "non-production", "sandbox", "test"}:
+        return "sandbox"
+    return "sandbox"
+
+
+def jwt_environment_for_portal(portal_environment: str) -> str:
+    """Map portal sandbox/production choice onto JWKS key environment names."""
+    if normalize_portal_environment(portal_environment) == "production":
+        return "production"
+    return "nonprod"
+
+
+def resolve_fhir_connection_settings(
+    environment: str | None = None,
+) -> dict[str, str | None]:
+    """Resolve FHIR URLs/credentials for sandbox or production.
+
+    Sandbox prefers ``FHIR_SANDBOX_*`` then falls back to ``FHIR_*``.
+    Production prefers ``FHIR_PRODUCTION_*`` then falls back to ``FHIR_*``.
+    JWT signing uses nonprod keys for sandbox and production keys for production.
+    """
+    env = normalize_portal_environment(
+        environment
+        if environment is not None
+        else os.environ.get("FHIR_JWT_ENVIRONMENT", "")
+    )
+    if env == "production":
+        base_url = (
+            os.environ.get("FHIR_PRODUCTION_BASE_URL", "").strip()
+            or os.environ.get("FHIR_BASE_URL", "").strip()
+        )
+        token_url = (
+            os.environ.get("FHIR_PRODUCTION_TOKEN_URL", "").strip()
+            or os.environ.get("FHIR_TOKEN_URL", "").strip()
+        )
+        client_id = (
+            os.environ.get("FHIR_PRODUCTION_CLIENT_ID", "").strip()
+            or os.environ.get("FHIR_CLIENT_ID", "").strip()
+        )
+        client_secret = (
+            os.environ.get("FHIR_PRODUCTION_CLIENT_SECRET", "").strip()
+            or os.environ.get("FHIR_CLIENT_SECRET", "").strip()
+        )
+        access_token = (
+            os.environ.get("FHIR_PRODUCTION_ACCESS_TOKEN", "").strip()
+            or os.environ.get("FHIR_ACCESS_TOKEN", "").strip()
+        )
+        default_patient_id = os.environ.get(
+            "FHIR_PRODUCTION_PATIENT_ID", ""
+        ).strip()
+    else:
+        base_url = (
+            os.environ.get("FHIR_SANDBOX_BASE_URL", "").strip()
+            or os.environ.get("FHIR_BASE_URL", "").strip()
+        )
+        token_url = (
+            os.environ.get("FHIR_SANDBOX_TOKEN_URL", "").strip()
+            or os.environ.get("FHIR_TOKEN_URL", "").strip()
+        )
+        client_id = (
+            os.environ.get("FHIR_SANDBOX_CLIENT_ID", "").strip()
+            or os.environ.get("FHIR_CLIENT_ID", "").strip()
+        )
+        client_secret = (
+            os.environ.get("FHIR_SANDBOX_CLIENT_SECRET", "").strip()
+            or os.environ.get("FHIR_CLIENT_SECRET", "").strip()
+        )
+        access_token = os.environ.get("FHIR_ACCESS_TOKEN", "").strip()
+        default_patient_id = (
+            os.environ.get("FHIR_PATIENT_ID", "").strip()
+            or EPIC_SANDBOX_TEST_PATIENT_ID
+        )
+
+    return {
+        "portal_environment": env,
+        "jwt_environment": jwt_environment_for_portal(env),
+        "base_url": base_url or None,
+        "token_url": token_url or None,
+        "client_id": client_id or None,
+        "client_secret": client_secret or None,
+        "scope": os.environ.get("FHIR_SCOPE", "").strip() or None,
+        "access_token": access_token or None,
+        "default_patient_id": default_patient_id or None,
+    }
+
 
 class FHIRClient(ABC):
     """Vendor-agnostic FHIR access used by the portal dashboard."""
@@ -87,21 +181,28 @@ class FHIRClient(ABC):
 class DemoFHIRClient(FHIRClient):
     """Returns sample data shaped like live FHIR mappings for UI scaffolding."""
 
+    def __init__(self, *, portal_environment: str = "sandbox"):
+        self.portal_environment = normalize_portal_environment(portal_environment)
+        self.jwt_environment = jwt_environment_for_portal(self.portal_environment)
+
     def get_connection_status(self) -> ConnectionStatus:
-        jwks_uri = public_jwks_uri()
+        jwks_uri = public_jwks_uri(environment=self.jwt_environment)
         jwks_note = (
             f" JWKS URI for vendor registration: {jwks_uri}."
-            if jwks_uri and jwks_is_configured()
+            if jwks_uri and jwks_is_configured(environment=self.jwt_environment)
             else (
                 " Generate portal keys (scripts/generate_portal_jwks_keys.py) and "
                 "set PUBLIC_BASE_URL so /.well-known/jwks.json can be registered."
-                if not jwks_is_configured()
+                if not jwks_is_configured(environment=self.jwt_environment)
                 else " Set PUBLIC_BASE_URL or PORTAL_JWKS_URI for the absolute JWKS URL."
             )
         )
+        env_label = (
+            "production" if self.portal_environment == "production" else "test sandbox"
+        )
         return ConnectionStatus(
             mode="demo",
-            label="Demo mode",
+            label=f"Demo mode ({env_label})",
             detail=(
                 "Showing sample FHIR-shaped data. Configure FHIR_BASE_URL, "
                 "FHIR_TOKEN_URL, FHIR_CLIENT_ID, and PORTAL_JWT_PRIVATE_KEY for "
@@ -329,6 +430,8 @@ class LiveFHIRClient(FHIRClient):
         scope: str | None = None,
         access_token: str | None = None,
         default_patient_id: str | None = None,
+        jwt_environment: str | None = None,
+        portal_environment: str | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.token_url = (token_url or "").rstrip("/") or None
@@ -341,10 +444,24 @@ class LiveFHIRClient(FHIRClient):
         self._last_auth_error: str | None = None
         self._last_fetch_notes: list[str] = []
         self.default_patient_id = default_patient_id or None
+        self.portal_environment = normalize_portal_environment(
+            portal_environment or jwt_environment or active_jwt_environment()
+        )
+        self.jwt_environment = (
+            (jwt_environment or "").strip().lower()
+            or jwt_environment_for_portal(self.portal_environment)
+        )
+        if self.jwt_environment in {"prod"}:
+            self.jwt_environment = "production"
+        if self.jwt_environment in {"sandbox", "non-production"}:
+            self.jwt_environment = "nonprod"
 
     def _jwt_ready(self) -> bool:
-        env = active_jwt_environment()
-        return bool(self.token_url and self.client_id and load_private_pem(environment=env))
+        return bool(
+            self.token_url
+            and self.client_id
+            and load_private_pem(environment=self.jwt_environment)
+        )
 
     def _secret_ready(self) -> bool:
         return bool(self.token_url and self.client_id and self.client_secret)
@@ -357,7 +474,7 @@ class LiveFHIRClient(FHIRClient):
         if self._cached_access_token:
             return self._cached_access_token
 
-        jwt_env = active_jwt_environment()
+        jwt_env = self.jwt_environment
         if self._jwt_ready():
             pem = load_private_pem(environment=jwt_env)
             assert pem is not None and self.token_url and self.client_id
@@ -397,12 +514,15 @@ class LiveFHIRClient(FHIRClient):
         return None
 
     def get_connection_status(self) -> ConnectionStatus:
-        jwt_env = active_jwt_environment()
+        jwt_env = self.jwt_environment
         jwks_uri = public_jwks_uri(environment=jwt_env)
         has_static = bool(self._static_access_token)
         jwt_ready = self._jwt_ready()
         secret_ready = self._secret_ready()
         jwks_ready = jwks_is_configured(environment=jwt_env)
+        env_label = (
+            "production" if self.portal_environment == "production" else "test sandbox"
+        )
 
         if not (has_static or jwt_ready or secret_ready):
             detail = (
@@ -418,7 +538,7 @@ class LiveFHIRClient(FHIRClient):
                 )
             return ConnectionStatus(
                 mode="unconfigured",
-                label="Endpoint configured — credentials missing",
+                label=f"Endpoint configured — credentials missing ({env_label})",
                 detail=detail,
                 base_url=self.base_url,
                 jwks_uri=jwks_uri,
@@ -450,7 +570,7 @@ class LiveFHIRClient(FHIRClient):
         label = (
             "Auth failed"
             if self._last_auth_error
-            else "Connected (backend services)"
+            else f"Connected (backend services · {env_label})"
         )
         return ConnectionStatus(
             mode=mode,
@@ -519,8 +639,9 @@ class LiveFHIRClient(FHIRClient):
 
         if not resolved_patient_id:
             self._last_fetch_notes.append(
-                "Pass ?patient_id=… or set FHIR_PATIENT_ID to pull live chart data "
-                "(Epic sandbox example: erXuFYUfucBZaryVksYEcMg3). "
+                "Enter a patient FHIR id in the advocate lookup form, pass "
+                f"?patient_id=…, or set FHIR_PATIENT_ID (sandbox test patient: "
+                f"{EPIC_SANDBOX_TEST_PATIENT_ID}). "
                 "Patient Epic login supplies the patient id from the token response."
             )
             return PortalDashboard(
@@ -647,17 +768,23 @@ class LiveFHIRClient(FHIRClient):
         )
 
 
-def get_fhir_client() -> FHIRClient:
-    """Factory: live client when FHIR_BASE_URL is set, otherwise demo."""
-    base_url = os.environ.get("FHIR_BASE_URL", "").strip()
+def get_fhir_client(*, environment: str | None = None) -> FHIRClient:
+    """Factory: live client when a FHIR base URL is set, otherwise demo.
+
+    ``environment`` selects sandbox vs production URL/credential/JWT sets.
+    """
+    settings = resolve_fhir_connection_settings(environment)
+    base_url = settings["base_url"]
     if base_url:
         return LiveFHIRClient(
             base_url=base_url,
-            token_url=os.environ.get("FHIR_TOKEN_URL", "").strip() or None,
-            client_id=os.environ.get("FHIR_CLIENT_ID", "").strip() or None,
-            client_secret=os.environ.get("FHIR_CLIENT_SECRET", "").strip() or None,
-            scope=os.environ.get("FHIR_SCOPE", "").strip() or None,
-            access_token=os.environ.get("FHIR_ACCESS_TOKEN", "").strip() or None,
-            default_patient_id=os.environ.get("FHIR_PATIENT_ID", "").strip() or None,
+            token_url=settings["token_url"],
+            client_id=settings["client_id"],
+            client_secret=settings["client_secret"],
+            scope=settings["scope"],
+            access_token=settings["access_token"],
+            default_patient_id=settings["default_patient_id"],
+            jwt_environment=settings["jwt_environment"],
+            portal_environment=settings["portal_environment"],
         )
-    return DemoFHIRClient()
+    return DemoFHIRClient(portal_environment=settings["portal_environment"] or "sandbox")

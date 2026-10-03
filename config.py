@@ -28,6 +28,16 @@ class Config:
     FHIR_SCOPE = os.environ.get("FHIR_SCOPE", "").strip()
     FHIR_ACCESS_TOKEN = os.environ.get("FHIR_ACCESS_TOKEN", "").strip()
     FHIR_PATIENT_ID = os.environ.get("FHIR_PATIENT_ID", "").strip()
+    # Optional sandbox / production overrides for advocate portal environment switch
+    FHIR_SANDBOX_BASE_URL = os.environ.get("FHIR_SANDBOX_BASE_URL", "").strip()
+    FHIR_SANDBOX_TOKEN_URL = os.environ.get("FHIR_SANDBOX_TOKEN_URL", "").strip()
+    FHIR_SANDBOX_CLIENT_ID = os.environ.get("FHIR_SANDBOX_CLIENT_ID", "").strip()
+    FHIR_PRODUCTION_BASE_URL = os.environ.get("FHIR_PRODUCTION_BASE_URL", "").strip()
+    FHIR_PRODUCTION_TOKEN_URL = os.environ.get("FHIR_PRODUCTION_TOKEN_URL", "").strip()
+    FHIR_PRODUCTION_CLIENT_ID = os.environ.get("FHIR_PRODUCTION_CLIENT_ID", "").strip()
+    FHIR_PRODUCTION_PATIENT_ID = os.environ.get(
+        "FHIR_PRODUCTION_PATIENT_ID", ""
+    ).strip()
     # Patient SMART App Launch (authorization_code + PKCE)
     FHIR_AUTHORIZE_URL = os.environ.get("FHIR_AUTHORIZE_URL", "").strip()
     FHIR_PATIENT_CLIENT_ID = os.environ.get("FHIR_PATIENT_CLIENT_ID", "").strip()

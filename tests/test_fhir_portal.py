@@ -11,7 +11,12 @@ from unittest import mock
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from fhir.client import LiveFHIRClient
+from fhir.client import (
+    EPIC_SANDBOX_TEST_PATIENT_ID,
+    LiveFHIRClient,
+    normalize_portal_environment,
+    resolve_fhir_connection_settings,
+)
 from fhir.jwt_assert import create_client_assertion
 from fhir.jwks import clear_jwks_cache
 from fhir.mapping import (
@@ -34,6 +39,41 @@ def _rsa_pem() -> bytes:
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
+
+
+class PortalEnvironmentTests(unittest.TestCase):
+    def test_normalize_portal_environment(self):
+        self.assertEqual(normalize_portal_environment("sandbox"), "sandbox")
+        self.assertEqual(normalize_portal_environment("nonprod"), "sandbox")
+        self.assertEqual(normalize_portal_environment("production"), "production")
+        self.assertEqual(normalize_portal_environment("prod"), "production")
+
+    def test_resolve_settings_prefer_environment_specific_urls(self):
+        env = {
+            "FHIR_BASE_URL": "https://shared.example/FHIR/R4",
+            "FHIR_TOKEN_URL": "https://shared.example/oauth2/token",
+            "FHIR_CLIENT_ID": "shared-client",
+            "FHIR_SANDBOX_BASE_URL": "https://sandbox.example/FHIR/R4",
+            "FHIR_SANDBOX_CLIENT_ID": "sandbox-client",
+            "FHIR_PRODUCTION_BASE_URL": "https://prod.example/FHIR/R4",
+            "FHIR_PRODUCTION_TOKEN_URL": "https://prod.example/oauth2/token",
+            "FHIR_PRODUCTION_CLIENT_ID": "prod-client",
+            "FHIR_PATIENT_ID": "",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            sandbox = resolve_fhir_connection_settings("sandbox")
+            production = resolve_fhir_connection_settings("production")
+
+        self.assertEqual(sandbox["base_url"], "https://sandbox.example/FHIR/R4")
+        self.assertEqual(sandbox["client_id"], "sandbox-client")
+        self.assertEqual(sandbox["jwt_environment"], "nonprod")
+        self.assertEqual(sandbox["default_patient_id"], EPIC_SANDBOX_TEST_PATIENT_ID)
+
+        self.assertEqual(production["base_url"], "https://prod.example/FHIR/R4")
+        self.assertEqual(production["token_url"], "https://prod.example/oauth2/token")
+        self.assertEqual(production["client_id"], "prod-client")
+        self.assertEqual(production["jwt_environment"], "production")
+        self.assertIsNone(production["default_patient_id"])
 
 
 class JwtAssertTests(unittest.TestCase):
@@ -529,16 +569,16 @@ class PortalEpicLoginRouteTests(unittest.TestCase):
     def setUp(self):
         self.client = self.app.test_client()
 
-    def test_login_page_renders(self):
-        response = self.client.get("/portal/login")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Patient Portal", response.data)
-        self.assertIn(b"MyChart username or password", response.data)
+    def test_login_page_redirects_to_advocate_login(self):
+        response = self.client.get("/portal/login", follow_redirects=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login", response.headers["Location"])
+        self.assertNotIn("Patient Portal Login", response.data.decode("utf-8", "ignore"))
 
-    def test_dashboard_redirects_unauthenticated_to_portal_login(self):
+    def test_dashboard_redirects_unauthenticated_to_advocate_login(self):
         response = self.client.get("/portal/dashboard", follow_redirects=False)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/portal/login", response.headers["Location"])
+        self.assertIn("/login", response.headers["Location"])
 
     def test_epic_login_redirects_when_configured(self):
         env = {

@@ -162,7 +162,10 @@ def portal_access_required(view):
     def wrapped(*args, **kwargs):
         if get_current_advocate() is not None or get_epic_patient_session() is not None:
             return view(*args, **kwargs)
-        flash("Please sign in with Epic to view the portal.", "error")
-        return redirect(url_for("portal.login", next=request.full_path))
+        flash(
+            "Please sign in with your StartHere advocate account to view the portal.",
+            "error",
+        )
+        return redirect(url_for("auth.login", next=request.full_path))
 
     return wrapped

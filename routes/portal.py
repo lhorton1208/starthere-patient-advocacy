@@ -6,13 +6,8 @@ session (SMART App Launch / authorization_code + PKCE).
 Patients never enter MyChart credentials on this site — they are redirected to
 Epic's authorize page to sign in securely.
 
-Live Epic testing (advocate/backend): set FHIR_* + PORTAL_JWT_* env vars, then
-open /portal/dashboard?patient_id=<Epic sandbox patient id>.
-
-Live Epic testing (patient login): register a Patient-audience app on
-fhir.epic.com, set FHIR_AUTHORIZE_URL / FHIR_PATIENT_CLIENT_ID /
-FHIR_PATIENT_SCOPE / FHIR_REDIRECT_URI (or PUBLIC_BASE_URL), then open
-/portal/login and choose Sign in with Epic.
+Advocates select sandbox vs production and enter an Epic FHIR patient id on
+the dashboard (or use the known sandbox test patient).
 """
 
 from __future__ import annotations
@@ -31,6 +26,11 @@ from flask import (
 
 from auth import get_current_advocate
 from fhir import get_fhir_client
+from fhir.client import (
+    EPIC_SANDBOX_TEST_PATIENT_ID,
+    normalize_portal_environment,
+    resolve_fhir_connection_settings,
+)
 from fhir.jwks import (
     active_jwt_environment,
     load_private_pem,
@@ -60,8 +60,12 @@ from fhir.patient_auth import (
     store_oauth_pending,
     token_url,
 )
+from forms import AdvocatePortalLookupForm
 
 portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
+
+SESSION_PORTAL_PATIENT_ID = "portal_patient_id"
+SESSION_PORTAL_ENVIRONMENT = "portal_fhir_environment"
 
 
 def _safe_next_url(target: str | None) -> str | None:
@@ -73,18 +77,34 @@ def _safe_next_url(target: str | None) -> str | None:
     return target
 
 
+def _default_portal_environment() -> str:
+    stored = session.get(SESSION_PORTAL_ENVIRONMENT)
+    if stored:
+        return normalize_portal_environment(stored)
+    return normalize_portal_environment(active_jwt_environment())
+
+
+def _resolve_advocate_patient_id(environment: str) -> str | None:
+    from_query = (request.args.get("patient_id") or "").strip() or None
+    if from_query:
+        return from_query
+    stored = (session.get(SESSION_PORTAL_PATIENT_ID) or "").strip() or None
+    if stored:
+        return stored
+    settings = resolve_fhir_connection_settings(environment)
+    return settings.get("default_patient_id")
+
+
 @portal_bp.route("/login")
 def login():
-    """Patient portal gate — start Epic MyChart OAuth or continue if already signed in."""
+    """Portal entry — advocates only; public patient-portal login is disabled."""
     if get_epic_patient_session() is not None or get_current_advocate() is not None:
         next_url = _safe_next_url(request.args.get("next"))
         return redirect(next_url or url_for("portal.dashboard"))
 
-    return render_template(
-        "portal/login.html",
-        oauth_configured=patient_oauth_configured(),
-        authorize_host=authorize_url(),
-    )
+    next_url = _safe_next_url(request.args.get("next")) or url_for("portal.dashboard")
+    flash("Sign in with your StartHere advocate account to open the portal.", "info")
+    return redirect(url_for("auth.login", next=next_url))
 
 
 @portal_bp.route("/epic/login")
@@ -96,7 +116,7 @@ def epic_login():
             "FHIR_TOKEN_URL, and FHIR_PATIENT_CLIENT_ID (or FHIR_CLIENT_ID).",
             "error",
         )
-        return redirect(url_for("portal.login"))
+        return redirect(url_for("auth.login", next=url_for("portal.dashboard")))
 
     client_id = patient_client_id()
     redirect_uri = resolve_redirect_uri()
@@ -129,7 +149,7 @@ def epic_callback():
         description = request.args.get("error_description") or error
         flash(f"Epic sign-in was not completed: {description}", "error")
         clear_epic_patient_session()
-        return redirect(url_for("portal.login"))
+        return redirect(url_for("auth.login", next=url_for("portal.dashboard")))
 
     code = request.args.get("code")
     state = request.args.get("state")
@@ -138,17 +158,17 @@ def epic_callback():
     if not code or not state or not expected_state or state != expected_state:
         flash("Epic sign-in failed (invalid or expired state). Please try again.", "error")
         clear_epic_patient_session()
-        return redirect(url_for("portal.login"))
+        return redirect(url_for("auth.login", next=url_for("portal.dashboard")))
 
     if not code_verifier:
         flash("Epic sign-in failed (missing PKCE verifier). Please try again.", "error")
-        return redirect(url_for("portal.login"))
+        return redirect(url_for("auth.login", next=url_for("portal.dashboard")))
 
     client_id = patient_client_id()
     tok_url = token_url()
     if not client_id or not tok_url:
         flash("Epic patient login is not configured on the server.", "error")
-        return redirect(url_for("portal.login"))
+        return redirect(url_for("auth.login", next=url_for("portal.dashboard")))
 
     jwt_env = active_jwt_environment()
     private_pem = load_private_pem(environment=jwt_env)
@@ -169,7 +189,7 @@ def epic_callback():
         )
     except (RuntimeError, ValueError, TypeError) as exc:
         flash(f"Could not complete Epic sign-in: {exc}", "error")
-        return redirect(url_for("portal.login"))
+        return redirect(url_for("auth.login", next=url_for("portal.dashboard")))
 
     store_epic_patient_session(
         access_token=token.access_token,
@@ -187,21 +207,56 @@ def epic_callback():
 def epic_logout():
     clear_epic_patient_session()
     flash("You have been signed out of Epic.", "success")
-    return redirect(url_for("portal.login"))
+    return redirect(url_for("auth.login", next=url_for("portal.dashboard")))
 
 
-@portal_bp.route("/")
-@portal_bp.route("/dashboard")
+@portal_bp.route("/", methods=["GET", "POST"])
+@portal_bp.route("/dashboard", methods=["GET", "POST"])
 @portal_access_required
 def dashboard():
     """Display FHIR-sourced clinical and administrative information.
 
     Patient Epic sessions use the authorization_code access token and the
-    `patient` id returned by Epic. Advocates use Backend Services and optional
-    `?patient_id=` (falls back to FHIR_PATIENT_ID).
+    `patient` id returned by Epic. Advocates use Backend Services and the
+    patient id / environment chosen on the lookup form.
     """
     epic = get_epic_patient_session()
-    client = get_fhir_client()
+    advocate = get_current_advocate()
+    is_advocate = advocate is not None
+    lookup_form = None
+    portal_environment = _default_portal_environment()
+    selected_patient_id = None
+
+    if is_advocate and epic is None:
+        lookup_form = AdvocatePortalLookupForm()
+        if request.method == "POST" and lookup_form.load_sandbox_test.data:
+            session[SESSION_PORTAL_ENVIRONMENT] = "sandbox"
+            session[SESSION_PORTAL_PATIENT_ID] = EPIC_SANDBOX_TEST_PATIENT_ID
+            session.modified = True
+            flash(
+                f"Loaded sandbox test patient {EPIC_SANDBOX_TEST_PATIENT_ID}.",
+                "success",
+            )
+            return redirect(url_for("portal.dashboard"))
+
+        if lookup_form.validate_on_submit():
+            portal_environment = normalize_portal_environment(
+                lookup_form.environment.data
+            )
+            selected_patient_id = (lookup_form.patient_id.data or "").strip()
+            session[SESSION_PORTAL_ENVIRONMENT] = portal_environment
+            session[SESSION_PORTAL_PATIENT_ID] = selected_patient_id
+            session.modified = True
+            flash("Loading patient chart from the selected EHR environment.", "success")
+            return redirect(url_for("portal.dashboard"))
+
+        if request.method == "GET":
+            portal_environment = _default_portal_environment()
+            selected_patient_id = _resolve_advocate_patient_id(portal_environment)
+            lookup_form.environment.data = portal_environment
+            lookup_form.patient_id.data = selected_patient_id or ""
+
+    client = get_fhir_client(environment=portal_environment)
 
     if epic is not None:
         patient_id = epic.patient_id or request.args.get("patient_id") or None
@@ -211,17 +266,24 @@ def dashboard():
             auth_method="patient_authorization_code",
             grant_type="authorization_code",
         )
+        selected_patient_id = patient_id
     else:
-        patient_id = request.args.get("patient_id") or None
-        data = client.fetch_dashboard(patient_id=patient_id)
+        if selected_patient_id is None:
+            selected_patient_id = _resolve_advocate_patient_id(portal_environment)
+        data = client.fetch_dashboard(patient_id=selected_patient_id)
 
     if not data.connection.jwks_uri:
         data.connection.jwks_uri = public_jwks_uri(
-            preferred_base=request.url_root.rstrip("/")
+            preferred_base=request.url_root.rstrip("/"),
+            environment=getattr(client, "jwt_environment", active_jwt_environment()),
         )
     return render_template(
         "portal/dashboard.html",
         dashboard=data,
         epic_patient=epic,
-        is_advocate=get_current_advocate() is not None,
+        is_advocate=is_advocate,
+        lookup_form=lookup_form,
+        portal_environment=portal_environment,
+        selected_patient_id=selected_patient_id,
+        sandbox_test_patient_id=EPIC_SANDBOX_TEST_PATIENT_ID,
     )
