@@ -10,6 +10,7 @@ from fhir.models import (
     EncounterItem,
     InsuranceApproval,
     MedicationItem,
+    PatientMatch,
     ProblemItem,
     ProcedureItem,
     ProviderNoteItem,
@@ -52,6 +53,65 @@ def patient_display_name(patient: dict[str, Any] | None) -> str:
                 if display:
                     return display
     return patient.get("id") or "Unknown Patient"
+
+
+def _patient_mrn(
+    patient: dict[str, Any], *, preferred_system: str | None = None
+) -> tuple[str, str]:
+    """Return (mrn, identifiers_summary) from Patient.identifier."""
+    identifiers = patient.get("identifier") or []
+    preferred = (preferred_system or "").strip() or None
+    mrn = ""
+    summaries: list[str] = []
+    for ident in identifiers:
+        if not isinstance(ident, dict):
+            continue
+        value = str(ident.get("value") or "").strip()
+        if not value:
+            continue
+        system = str(ident.get("system") or "").strip()
+        type_text = _coding_display(ident.get("type"))
+        label = type_text or ("MRN" if "mrn" in system.lower() else "ID")
+        summaries.append(f"{label}: {value}")
+        if preferred and system == preferred and not mrn:
+            mrn = value
+        elif not mrn and (
+            "mrn" in system.lower()
+            or "mrn" in type_text.lower()
+            or "medical record" in type_text.lower()
+        ):
+            mrn = value
+    if not mrn and identifiers:
+        first = identifiers[0] if isinstance(identifiers[0], dict) else {}
+        mrn = str(first.get("value") or "").strip()
+    return mrn, "; ".join(summaries)
+
+
+def map_patient_matches(
+    bundle_or_resource: dict[str, Any] | None,
+    *,
+    mrn_system: str | None = None,
+) -> list[PatientMatch]:
+    """Normalize Patient search results into selectable matches."""
+    matches: list[PatientMatch] = []
+    for patient in _bundle_resources(bundle_or_resource):
+        if patient.get("resourceType") and patient.get("resourceType") != "Patient":
+            continue
+        patient_id = str(patient.get("id") or "").strip()
+        if not patient_id:
+            continue
+        mrn, summary = _patient_mrn(patient, preferred_system=mrn_system)
+        matches.append(
+            PatientMatch(
+                id=patient_id,
+                display_name=patient_display_name(patient),
+                birthdate=str(patient.get("birthDate") or "").strip(),
+                gender=str(patient.get("gender") or "").strip(),
+                mrn=mrn,
+                identifiers_summary=summary,
+            )
+        )
+    return matches
 
 
 def _bundle_resources(bundle_or_resource: dict[str, Any] | None) -> list[dict[str, Any]]:

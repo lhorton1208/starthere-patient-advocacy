@@ -663,7 +663,7 @@ class LoginForm(FlaskForm):
 
 
 class AdvocatePortalLookupForm(FlaskForm):
-    """Advocate-only form to select EHR environment and FHIR patient id."""
+    """Advocate EHR lookup by MRN or name + DOB (normal clinical workflow)."""
 
     environment = SelectField(
         "EHR environment",
@@ -674,17 +674,66 @@ class AdvocatePortalLookupForm(FlaskForm):
         validators=[DataRequired()],
         default="sandbox",
     )
-    patient_id = StringField(
-        "Epic FHIR Patient ID",
-        validators=[DataRequired(), Length(min=1, max=128)],
+    mrn = StringField(
+        "Medical record number (MRN)",
+        validators=[Optional(), Length(max=64)],
         render_kw={
-            "placeholder": "e.g. erXuFYUfucBZaryVksYEcMg3",
+            "placeholder": "Hospital / Epic MRN",
             "autocomplete": "off",
             "spellcheck": "false",
         },
     )
-    submit = SubmitField("View patient chart")
+    family_name = StringField(
+        "Last name",
+        validators=[Optional(), Length(max=80)],
+        render_kw={"placeholder": "Last name", "autocomplete": "family-name"},
+    )
+    given_name = StringField(
+        "First name",
+        validators=[Optional(), Length(max=80)],
+        render_kw={"placeholder": "First name (optional)", "autocomplete": "given-name"},
+    )
+    birthdate = DateField(
+        "Date of birth",
+        validators=[Optional()],
+        format="%Y-%m-%d",
+        render_kw={"placeholder": "YYYY-MM-DD"},
+    )
+    fhir_patient_id = StringField(
+        "Epic FHIR Patient ID (advanced)",
+        validators=[Optional(), Length(max=128)],
+        render_kw={
+            "placeholder": "Only if you already know the FHIR Patient/{id}",
+            "autocomplete": "off",
+            "spellcheck": "false",
+        },
+    )
+    selected_patient_id = HiddenField(validators=[Optional(), Length(max=128)])
+    submit = SubmitField("Find patient chart")
     load_sandbox_test = SubmitField("Load sandbox test patient")
+
+    def validate(self, extra_validators=None):
+        if not super().validate(extra_validators=extra_validators):
+            return False
+        # Sandbox shortcut and explicit match selection skip search criteria.
+        if self.load_sandbox_test.data or (self.selected_patient_id.data or "").strip():
+            return True
+        if (self.fhir_patient_id.data or "").strip():
+            return True
+        mrn = (self.mrn.data or "").strip()
+        family = (self.family_name.data or "").strip()
+        birthdate = self.birthdate.data
+        if mrn:
+            return True
+        if family and birthdate:
+            return True
+        message = (
+            "Enter an MRN, or last name plus date of birth "
+            "(or an advanced FHIR Patient ID)."
+        )
+        self.mrn.errors.append(message)
+        self.family_name.errors.append(message)
+        return False
 
 
 class ChangePasswordForm(FlaskForm):

@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from fhir.client import (
+    DemoFHIRClient,
     EPIC_SANDBOX_TEST_PATIENT_ID,
     LiveFHIRClient,
     normalize_portal_environment,
@@ -25,6 +26,7 @@ from fhir.mapping import (
     map_encounters,
     map_medications,
     map_observations,
+    map_patient_matches,
     map_problems,
     map_provider_notes,
     patient_display_name,
@@ -99,6 +101,52 @@ class JwtAssertTests(unittest.TestCase):
         )
         self.assertLessEqual(payload["exp"] - payload["iat"], 300)
         self.assertTrue(signature_b64)
+
+
+class PatientSearchTests(unittest.TestCase):
+    def test_map_patient_matches_extracts_mrn(self):
+        bundle = {
+            "resourceType": "Bundle",
+            "entry": [
+                {
+                    "resource": {
+                        "resourceType": "Patient",
+                        "id": "pat-1",
+                        "name": [{"family": "Smith", "given": ["Pat"]}],
+                        "birthDate": "1980-01-02",
+                        "gender": "female",
+                        "identifier": [
+                            {
+                                "system": "urn:oid:1.2.3.4",
+                                "value": "MRN-99",
+                                "type": {"text": "MRN"},
+                            }
+                        ],
+                    }
+                }
+            ],
+        }
+        matches = map_patient_matches(bundle, mrn_system="urn:oid:1.2.3.4")
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0].id, "pat-1")
+        self.assertEqual(matches[0].display_name, "Pat Smith")
+        self.assertEqual(matches[0].mrn, "MRN-99")
+        self.assertEqual(matches[0].birthdate, "1980-01-02")
+
+    def test_demo_search_by_mrn(self):
+        client = DemoFHIRClient()
+        matches = client.search_patients(mrn="DEMO-1002")
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0].display_name, "Alex Rivera")
+
+    def test_demo_search_requires_criteria_for_live_contract(self):
+        client = LiveFHIRClient(
+            base_url="https://example.test/FHIR/R4",
+            token_url="https://example.test/oauth2/token",
+            client_id="client",
+        )
+        with self.assertRaises(ValueError):
+            client.search_patients()
 
 
 class MappingTests(unittest.TestCase):

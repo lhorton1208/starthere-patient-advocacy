@@ -26,6 +26,7 @@ from fhir.mapping import (
     map_encounters,
     map_medications,
     map_observations,
+    map_patient_matches,
     map_problems,
     map_procedures,
     map_provider_notes,
@@ -38,6 +39,7 @@ from fhir.models import (
     EncounterItem,
     InsuranceApproval,
     MedicationItem,
+    PatientMatch,
     PortalDashboard,
     ProblemItem,
     ProcedureItem,
@@ -177,6 +179,19 @@ class FHIRClient(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def search_patients(
+        self,
+        *,
+        mrn: str | None = None,
+        family_name: str | None = None,
+        given_name: str | None = None,
+        birthdate: str | None = None,
+        access_token: str | None = None,
+    ) -> list[PatientMatch]:
+        """Search Patient resources by MRN and/or demographics."""
+        raise NotImplementedError
+
 
 class DemoFHIRClient(FHIRClient):
     """Returns sample data shaped like live FHIR mappings for UI scaffolding."""
@@ -216,6 +231,53 @@ class DemoFHIRClient(FHIRClient):
             grant_type="client_credentials",
         )
 
+    def search_patients(
+        self,
+        *,
+        mrn: str | None = None,
+        family_name: str | None = None,
+        given_name: str | None = None,
+        birthdate: str | None = None,
+        access_token: str | None = None,
+    ) -> list[PatientMatch]:
+        _ = access_token
+        samples = [
+            PatientMatch(
+                id=EPIC_SANDBOX_TEST_PATIENT_ID,
+                display_name="Sample Patient",
+                birthdate="1980-01-15",
+                gender="female",
+                mrn="DEMO-1001",
+                identifiers_summary="MRN: DEMO-1001",
+            ),
+            PatientMatch(
+                id="demo-patient-2",
+                display_name="Alex Rivera",
+                birthdate="1975-06-02",
+                gender="male",
+                mrn="DEMO-1002",
+                identifiers_summary="MRN: DEMO-1002",
+            ),
+        ]
+        mrn_q = (mrn or "").strip().lower()
+        family_q = (family_name or "").strip().lower()
+        given_q = (given_name or "").strip().lower()
+        dob_q = (birthdate or "").strip()
+        matches: list[PatientMatch] = []
+        for item in samples:
+            if mrn_q and mrn_q not in item.mrn.lower():
+                continue
+            if family_q and family_q not in item.display_name.lower():
+                continue
+            if given_q and given_q not in item.display_name.lower():
+                continue
+            if dob_q and dob_q != item.birthdate:
+                continue
+            matches.append(item)
+        if not any((mrn_q, family_q, given_q, dob_q)):
+            return samples
+        return matches
+
     def fetch_dashboard(
         self,
         patient_id: str | None = None,
@@ -224,10 +286,15 @@ class DemoFHIRClient(FHIRClient):
         auth_method: str | None = None,
         grant_type: str | None = None,
     ) -> PortalDashboard:
-        _ = (patient_id, access_token, auth_method, grant_type)
+        _ = (access_token, auth_method, grant_type)
+        display = "Sample Patient"
+        if (patient_id or "").strip() == "demo-patient-2":
+            display = "Alex Rivera"
+        elif (patient_id or "").strip() == EPIC_SANDBOX_TEST_PATIENT_ID:
+            display = "Sample Patient"
         return PortalDashboard(
             connection=self.get_connection_status(),
-            patient_display_name="Sample Patient",
+            patient_display_name=display,
             test_results=[
                 TestResult(
                     id="obs-1001",
@@ -489,11 +556,22 @@ class LiveFHIRClient(FHIRClient):
                     jku=public_jwks_uri(environment=jwt_env),
                 )
             except (RuntimeError, ValueError, TypeError) as exc:
-                self._last_auth_error = (
-                    f"JWT private key/assertion failed: {exc}. "
-                    "PORTAL_JWT_PRIVATE_KEY must be an RSA PEM private key "
-                    "(-----BEGIN PRIVATE KEY-----...), not a JWKS URL."
-                )
+                detail = f"JWT private key/assertion failed: {exc}."
+                pem = load_private_pem(environment=jwt_env)
+                if pem is None:
+                    detail += (
+                        " No usable RSA PEM found. Set PORTAL_JWT_PRIVATE_KEY to a "
+                        "PEM starting with -----BEGIN PRIVATE KEY----- "
+                        "(not a JWKS URL)."
+                    )
+                else:
+                    detail += (
+                        " Epic rejected the client assertion (often invalid_client). "
+                        "Confirm PORTAL_JWT_ALG matches JWKS (usually RS384), the "
+                        "private key matches the live JWKS, and FHIR_CLIENT_ID is the "
+                        "Non-Production Client ID for sandbox."
+                    )
+                self._last_auth_error = detail
                 return None
             self._cached_access_token = token.access_token
             self._auth_method = "private_key_jwt"
@@ -593,6 +671,64 @@ class LiveFHIRClient(FHIRClient):
         except RuntimeError as exc:
             self._last_fetch_notes.append(str(exc))
             return None
+
+    def search_patients(
+        self,
+        *,
+        mrn: str | None = None,
+        family_name: str | None = None,
+        given_name: str | None = None,
+        birthdate: str | None = None,
+        access_token: str | None = None,
+    ) -> list[PatientMatch]:
+        """Search Epic Patient resources by MRN and/or name + birthdate."""
+        mrn_value = (mrn or "").strip()
+        family = (family_name or "").strip()
+        given = (given_name or "").strip()
+        dob = (birthdate or "").strip()
+        if not mrn_value and not (family and dob):
+            raise ValueError(
+                "Search requires an MRN, or last name plus date of birth."
+            )
+
+        override_token = (access_token or "").strip() or None
+        if override_token:
+            token = override_token
+        else:
+            try:
+                token = self._obtain_access_token()
+            except (RuntimeError, ValueError, TypeError) as exc:
+                self._last_auth_error = str(exc)
+                raise RuntimeError(f"Could not authenticate to FHIR: {exc}") from exc
+        if not token:
+            raise RuntimeError(
+                self._last_auth_error
+                or "Could not obtain a FHIR access token for patient search."
+            )
+
+        params: dict[str, str] = {"_count": "25"}
+        mrn_system = os.environ.get("FHIR_MRN_IDENTIFIER_SYSTEM", "").strip()
+        if mrn_value:
+            params["identifier"] = (
+                f"{mrn_system}|{mrn_value}" if mrn_system else mrn_value
+            )
+        if family:
+            params["family"] = family
+        if given:
+            params["given"] = given
+        if dob:
+            params["birthdate"] = dob
+
+        url = build_search_url(self.base_url, "Patient", params)
+        bundle = self._safe_get(url, token)
+        if bundle is None:
+            notes = " ".join(self._last_fetch_notes).strip()
+            raise RuntimeError(
+                notes
+                or "Patient search failed. Confirm system/Patient.read (search) "
+                "scopes are enabled for this Epic app."
+            )
+        return map_patient_matches(bundle, mrn_system=mrn_system or None)
 
     def fetch_dashboard(
         self,

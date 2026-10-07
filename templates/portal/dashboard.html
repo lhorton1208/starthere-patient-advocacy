@@ -30,15 +30,16 @@
 
     {% if is_advocate and lookup_form and not epic_patient %}
     <div class="portal-lookup form-card">
-      <h2 class="portal-lookup-title">Load patient chart</h2>
+      <h2 class="portal-lookup-title">Find patient chart</h2>
       <p class="portal-lookup-help">
-        Choose the EHR environment, then enter the patient’s Epic FHIR Patient ID.
-        StartHere never collects MyChart usernames or passwords — Backend Services
-        access uses the FHIR id your organization is authorized to query.
+        Choose the EHR environment, then look up the patient the same way clinics
+        do: by <strong>MRN</strong>, or by <strong>last name + date of birth</strong>
+        (first name optional). StartHere never collects MyChart passwords.
       </p>
       <form method="post" action="{{ url_for('portal.dashboard') }}" class="portal-lookup-form">
         {{ lookup_form.hidden_tag() }}
-        <div class="portal-lookup-grid">
+        {{ lookup_form.selected_patient_id() }}
+        <div class="portal-lookup-grid portal-lookup-grid--search">
           <div class="form-group is-required{% if lookup_form.environment.errors %} is-invalid{% endif %}">
             <label class="field-label" for="{{ lookup_form.environment.id }}">
               {{ lookup_form.environment.label.text }}
@@ -49,13 +50,38 @@
             <span class="field-error">{{ error }}</span>
             {% endfor %}
           </div>
-          <div class="form-group is-required{% if lookup_form.patient_id.errors %} is-invalid{% endif %}">
-            <label class="field-label" for="{{ lookup_form.patient_id.id }}">
-              {{ lookup_form.patient_id.label.text }}
-              <span class="required-marker" aria-hidden="true">*</span>
-            </label>
-            {{ lookup_form.patient_id(required=true, data_required="true") }}
-            {% for error in lookup_form.patient_id.errors %}
+          <div class="form-group{% if lookup_form.mrn.errors %} is-invalid{% endif %}">
+            <label class="field-label" for="{{ lookup_form.mrn.id }}">{{ lookup_form.mrn.label.text }}</label>
+            {{ lookup_form.mrn() }}
+            {% for error in lookup_form.mrn.errors %}
+            <span class="field-error">{{ error }}</span>
+            {% endfor %}
+          </div>
+          <div class="form-group{% if lookup_form.family_name.errors %} is-invalid{% endif %}">
+            <label class="field-label" for="{{ lookup_form.family_name.id }}">{{ lookup_form.family_name.label.text }}</label>
+            {{ lookup_form.family_name() }}
+            {% for error in lookup_form.family_name.errors %}
+            <span class="field-error">{{ error }}</span>
+            {% endfor %}
+          </div>
+          <div class="form-group{% if lookup_form.given_name.errors %} is-invalid{% endif %}">
+            <label class="field-label" for="{{ lookup_form.given_name.id }}">{{ lookup_form.given_name.label.text }}</label>
+            {{ lookup_form.given_name() }}
+            {% for error in lookup_form.given_name.errors %}
+            <span class="field-error">{{ error }}</span>
+            {% endfor %}
+          </div>
+          <div class="form-group{% if lookup_form.birthdate.errors %} is-invalid{% endif %}">
+            <label class="field-label" for="{{ lookup_form.birthdate.id }}">{{ lookup_form.birthdate.label.text }}</label>
+            {{ lookup_form.birthdate(type="date") }}
+            {% for error in lookup_form.birthdate.errors %}
+            <span class="field-error">{{ error }}</span>
+            {% endfor %}
+          </div>
+          <div class="form-group portal-lookup-advanced{% if lookup_form.fhir_patient_id.errors %} is-invalid{% endif %}">
+            <label class="field-label" for="{{ lookup_form.fhir_patient_id.id }}">{{ lookup_form.fhir_patient_id.label.text }}</label>
+            {{ lookup_form.fhir_patient_id() }}
+            {% for error in lookup_form.fhir_patient_id.errors %}
             <span class="field-error">{{ error }}</span>
             {% endfor %}
           </div>
@@ -65,13 +91,36 @@
           {{ lookup_form.load_sandbox_test(class_="btn btn-secondary") }}
         </div>
         <p class="portal-lookup-meta">
-          Sandbox test patient id:
+          Sandbox quick test uses FHIR id
           <code>{{ sandbox_test_patient_id }}</code>
           {% if selected_patient_id %}
-          · Currently viewing: <code>{{ selected_patient_id }}</code>
+          · Currently viewing FHIR id: <code>{{ selected_patient_id }}</code>
           {% endif %}
         </p>
       </form>
+
+      {% if patient_matches %}
+      <div class="portal-match-list" role="list">
+        <h3 class="portal-match-title">Select patient</h3>
+        {% for match in patient_matches %}
+        <form method="post" action="{{ url_for('portal.dashboard') }}" class="portal-match-item" role="listitem">
+          {{ lookup_form.hidden_tag() }}
+          <input type="hidden" name="environment" value="{{ portal_environment }}">
+          <input type="hidden" name="selected_patient_id" value="{{ match.id }}">
+          <div class="portal-match-copy">
+            <div class="portal-match-name">{{ match.display_name }}</div>
+            <div class="portal-match-meta">
+              {% if match.mrn %}MRN: <code>{{ match.mrn }}</code> · {% endif %}
+              {% if match.birthdate %}DOB: {{ match.birthdate }} · {% endif %}
+              {% if match.gender %}{{ match.gender }} · {% endif %}
+              FHIR id: <code>{{ match.id }}</code>
+            </div>
+          </div>
+          <button type="submit" name="submit" value="1" class="btn btn-primary">View chart</button>
+        </form>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
     {% endif %}
 
@@ -424,8 +473,8 @@
       Signed in with Epic.
       <a href="{{ url_for('portal.epic_logout') }}">Sign out of Epic</a>.
       {% elif is_advocate %}
-      Advocate Backend Services access — use the lookup form above to switch
-      patients or EHR environments.
+      Advocate Backend Services access — look up patients by MRN or name + DOB
+      above, then switch EHR environments as needed.
       {% endif %}
       Educational and advocacy use only — not a substitute for your care team’s
       official records.

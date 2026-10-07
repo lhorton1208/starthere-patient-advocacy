@@ -6,8 +6,8 @@ session (SMART App Launch / authorization_code + PKCE).
 Patients never enter MyChart credentials on this site — they are redirected to
 Epic's authorize page to sign in securely.
 
-Advocates select sandbox vs production and enter an Epic FHIR patient id on
-the dashboard (or use the known sandbox test patient).
+Advocates select sandbox vs production and look up patients by MRN or
+name + date of birth (normal EHR workflow), or load the sandbox test patient.
 """
 
 from __future__ import annotations
@@ -31,6 +31,7 @@ from fhir.client import (
     normalize_portal_environment,
     resolve_fhir_connection_settings,
 )
+from fhir.models import PortalDashboard
 from fhir.jwks import (
     active_jwt_environment,
     load_private_pem,
@@ -210,6 +211,12 @@ def epic_logout():
     return redirect(url_for("auth.login", next=url_for("portal.dashboard")))
 
 
+def _store_selected_patient(environment: str, patient_id: str) -> None:
+    session[SESSION_PORTAL_ENVIRONMENT] = normalize_portal_environment(environment)
+    session[SESSION_PORTAL_PATIENT_ID] = patient_id.strip()
+    session.modified = True
+
+
 @portal_bp.route("/", methods=["GET", "POST"])
 @portal_bp.route("/dashboard", methods=["GET", "POST"])
 @portal_access_required
@@ -217,8 +224,8 @@ def dashboard():
     """Display FHIR-sourced clinical and administrative information.
 
     Patient Epic sessions use the authorization_code access token and the
-    `patient` id returned by Epic. Advocates use Backend Services and the
-    patient id / environment chosen on the lookup form.
+    `patient` id returned by Epic. Advocates use Backend Services and look up
+    patients by MRN or name + DOB (or an advanced FHIR Patient ID).
     """
     epic = get_epic_patient_session()
     advocate = get_current_advocate()
@@ -226,13 +233,12 @@ def dashboard():
     lookup_form = None
     portal_environment = _default_portal_environment()
     selected_patient_id = None
+    patient_matches = []
 
     if is_advocate and epic is None:
         lookup_form = AdvocatePortalLookupForm()
         if request.method == "POST" and lookup_form.load_sandbox_test.data:
-            session[SESSION_PORTAL_ENVIRONMENT] = "sandbox"
-            session[SESSION_PORTAL_PATIENT_ID] = EPIC_SANDBOX_TEST_PATIENT_ID
-            session.modified = True
+            _store_selected_patient("sandbox", EPIC_SANDBOX_TEST_PATIENT_ID)
             flash(
                 f"Loaded sandbox test patient {EPIC_SANDBOX_TEST_PATIENT_ID}.",
                 "success",
@@ -243,18 +249,63 @@ def dashboard():
             portal_environment = normalize_portal_environment(
                 lookup_form.environment.data
             )
-            selected_patient_id = (lookup_form.patient_id.data or "").strip()
             session[SESSION_PORTAL_ENVIRONMENT] = portal_environment
-            session[SESSION_PORTAL_PATIENT_ID] = selected_patient_id
             session.modified = True
-            flash("Loading patient chart from the selected EHR environment.", "success")
-            return redirect(url_for("portal.dashboard"))
+
+            selected = (lookup_form.selected_patient_id.data or "").strip()
+            advanced_id = (lookup_form.fhir_patient_id.data or "").strip()
+            if selected or advanced_id:
+                patient_id = selected or advanced_id
+                _store_selected_patient(portal_environment, patient_id)
+                flash(
+                    "Loading patient chart from the selected EHR environment.",
+                    "success",
+                )
+                return redirect(url_for("portal.dashboard"))
+
+            client = get_fhir_client(environment=portal_environment)
+            mrn = (lookup_form.mrn.data or "").strip() or None
+            family = (lookup_form.family_name.data or "").strip() or None
+            given = (lookup_form.given_name.data or "").strip() or None
+            birthdate = (
+                lookup_form.birthdate.data.isoformat()
+                if lookup_form.birthdate.data
+                else None
+            )
+            try:
+                patient_matches = client.search_patients(
+                    mrn=mrn,
+                    family_name=family,
+                    given_name=given,
+                    birthdate=birthdate,
+                )
+            except (RuntimeError, ValueError) as exc:
+                flash(str(exc), "error")
+                patient_matches = []
+            else:
+                if len(patient_matches) == 1:
+                    _store_selected_patient(portal_environment, patient_matches[0].id)
+                    flash(
+                        f"Matched {patient_matches[0].display_name}. Loading chart.",
+                        "success",
+                    )
+                    return redirect(url_for("portal.dashboard"))
+                if not patient_matches:
+                    flash(
+                        "No patients matched that MRN or name/DOB in the selected "
+                        "EHR environment.",
+                        "error",
+                    )
+                else:
+                    flash(
+                        f"Found {len(patient_matches)} matches — select the correct patient.",
+                        "info",
+                    )
 
         if request.method == "GET":
             portal_environment = _default_portal_environment()
             selected_patient_id = _resolve_advocate_patient_id(portal_environment)
             lookup_form.environment.data = portal_environment
-            lookup_form.patient_id.data = selected_patient_id or ""
 
     client = get_fhir_client(environment=portal_environment)
 
@@ -270,7 +321,14 @@ def dashboard():
     else:
         if selected_patient_id is None:
             selected_patient_id = _resolve_advocate_patient_id(portal_environment)
-        data = client.fetch_dashboard(patient_id=selected_patient_id)
+        # Avoid auto-loading a default chart while the advocate picks a match.
+        if is_advocate and patient_matches:
+            data = PortalDashboard(
+                connection=client.get_connection_status(),
+                patient_display_name="Select a matched patient",
+            )
+        else:
+            data = client.fetch_dashboard(patient_id=selected_patient_id)
 
     if not data.connection.jwks_uri:
         data.connection.jwks_uri = public_jwks_uri(
@@ -285,5 +343,6 @@ def dashboard():
         lookup_form=lookup_form,
         portal_environment=portal_environment,
         selected_patient_id=selected_patient_id,
+        patient_matches=patient_matches,
         sandbox_test_patient_id=EPIC_SANDBOX_TEST_PATIENT_ID,
     )

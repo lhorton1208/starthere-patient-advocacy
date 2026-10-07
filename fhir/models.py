@@ -134,6 +134,18 @@ class ProviderNoteItem:
 
 
 @dataclass
+class PatientMatch:
+    """A Patient resource candidate from MRN or demographic search."""
+
+    id: str
+    display_name: str
+    birthdate: str = ""
+    gender: str = ""
+    mrn: str = ""
+    identifiers_summary: str = ""
+
+
+@dataclass
 class PortalDashboard:
     """Aggregate payload for the Patient/Advocate Portal dashboard."""
 
