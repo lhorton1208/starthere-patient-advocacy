@@ -904,13 +904,18 @@ class LiveFHIRClient(FHIRClient):
         )
 
 
-def get_fhir_client(*, environment: str | None = None) -> FHIRClient:
+def get_fhir_client(
+    *,
+    environment: str | None = None,
+    base_url_override: str | None = None,
+) -> FHIRClient:
     """Factory: live client when a FHIR base URL is set, otherwise demo.
 
     ``environment`` selects sandbox vs production URL/credential/JWT sets.
+    ``base_url_override`` is used for patient MyChart sessions (issuer-specific).
     """
     settings = resolve_fhir_connection_settings(environment)
-    base_url = settings["base_url"]
+    base_url = (base_url_override or "").strip().rstrip("/") or settings["base_url"]
     if base_url:
         return LiveFHIRClient(
             base_url=base_url,

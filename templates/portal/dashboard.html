@@ -16,25 +16,34 @@
 
 <section class="content-section portal-dashboard">
   <div class="container">
-    {% if portal_environment == "sandbox" %}
+    {% if epic_patient %}
     <aside class="portal-sandbox-notice" role="status">
-      Connected to the <strong>test sandbox</strong>. Chart data is from Epic’s
-      open sandbox (or demo mode), not a live production patient record.
+      Signed in with <strong>MyChart</strong>. You are viewing your own chart
+      shared through Epic patient login.
+    </aside>
+    {% elif portal_environment == "sandbox" %}
+    <aside class="portal-sandbox-notice" role="status">
+      Advocate <strong>test sandbox</strong> (Backend Services). Not a live
+      production patient record. Patients should use MyChart login instead.
     </aside>
     {% else %}
     <aside class="portal-production-notice" role="status">
-      Connected to <strong>production</strong>. Treat all chart data as PHI and
-      follow StartHere access policies.
+      Advocate <strong>partner production</strong> Backend Services. Treat all
+      chart data as PHI and follow StartHere access policies.
     </aside>
     {% endif %}
 
     {% if is_advocate and lookup_form and not epic_patient %}
     <div class="portal-lookup form-card">
-      <h2 class="portal-lookup-title">Find patient chart</h2>
+      <h2 class="portal-lookup-title">Advocate EHR lookup</h2>
       <p class="portal-lookup-help">
-        Choose the EHR environment, then look up the patient the same way clinics
-        do: by <strong>MRN</strong>, or by <strong>last name + date of birth</strong>
-        (first name optional). StartHere never collects MyChart passwords.
+        For sandbox demos and approved partner orgs only. Look up by
+        <strong>MRN</strong> or <strong>last name + date of birth</strong>.
+        Patients should use <a href="{{ url_for('portal.login') }}">MyChart login</a>
+        — that scales across health systems without per-hospital Backend URLs.
+        {% if not partner_backend_enabled %}
+        Partner production is currently off (sandbox only).
+        {% endif %}
       </p>
       <form method="post" action="{{ url_for('portal.dashboard') }}" class="portal-lookup-form">
         {{ lookup_form.hidden_tag() }}
@@ -473,8 +482,8 @@
       Signed in with Epic.
       <a href="{{ url_for('portal.epic_logout') }}">Sign out of Epic</a>.
       {% elif is_advocate %}
-      Advocate Backend Services access — look up patients by MRN or name + DOB
-      above, then switch EHR environments as needed.
+      Advocate Backend Services (sandbox{% if partner_backend_enabled %} / partner{% endif %})
+      — patients should use MyChart login for their own chart.
       {% endif %}
       Educational and advocacy use only — not a substitute for your care team’s
       official records.

@@ -617,16 +617,17 @@ class PortalEpicLoginRouteTests(unittest.TestCase):
     def setUp(self):
         self.client = self.app.test_client()
 
-    def test_login_page_redirects_to_advocate_login(self):
-        response = self.client.get("/portal/login", follow_redirects=False)
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/login", response.headers["Location"])
-        self.assertNotIn("Patient Portal Login", response.data.decode("utf-8", "ignore"))
+    def test_login_page_renders_patient_mychart_entry(self):
+        response = self.client.get("/portal/login")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Patient Portal", response.data)
+        self.assertIn(b"MyChart", response.data)
+        self.assertIn(b"Advocate / staff?", response.data)
 
-    def test_dashboard_redirects_unauthenticated_to_advocate_login(self):
+    def test_dashboard_redirects_unauthenticated_to_portal_login(self):
         response = self.client.get("/portal/dashboard", follow_redirects=False)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/login", response.headers["Location"])
+        self.assertIn("/portal/login", response.headers["Location"])
 
     def test_epic_login_redirects_when_configured(self):
         env = {

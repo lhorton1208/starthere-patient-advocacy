@@ -8,8 +8,8 @@
   <div class="container">
     <h1>Patient Portal</h1>
     <p>
-      Sign in with your Epic / MyChart account to view problems, medications,
-      allergies, notes, and other chart information shared with StartHere.
+      Sign in with your own Epic / MyChart account to view your chart — problems,
+      medications, allergies, notes, and results — securely with StartHere.
     </p>
   </div>
 </section>
@@ -20,8 +20,8 @@
       {{ flash_messages() }}
 
       <p class="form-help">
-        You will be redirected to Epic to enter your credentials. StartHere never
-        asks for your MyChart username or password on this site.
+        You will be redirected to Epic / MyChart to enter your credentials.
+        StartHere never asks for your MyChart username or password on this site.
       </p>
 
       {% if oauth_configured %}
@@ -30,7 +30,7 @@
           href="{{ url_for('portal.epic_login', next=request.args.get('next')) }}"
           class="btn btn-primary"
         >
-          Sign in with Epic
+          Sign in with MyChart
         </a>
       </div>
       <p class="portal-login-meta">
@@ -39,19 +39,20 @@
       </p>
       {% else %}
       <aside class="portal-sandbox-notice" role="status">
-        Epic patient login is not configured yet. An administrator must register a
-        Patient-audience app on fhir.epic.com and set
-        <code>FHIR_AUTHORIZE_URL</code>, <code>FHIR_TOKEN_URL</code>, and
-        <code>FHIR_PATIENT_CLIENT_ID</code> (plus redirect URI /
-        <code>PUBLIC_BASE_URL</code>).
+        Patient MyChart login is not configured yet. An administrator must register a
+        <strong>Patient-audience</strong> app on fhir.epic.com and set
+        <code>FHIR_AUTHORIZE_URL</code>, <code>FHIR_PATIENT_TOKEN_URL</code> (or
+        <code>FHIR_TOKEN_URL</code>), <code>FHIR_PATIENT_CLIENT_ID</code>, and
+        <code>FHIR_REDIRECT_URI</code> / <code>PUBLIC_BASE_URL</code>.
       </aside>
       {% endif %}
 
       <p class="portal-login-advocate">
-        Advocate?
+        Advocate / staff?
         <a href="{{ url_for('auth.login', next=url_for('portal.dashboard')) }}">
           Sign in with your StartHere account
         </a>
+        (sandbox and partner Backend Services access)
       </p>
     </div>
   </div>

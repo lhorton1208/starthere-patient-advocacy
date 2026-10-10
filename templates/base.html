@@ -157,6 +157,7 @@
             {% endif %}
             <a href="{{ url_for('auth.logout') }}">Logout</a>
             {% else %}
+            <a href="{{ url_for('portal.login') }}">Patient Portal (MyChart)</a>
             <a href="{{ url_for('auth.login') }}">Advocate Login</a>
             {% endif %}
             {% if epic_patient and not current_advocate %}
@@ -204,11 +205,20 @@
             <li><a href="{{ url_for('hipaa_forms') }}">HIPAA Forms</a></li>
           </ul>
         </div>
-        {% if current_advocate %}
+        {% if current_advocate or epic_patient %}
         <div>
           <h4>Portal</h4>
           <ul>
-            <li><a href="{{ url_for('portal.dashboard') }}">Patient/Advocate Dashboard</a></li>
+            <li><a href="{{ url_for('portal.dashboard') }}">
+              {% if epic_patient and not current_advocate %}My Chart{% else %}Patient/Advocate Dashboard{% endif %}
+            </a></li>
+          </ul>
+        </div>
+        {% elif not current_advocate %}
+        <div>
+          <h4>Portal</h4>
+          <ul>
+            <li><a href="{{ url_for('portal.login') }}">Patient Portal (MyChart)</a></li>
           </ul>
         </div>
         {% endif %}

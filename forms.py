@@ -663,14 +663,11 @@ class LoginForm(FlaskForm):
 
 
 class AdvocatePortalLookupForm(FlaskForm):
-    """Advocate EHR lookup by MRN or name + DOB (normal clinical workflow)."""
+    """Advocate EHR lookup by MRN or name + DOB (sandbox / partner Backend Services)."""
 
     environment = SelectField(
         "EHR environment",
-        choices=[
-            ("sandbox", "Test sandbox"),
-            ("production", "Production"),
-        ],
+        choices=[("sandbox", "Test sandbox")],
         validators=[DataRequired()],
         default="sandbox",
     )
