@@ -51,6 +51,7 @@ from fhir.patient_auth import (
     partner_backend_enabled,
     patient_client_id,
     patient_client_secret,
+    patient_confidential_jwt_enabled,
     patient_oauth_configured,
     patient_scope,
     pop_oauth_pending,
@@ -194,9 +195,12 @@ def epic_callback():
         flash("Epic patient login is not configured on the server.", "error")
         return _redirect_portal_login()
 
+    # Default: public client + PKCE (matches Epic "Is Confidential Client" off).
+    # Only use private_key_jwt when explicitly enabled for a confidential Patients app.
     jwt_env = active_jwt_environment()
-    private_pem = load_private_pem(environment=jwt_env)
-    secret = patient_client_secret() or None
+    use_jwt = patient_confidential_jwt_enabled()
+    private_pem = load_private_pem(environment=jwt_env) if use_jwt else None
+    secret = None if private_pem else (patient_client_secret() or None)
 
     try:
         token = request_authorization_code_token(
@@ -205,11 +209,11 @@ def epic_callback():
             code=code,
             redirect_uri=resolve_redirect_uri(),
             code_verifier=code_verifier,
-            client_secret=None if private_pem else secret,
+            client_secret=secret,
             private_key_pem=private_pem,
             algorithm=signing_algorithm(environment=jwt_env),
-            kid=signing_kid(environment=jwt_env),
-            jku=public_jwks_uri(environment=jwt_env),
+            kid=signing_kid(environment=jwt_env) if private_pem else None,
+            jku=public_jwks_uri(environment=jwt_env) if private_pem else None,
         )
     except (RuntimeError, ValueError, TypeError) as exc:
         flash(f"Could not complete Epic sign-in: {exc}", "error")

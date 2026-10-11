@@ -103,6 +103,16 @@ def patient_oauth_configured() -> bool:
     return bool(patient_client_id() and token_url() and authorize_url())
 
 
+def patient_confidential_jwt_enabled() -> bool:
+    """Use private_key_jwt on the patient token exchange.
+
+    Only enable when the Epic Patients app has "Is Confidential Client"
+    checked and JWKS URLs are registered. Default is public client + PKCE.
+    """
+    flag = os.environ.get("FHIR_PATIENT_CONFIDENTIAL", "").strip().lower()
+    return flag in {"1", "true", "yes", "on"}
+
+
 def partner_backend_enabled() -> bool:
     """Whether advocates may use partner/production Backend Services lookup.
 
