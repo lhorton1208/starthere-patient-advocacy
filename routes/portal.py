@@ -201,13 +201,20 @@ def epic_callback():
     use_jwt = patient_confidential_jwt_enabled()
     private_pem = load_private_pem(environment=jwt_env) if use_jwt else None
     secret = None if private_pem else (patient_client_secret() or None)
+    if private_pem:
+        client_auth = "private_key_jwt"
+    elif secret:
+        client_auth = "client_secret"
+    else:
+        client_auth = "public_pkce"
+    redirect_uri = resolve_redirect_uri()
 
     try:
         token = request_authorization_code_token(
             token_url=tok_url,
             client_id=client_id,
             code=code,
-            redirect_uri=resolve_redirect_uri(),
+            redirect_uri=redirect_uri,
             code_verifier=code_verifier,
             client_secret=secret,
             private_key_pem=private_pem,
@@ -216,7 +223,12 @@ def epic_callback():
             jku=public_jwks_uri(environment=jwt_env) if private_pem else None,
         )
     except (RuntimeError, ValueError, TypeError) as exc:
-        flash(f"Could not complete Epic sign-in: {exc}", "error")
+        flash(
+            f"Could not complete Epic sign-in: {exc} "
+            f"[client_auth={client_auth}; client_id={client_id[:8]}…; "
+            f"redirect_uri={redirect_uri}]",
+            "error",
+        )
         return _redirect_portal_login()
 
     store_epic_patient_session(
