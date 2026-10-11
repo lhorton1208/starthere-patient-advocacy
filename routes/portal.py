@@ -195,16 +195,18 @@ def epic_callback():
         flash("Epic patient login is not configured on the server.", "error")
         return _redirect_portal_login()
 
-    # Default: public client + PKCE (matches Epic "Is Confidential Client" off).
-    # Only use private_key_jwt when explicitly enabled for a confidential Patients app.
+    # Patient token auth preference:
+    # 1) client secret (Epic Patients "Sandbox Client Secret") when configured
+    # 2) private_key_jwt when FHIR_PATIENT_CONFIDENTIAL=true
+    # 3) public client + PKCE
     jwt_env = active_jwt_environment()
-    use_jwt = patient_confidential_jwt_enabled()
+    secret = patient_client_secret() or None
+    use_jwt = (not secret) and patient_confidential_jwt_enabled()
     private_pem = load_private_pem(environment=jwt_env) if use_jwt else None
-    secret = None if private_pem else (patient_client_secret() or None)
-    if private_pem:
-        client_auth = "private_key_jwt"
-    elif secret:
+    if secret:
         client_auth = "client_secret"
+    elif private_pem:
+        client_auth = "private_key_jwt"
     else:
         client_auth = "public_pkce"
     redirect_uri = resolve_redirect_uri()
