@@ -25,6 +25,15 @@
           <dt>Email</dt><dd>{{ client.email or '—' }}</dd>
           <dt>Primary Phone</dt><dd>{{ client.phone or '—' }}</dd>
           {% if client.phone_number2 %}<dt>Secondary Phone</dt><dd>{{ client.phone_number2 }}</dd>{% endif %}
+          <dt>Health System</dt>
+          <dd>
+            {% if client.health_system %}
+              {{ client.health_system.name }}
+              <a href="{{ url_for('portal.epic_login', client=client.id) }}">Connect MyChart</a>
+            {% else %}
+              Not set. <a href="{{ url_for('client_patient.edit_client', client_id=client.id) }}">Choose a health system</a>.
+            {% endif %}
+          </dd>
           {% if client.relationship_type %}<dt>Relationship to Patient</dt><dd>{{ client.relationship_type.relationship }}</dd>{% endif %}
           <dt>Address</dt>
           <dd>

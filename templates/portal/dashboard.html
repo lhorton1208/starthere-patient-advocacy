@@ -18,8 +18,9 @@
   <div class="container">
     {% if epic_patient %}
     <aside class="portal-sandbox-notice" role="status">
-      Signed in with <strong>MyChart</strong>. You are viewing your own chart
-      shared through Epic patient login.
+      Signed in with <strong>MyChart</strong>{% if epic_patient.health_system_name %}
+      at <strong>{{ epic_patient.health_system_name }}</strong>{% endif %}.
+      You are viewing your own chart shared through Epic patient login.
     </aside>
     {% elif portal_environment == "sandbox" %}
     <aside class="portal-sandbox-notice" role="status">
@@ -31,6 +32,43 @@
       Advocate <strong>partner production</strong> Backend Services. Treat all
       chart data as PHI and follow StartHere access policies.
     </aside>
+    {% endif %}
+
+    {% if is_advocate and not epic_patient %}
+    <div class="portal-lookup form-card">
+      <h2 class="portal-lookup-title">Connect a client with MyChart</h2>
+      <p class="portal-lookup-help">
+        The health system on the client record chooses the MyChart authorize,
+        token, and FHIR address. Open this with the patient present so they
+        can sign in on Epic's page.
+      </p>
+      {% if portal_clients %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Client</th><th>Health System</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for row in portal_clients %}
+            <tr>
+              <td>{{ row.display_name }}</td>
+              <td>{{ row.health_system.name if row.health_system else 'Not set' }}</td>
+              <td>
+                {% if row.health_system %}
+                <a href="{{ url_for('portal.epic_login', client=row.id) }}">Sign in with MyChart</a>
+                {% else %}
+                <a href="{{ url_for('client_patient.edit_client', client_id=row.id) }}">Set health system</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="portal-empty">No clients yet. Add one under Client Info and choose their health system.</p>
+      {% endif %}
+    </div>
     {% endif %}
 
     {% if is_advocate and lookup_form and not epic_patient %}

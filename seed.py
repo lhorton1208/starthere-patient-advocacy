@@ -1,4 +1,5 @@
 from config import CONTACTS
+from fhir.health_systems import seed_health_systems
 from models import Advocate, Company, LookupList, RelationshipToPatient, db
 
 
@@ -77,6 +78,8 @@ def seed_database():
                 advocate.email = contact["email"]
             if contact.get("phone"):
                 advocate.phone = contact["phone"]
+
+    seed_health_systems()
 
     db.session.commit()
     return company

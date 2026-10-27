@@ -679,6 +679,86 @@ class PortalEpicLoginRouteTests(unittest.TestCase):
             self.assertEqual(sess.get("epic_access_token"), "patient-access")
             self.assertEqual(sess.get("epic_patient_id"), "pat-99")
 
+    def test_epic_login_uses_selected_health_system(self):
+        env = {
+            "FHIR_PATIENT_CLIENT_ID": "prod-patient-client",
+            "FHIR_AUTHORIZE_URL": "https://fhir.epic.com/oauth2/authorize",
+            "FHIR_TOKEN_URL": "https://fhir.epic.com/oauth2/token",
+            "FHIR_BASE_URL": "https://fhir.epic.com/api/FHIR/R4",
+            "PUBLIC_BASE_URL": "https://example.com",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            response = self.client.get(
+                "/portal/epic/login?system=unc", follow_redirects=False
+            )
+        self.assertEqual(response.status_code, 302)
+        location = response.headers["Location"]
+        self.assertTrue(
+            location.startswith("https://epicfe.unch.unc.edu/FHIR/oauth2/authorize?")
+        )
+        self.assertIn("client_id=prod-patient-client", location)
+        self.assertIn(
+            "aud=https%3A%2F%2Fepicfe.unch.unc.edu%2FFHIR%2Fapi%2FFHIR%2FR4",
+            location,
+        )
+
+    def test_sandbox_health_system_does_not_reuse_production_client_id(self):
+        env = {
+            "FHIR_PATIENT_CLIENT_ID": "prod-patient-client",
+            "FHIR_PATIENT_SANDBOX_CLIENT_ID": "",
+            "PUBLIC_BASE_URL": "https://example.com",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            response = self.client.get(
+                "/portal/epic/login?system=epic-sandbox", follow_redirects=False
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/portal/login", response.headers["Location"])
+
+    def test_epic_callback_uses_pending_health_system_endpoints(self):
+        env = {
+            "FHIR_TOKEN_URL": "https://fhir.epic.com/oauth2/token",
+            "FHIR_PATIENT_CLIENT_ID": "sandbox-client",
+            "FHIR_BASE_URL": "https://fhir.epic.com/api/FHIR/R4",
+            "PUBLIC_BASE_URL": "https://example.com",
+        }
+        with self.client.session_transaction() as sess:
+            sess["epic_oauth_state"] = "good-state"
+            sess["epic_code_verifier"] = "verifier-1"
+            sess["epic_oauth_token_url"] = "https://epicfe.unch.unc.edu/FHIR/oauth2/token"
+            sess["epic_oauth_fhir_base"] = "https://epicfe.unch.unc.edu/FHIR/api/FHIR/R4"
+            sess["epic_oauth_client_id"] = "prod-client"
+            sess["epic_oauth_health_system_name"] = "UNC Health Care"
+
+        fake_token = mock.Mock(
+            access_token="patient-access",
+            patient="pat-unc",
+            scope="patient/Patient.read",
+            expires_in=3600,
+        )
+        with mock.patch.dict(os.environ, env, clear=False):
+            with mock.patch(
+                "routes.portal.request_authorization_code_token",
+                return_value=fake_token,
+            ) as exchange:
+                response = self.client.get(
+                    "/portal/epic/callback?code=abc&state=good-state",
+                    follow_redirects=False,
+                )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            exchange.call_args.kwargs["token_url"],
+            "https://epicfe.unch.unc.edu/FHIR/oauth2/token",
+        )
+        self.assertEqual(exchange.call_args.kwargs["client_id"], "prod-client")
+        with self.client.session_transaction() as sess:
+            self.assertEqual(
+                sess.get("epic_fhir_base_url"),
+                "https://epicfe.unch.unc.edu/FHIR/api/FHIR/R4",
+            )
+            self.assertEqual(sess.get("epic_health_system_name"), "UNC Health Care")
+
 
 if __name__ == "__main__":
     unittest.main()

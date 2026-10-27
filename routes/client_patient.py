@@ -103,6 +103,8 @@ def _strip(value):
 
 
 def _populate_client_form(form, client=None):
+    from models import HealthSystem
+
     relationships = RelationshipToPatient.query.order_by(
         RelationshipToPatient.relationship
     ).all()
@@ -113,6 +115,12 @@ def _populate_client_form(form, client=None):
     form.patient_id.choices = [(0, "None")] + [
         (p.id, p.full_name) for p in patients
     ]
+    systems = HealthSystem.query.filter_by(active=True).order_by(
+        HealthSystem.sort_order, HealthSystem.name
+    ).all()
+    form.health_system_id.choices = [(0, "Select health system...")] + [
+        (system.id, system.name) for system in systems
+    ]
     if client:
         if not client.first_name and client.name:
             client.sync_name_fields()
@@ -120,6 +128,8 @@ def _populate_client_form(form, client=None):
             form.patient_id.data = client.patients.first().id
         if client.relationship_to_patient_id:
             form.relationship_to_patient_id.data = client.relationship_to_patient_id
+        if client.health_system_id:
+            form.health_system_id.data = client.health_system_id
 
 
 def _populate_patient_form(form, patient=None):
@@ -230,6 +240,7 @@ def _apply_client_from_form(record, form):
     record.city = _strip(form.city.data)
     record.state = _strip(form.state.data)
     record.zip_code = _strip(form.zip_code.data)
+    record.health_system_id = form.health_system_id.data or None
     record.sync_name_fields()
 
 

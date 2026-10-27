@@ -42,11 +42,31 @@ class RelationshipToPatient(db.Model):
     clients = db.relationship("Client", back_populates="relationship_type", lazy="dynamic")
 
 
+class HealthSystem(db.Model):
+    """Epic organization whose MyChart authorize, token, and FHIR base URLs differ."""
+
+    __tablename__ = "health_systems"
+
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(64), nullable=False, unique=True)
+    name = db.Column(db.String(200), nullable=False)
+    fhir_base_url = db.Column(db.String(500), nullable=False)
+    authorize_url = db.Column(db.String(500), nullable=False)
+    token_url = db.Column(db.String(500), nullable=False)
+    use_sandbox_client = db.Column(db.Boolean, nullable=False, default=False)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+
+    clients = db.relationship("Client", back_populates="health_system")
+
+
 class Client(db.Model):
     __tablename__ = "clients"
 
     id = db.Column(db.Integer, primary_key=True)
     company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False)
+    health_system_id = db.Column(db.Integer, db.ForeignKey("health_systems.id"))
     # Legacy single-field name (kept for backward compatibility in lists/reports).
     name = db.Column(db.String(200), nullable=False, default="")
     first_name = db.Column(db.String(255))
@@ -69,6 +89,7 @@ class Client(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     company = db.relationship("Company", back_populates="clients")
+    health_system = db.relationship("HealthSystem", back_populates="clients")
     relationship_type = db.relationship(
         "RelationshipToPatient", back_populates="clients"
     )

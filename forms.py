@@ -496,6 +496,11 @@ class ClientInfoForm(FlaskForm):
         coerce=nullable_int,
         validators=[Optional()],
     )
+    health_system_id = SelectField(
+        "Health System",
+        coerce=nullable_int,
+        validators=[Optional()],
+    )
 
 
 class DeletePatientForm(FlaskForm):

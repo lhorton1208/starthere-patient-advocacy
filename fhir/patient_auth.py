@@ -22,6 +22,12 @@ SESSION_EPIC_EXPIRES_AT = "epic_expires_at"
 SESSION_EPIC_FHIR_BASE = "epic_fhir_base_url"
 SESSION_EPIC_OAUTH_STATE = "epic_oauth_state"
 SESSION_EPIC_CODE_VERIFIER = "epic_code_verifier"
+SESSION_EPIC_OAUTH_TOKEN_URL = "epic_oauth_token_url"
+SESSION_EPIC_OAUTH_FHIR_BASE = "epic_oauth_fhir_base"
+SESSION_EPIC_OAUTH_CLIENT_ID = "epic_oauth_client_id"
+SESSION_EPIC_OAUTH_HEALTH_SYSTEM_ID = "epic_oauth_health_system_id"
+SESSION_EPIC_OAUTH_HEALTH_SYSTEM_NAME = "epic_oauth_health_system_name"
+SESSION_EPIC_HEALTH_SYSTEM_NAME = "epic_health_system_name"
 
 DEFAULT_AUTHORIZE_URL = (
     "https://fhir.epic.com/interconnect-fhir-oauth/oauth2/authorize"
@@ -42,6 +48,18 @@ class EpicPatientSession:
     scope: str | None = None
     expires_at: float | None = None
     fhir_base_url: str | None = None
+    health_system_name: str | None = None
+
+
+@dataclass
+class OAuthPending:
+    state: str | None
+    code_verifier: str | None
+    token_url: str | None = None
+    fhir_base_url: str | None = None
+    epic_client_id: str | None = None
+    health_system_id: int | None = None
+    health_system_name: str | None = None
 
     @property
     def is_expired(self) -> bool:
@@ -134,6 +152,7 @@ def get_epic_patient_session() -> EpicPatientSession | None:
         scope=session.get(SESSION_EPIC_SCOPE),
         expires_at=session.get(SESSION_EPIC_EXPIRES_AT),
         fhir_base_url=session.get(SESSION_EPIC_FHIR_BASE) or None,
+        health_system_name=session.get(SESSION_EPIC_HEALTH_SYSTEM_NAME) or None,
     )
     if epic.is_expired:
         clear_epic_patient_session()
@@ -148,6 +167,7 @@ def store_epic_patient_session(
     scope: str | None = None,
     expires_in: int | None = None,
     fhir_base: str | None = None,
+    health_system_name: str | None = None,
 ) -> None:
     session[SESSION_EPIC_ACCESS_TOKEN] = access_token
     if patient_id:
@@ -162,6 +182,10 @@ def store_epic_patient_session(
     base = (fhir_base or fhir_base_url() or "").strip().rstrip("/")
     if base:
         session[SESSION_EPIC_FHIR_BASE] = base
+    if health_system_name:
+        session[SESSION_EPIC_HEALTH_SYSTEM_NAME] = health_system_name
+    elif SESSION_EPIC_HEALTH_SYSTEM_NAME in session:
+        session.pop(SESSION_EPIC_HEALTH_SYSTEM_NAME, None)
     session.modified = True
 
 
@@ -174,22 +198,56 @@ def clear_epic_patient_session() -> None:
         SESSION_EPIC_FHIR_BASE,
         SESSION_EPIC_OAUTH_STATE,
         SESSION_EPIC_CODE_VERIFIER,
+        SESSION_EPIC_OAUTH_TOKEN_URL,
+        SESSION_EPIC_OAUTH_FHIR_BASE,
+        SESSION_EPIC_OAUTH_CLIENT_ID,
+        SESSION_EPIC_OAUTH_HEALTH_SYSTEM_ID,
+        SESSION_EPIC_OAUTH_HEALTH_SYSTEM_NAME,
+        SESSION_EPIC_HEALTH_SYSTEM_NAME,
     ):
         session.pop(key, None)
     session.modified = True
 
 
-def store_oauth_pending(*, state: str, code_verifier: str) -> None:
+def store_oauth_pending(
+    *,
+    state: str,
+    code_verifier: str,
+    token_url: str | None = None,
+    fhir_base_url: str | None = None,
+    epic_client_id: str | None = None,
+    health_system_id: int | None = None,
+    health_system_name: str | None = None,
+) -> None:
     session[SESSION_EPIC_OAUTH_STATE] = state
     session[SESSION_EPIC_CODE_VERIFIER] = code_verifier
+    extras = {
+        SESSION_EPIC_OAUTH_TOKEN_URL: token_url,
+        SESSION_EPIC_OAUTH_FHIR_BASE: fhir_base_url,
+        SESSION_EPIC_OAUTH_CLIENT_ID: epic_client_id,
+        SESSION_EPIC_OAUTH_HEALTH_SYSTEM_ID: health_system_id,
+        SESSION_EPIC_OAUTH_HEALTH_SYSTEM_NAME: health_system_name,
+    }
+    for key, value in extras.items():
+        if value is None or value == "":
+            session.pop(key, None)
+        else:
+            session[key] = value
     session.modified = True
 
 
-def pop_oauth_pending() -> tuple[str | None, str | None]:
-    state = session.pop(SESSION_EPIC_OAUTH_STATE, None)
-    verifier = session.pop(SESSION_EPIC_CODE_VERIFIER, None)
+def pop_oauth_pending() -> OAuthPending:
+    pending = OAuthPending(
+        state=session.pop(SESSION_EPIC_OAUTH_STATE, None),
+        code_verifier=session.pop(SESSION_EPIC_CODE_VERIFIER, None),
+        token_url=session.pop(SESSION_EPIC_OAUTH_TOKEN_URL, None),
+        fhir_base_url=session.pop(SESSION_EPIC_OAUTH_FHIR_BASE, None),
+        epic_client_id=session.pop(SESSION_EPIC_OAUTH_CLIENT_ID, None),
+        health_system_id=session.pop(SESSION_EPIC_OAUTH_HEALTH_SYSTEM_ID, None),
+        health_system_name=session.pop(SESSION_EPIC_OAUTH_HEALTH_SYSTEM_NAME, None),
+    )
     session.modified = True
-    return state, verifier
+    return pending
 
 
 def portal_access_required(view):

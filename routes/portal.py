@@ -24,6 +24,12 @@ from flask import (
 
 from auth import get_current_advocate
 from fhir import get_fhir_client
+from fhir.health_systems import (
+    active_health_systems,
+    connection_for_system,
+    env_patient_connection,
+    resolve_patient_connection,
+)
 from fhir.client import (
     EPIC_SANDBOX_TEST_PATIENT_ID,
     normalize_portal_environment,
@@ -37,6 +43,7 @@ from fhir.jwks import (
     signing_kid,
 )
 from fhir.models import PortalDashboard
+from models import Client
 from fhir.oauth import (
     build_authorize_url,
     generate_oauth_state,
@@ -125,29 +132,72 @@ def login():
         next_url = _safe_next_url(request.args.get("next"))
         return redirect(next_url or url_for("portal.dashboard"))
 
+    systems = []
+    for system in active_health_systems():
+        systems.append(
+            {
+                "slug": system.slug,
+                "name": system.name,
+                "ready": connection_for_system(system) is not None,
+            }
+        )
+    ready_systems = [system for system in systems if system["ready"]]
     return render_template(
         "portal/login.html",
         oauth_configured=patient_oauth_configured(),
         authorize_host=authorize_url(),
+        health_systems=ready_systems,
     )
 
 
 @portal_bp.route("/epic/login")
 def epic_login():
-    """Redirect the patient to Epic's authorize page (credentials entered there)."""
-    if not patient_oauth_configured():
+    """Redirect the patient to the health system's MyChart authorize page."""
+    raw_client = (request.args.get("client") or "").strip()
+    slug = (request.args.get("system") or "").strip()
+    connection = None
+    if raw_client:
+        try:
+            client_pk = int(raw_client)
+        except ValueError:
+            flash("That client record could not be used for MyChart sign-in.", "error")
+            return _redirect_portal_login()
+        connection = resolve_patient_connection(client_id=client_pk)
+        if connection is None:
+            flash(
+                "This client has no health system ready for MyChart. "
+                "Set the health system on the client record first.",
+                "error",
+            )
+            return _redirect_portal_login()
+    elif slug:
+        connection = resolve_patient_connection(system_slug=slug)
+        if connection is None:
+            flash("That health system is not available for MyChart sign-in.", "error")
+            return _redirect_portal_login()
+    else:
+        connection = env_patient_connection()
+
+    if connection is None:
         flash(
-            "Epic patient login is not configured. Set FHIR_AUTHORIZE_URL, "
-            "FHIR_PATIENT_TOKEN_URL (or FHIR_TOKEN_URL), and FHIR_PATIENT_CLIENT_ID.",
+            "Epic patient login is not configured. Set FHIR_PATIENT_CLIENT_ID "
+            "and either choose a health system or set the sandbox FHIR URLs.",
             "error",
         )
         return _redirect_portal_login()
 
-    client_id = patient_client_id()
     redirect_uri = resolve_redirect_uri()
     pkce = generate_pkce_pair()
     state = generate_oauth_state()
-    store_oauth_pending(state=state, code_verifier=pkce.code_verifier)
+    store_oauth_pending(
+        state=state,
+        code_verifier=pkce.code_verifier,
+        token_url=connection.token_url,
+        fhir_base_url=connection.fhir_base_url,
+        epic_client_id=connection.epic_client_id,
+        health_system_id=connection.health_system_id,
+        health_system_name=connection.health_system_name,
+    )
 
     next_url = _safe_next_url(request.args.get("next"))
     if next_url:
@@ -155,13 +205,13 @@ def epic_login():
         session.modified = True
 
     url = build_authorize_url(
-        authorize_url=authorize_url(),
-        client_id=client_id,
+        authorize_url=connection.authorize_url,
+        client_id=connection.epic_client_id,
         redirect_uri=redirect_uri,
         scope=patient_scope(),
         state=state,
         code_challenge=pkce.code_challenge,
-        aud=fhir_base_url() or None,
+        aud=connection.fhir_base_url or None,
     )
     return redirect(url)
 
@@ -178,19 +228,20 @@ def epic_callback():
 
     code = request.args.get("code")
     state = request.args.get("state")
-    expected_state, code_verifier = pop_oauth_pending()
+    pending = pop_oauth_pending()
 
-    if not code or not state or not expected_state or state != expected_state:
+    if not code or not state or not pending.state or state != pending.state:
         flash("Epic sign-in failed (invalid or expired state). Please try again.", "error")
         clear_epic_patient_session()
         return _redirect_portal_login()
 
-    if not code_verifier:
+    if not pending.code_verifier:
         flash("Epic sign-in failed (missing PKCE verifier). Please try again.", "error")
         return _redirect_portal_login()
 
-    client_id = patient_client_id()
-    tok_url = token_url()
+    client_id = pending.epic_client_id or patient_client_id()
+    tok_url = pending.token_url or token_url()
+    fhir_base = pending.fhir_base_url or fhir_base_url()
     if not client_id or not tok_url:
         flash("Epic patient login is not configured on the server.", "error")
         return _redirect_portal_login()
@@ -217,7 +268,7 @@ def epic_callback():
             client_id=client_id,
             code=code,
             redirect_uri=redirect_uri,
-            code_verifier=code_verifier,
+            code_verifier=pending.code_verifier,
             client_secret=secret,
             private_key_pem=private_pem,
             algorithm=signing_algorithm(environment=jwt_env),
@@ -238,7 +289,8 @@ def epic_callback():
         patient_id=token.patient,
         scope=token.scope,
         expires_in=token.expires_in,
-        fhir_base=fhir_base_url() or None,
+        fhir_base=fhir_base or None,
+        health_system_name=pending.health_system_name,
     )
 
     next_url = _safe_next_url(session.pop("epic_oauth_next", None))
@@ -269,10 +321,14 @@ def dashboard():
     portal_environment = _default_portal_environment()
     selected_patient_id = None
     patient_matches = []
+    portal_clients = []
 
     if is_advocate:
         lookup_form = AdvocatePortalLookupForm()
         lookup_form.environment.choices = _advocate_environment_choices()
+        portal_clients = (
+            Client.query.order_by(Client.last_name, Client.first_name, Client.name).all()
+        )
 
         if request.method == "POST" and lookup_form.load_sandbox_test.data:
             _store_selected_patient("sandbox", EPIC_SANDBOX_TEST_PATIENT_ID)
@@ -394,4 +450,5 @@ def dashboard():
         patient_matches=patient_matches,
         sandbox_test_patient_id=EPIC_SANDBOX_TEST_PATIENT_ID,
         partner_backend_enabled=partner_backend_enabled(),
+        portal_clients=portal_clients,
     )

@@ -21,7 +21,7 @@
     <div class="table-wrap">
       <table class="data-table">
         <thead>
-          <tr><th>Name</th><th>Phone</th><th>Email</th><th>Patients</th><th></th></tr>
+          <tr><th>Name</th><th>Phone</th><th>Email</th><th>Health System</th><th>Patients</th><th></th></tr>
         </thead>
         <tbody>
           {% for row in rows %}
@@ -29,11 +29,12 @@
             <td><a href="{{ url_for('client_patient.view_client', client_id=row.id) }}">{{ row.display_name }}</a></td>
             <td>{{ row.phone or '—' }}</td>
             <td>{{ row.email or '—' }}</td>
+            <td>{{ row.health_system.name if row.health_system else '—' }}</td>
             <td>{{ row.patients.count() }}</td>
             <td><a href="{{ url_for('client_patient.edit_client', client_id=row.id) }}">Edit</a></td>
           </tr>
           {% else %}
-          <tr><td colspan="5" class="empty-state">No clients yet.</td></tr>
+          <tr><td colspan="6" class="empty-state">No clients yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>

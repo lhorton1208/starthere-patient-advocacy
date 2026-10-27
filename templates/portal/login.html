@@ -24,7 +24,19 @@
         StartHere never asks for your MyChart username or password on this site.
       </p>
 
-      {% if oauth_configured %}
+      {% if health_systems %}
+      <p class="form-help">Choose the health system that holds your MyChart account.</p>
+      <div class="form-actions portal-system-list">
+        {% for system in health_systems %}
+        <a
+          href="{{ url_for('portal.epic_login', system=system.slug, next=request.args.get('next')) }}"
+          class="btn btn-primary"
+        >
+          Sign in with {{ system.name }}
+        </a>
+        {% endfor %}
+      </div>
+      {% elif oauth_configured %}
       <div class="form-actions">
         <a
           href="{{ url_for('portal.epic_login', next=request.args.get('next')) }}"

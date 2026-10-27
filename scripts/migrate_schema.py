@@ -31,6 +31,7 @@ NEW_COLUMNS = {
         "phone_number2": "VARCHAR(32)",
         "relationship_to_patient_id": "INTEGER",
         "patient_id": "INTEGER",
+        "health_system_id": "INTEGER",
     },
     "patients": {
         "address": "VARCHAR(300)",
