@@ -25,17 +25,22 @@
       </p>
 
       {% if health_systems %}
-      <p class="form-help">Choose the health system that holds your MyChart account.</p>
-      <div class="form-actions portal-system-list">
-        {% for system in health_systems %}
-        <a
-          href="{{ url_for('portal.epic_login', system=system.slug, next=request.args.get('next')) }}"
-          class="btn btn-primary"
-        >
-          Sign in with {{ system.name }}
-        </a>
-        {% endfor %}
-      </div>
+      <form method="get" action="{{ url_for('portal.epic_login') }}" class="portal-system-form">
+        <div class="form-group">
+          <label class="field-label" for="health-system">Health system</label>
+          <select id="health-system" name="system" required>
+            {% for system in health_systems %}
+            <option value="{{ system.slug }}">{{ system.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% if request.args.get('next') %}
+        <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+        {% endif %}
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Sign in with MyChart</button>
+        </div>
+      </form>
       {% elif oauth_configured %}
       <div class="form-actions">
         <a

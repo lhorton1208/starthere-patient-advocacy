@@ -36,6 +36,15 @@ DEFAULT_HEALTH_SYSTEMS = (
         "use_sandbox_client": False,
         "sort_order": 10,
     },
+    {
+        "slug": "duke",
+        "name": "Duke University Health System",
+        "fhir_base_url": "https://health-apis.duke.edu/FHIR/api/FHIR/R4",
+        "authorize_url": "https://health-apis.duke.edu/FHIR/oauth2/authorize",
+        "token_url": "https://health-apis.duke.edu/FHIR/oauth2/token",
+        "use_sandbox_client": False,
+        "sort_order": 20,
+    },
 )
 
 

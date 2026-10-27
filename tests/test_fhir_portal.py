@@ -702,6 +702,31 @@ class PortalEpicLoginRouteTests(unittest.TestCase):
             location,
         )
 
+    def test_epic_login_uses_duke_health_system(self):
+        env = {
+            "FHIR_PATIENT_CLIENT_ID": "prod-patient-client",
+            "PUBLIC_BASE_URL": "https://example.com",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            response = self.client.get(
+                "/portal/epic/login?system=duke", follow_redirects=False
+            )
+        self.assertEqual(response.status_code, 302)
+        location = response.headers["Location"]
+        self.assertTrue(
+            location.startswith("https://health-apis.duke.edu/FHIR/oauth2/authorize?")
+        )
+        self.assertIn("client_id=prod-patient-client", location)
+
+    def test_login_page_lists_unc_and_duke(self):
+        env = {"FHIR_PATIENT_CLIENT_ID": "prod-patient-client"}
+        with mock.patch.dict(os.environ, env, clear=False):
+            response = self.client.get("/portal/login")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"UNC Health Care", response.data)
+        self.assertIn(b"Duke University Health System", response.data)
+        self.assertIn(b'name="system"', response.data)
+
     def test_sandbox_health_system_does_not_reuse_production_client_id(self):
         env = {
             "FHIR_PATIENT_CLIENT_ID": "prod-patient-client",
