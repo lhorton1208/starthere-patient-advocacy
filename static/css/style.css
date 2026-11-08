@@ -713,6 +713,14 @@ a:hover {
   color: var(--color-primary);
 }
 
+.bcpa-callout {
+  max-width: 46rem;
+}
+
+.bcpa-callout h2 {
+  margin-bottom: 0.75rem;
+}
+
 .advocate-title {
   margin: 0 0 1rem;
   color: var(--color-text-muted);

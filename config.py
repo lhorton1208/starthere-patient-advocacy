@@ -70,7 +70,9 @@ GEORGETTE_BIO = [
         "patient relationship as a collaboration, meeting people where they were, "
         "leading with empathy, and ensuring that compassion was never a secondary "
         "consideration. That commitment to patient-centered care is what drew me to "
-        "nursing, and it is what drives the work I do today."
+        "nursing, and it is what drives the work I do today. I am a Board Certified "
+        "Patient Advocate (BCPA), having passed the national certification exam and "
+        "met the standards set by the Patient Advocate Certification Board."
     ),
     (
         "Healthcare has changed dramatically. Artificial intelligence now schedules "
@@ -119,9 +121,11 @@ LARRY_BIO = [
         "to helping others make informed decisions and avoid preventable setbacks."
     ),
     (
-        "Larry holds a Bachelor and Master degree in Computer Science from NC Central "
-        "University and NC State University and an MBA from Kenan-Flagler Business "
-        "School UNC Chapel Hill."
+        "Larry is a Board Certified Patient Advocate (BCPA), having passed the "
+        "national certification exam and met the standards set by the Patient "
+        "Advocate Certification Board. He holds a Bachelor and Master degree in "
+        "Computer Science from NC Central University and NC State University and an "
+        "MBA from Kenan-Flagler Business School UNC Chapel Hill."
     ),
 ]
 
@@ -164,7 +168,7 @@ CONTACTS = [
         "name": "Georgette Darnell",
         "slug": "georgette-darnell",
         "legacy_name": "Georgette Johnson",
-        "credentials": "RN, MHA",
+        "credentials": "RN, MHA, BCPA",
         "title": "Founder & Principal, StartHere Patient Advocacy LLC",
         "email": os.environ.get(
             "CONTACT_GEORGETTE_EMAIL",
@@ -177,6 +181,7 @@ CONTACTS = [
     {
         "name": "Larry Horton",
         "slug": "larry-horton",
+        "credentials": "BCPA",
         "title": "Founder & Principal, StartHere Patient Advocacy LLC",
         "email": os.environ.get(
             "CONTACT_LARRY_EMAIL", "Larry.Horton@startherepatientadvocacy.com"

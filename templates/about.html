@@ -39,8 +39,23 @@
   </div>
 </section>
 
-{% if advocates %}
 <section class="content-section content-section-alt">
+  <div class="container">
+    <div class="mission-vision-block bcpa-callout">
+      <h2>Board Certified Patient Advocates</h2>
+      <p>
+        A Board Certified Patient Advocate (BCPA) is a professional healthcare
+        navigator who has passed a rigorous national exam and met strict standards
+        set by the Patient Advocate Certification Board. Georgette Darnell and
+        Larry Horton are BCPA-certified and bring that national credential to
+        every StartHere engagement.
+      </p>
+    </div>
+  </div>
+</section>
+
+{% if advocates %}
+<section class="content-section">
   <div class="container advocate-profiles">
     {% for advocate in advocates %}
     {% include "_advocate_profile.html" %}
